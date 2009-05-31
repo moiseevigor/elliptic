@@ -1,6 +1,6 @@
 function [a,b,c,n] = agm(a0,b0,c0,tol)
 % AGM calculates the Artihmetic Geometric Mean of A and B (see [1]). 
-% The function is used in routines ELLIPJ and ELLIPTIC12.
+% The function is used by routines ELLIPJ and ELLIPTIC12.
 %
 %   [A,B,C,N] = AGM(A0,B0,C0,TOL) carry out the process of the arithmetic geometric 
 %   mean, starting with a given positive numbers triple (A0,B0,C0) and returns in 

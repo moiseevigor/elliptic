@@ -1,0 +1,16 @@
+
+Contents of the package Elliptic
+
+Structure of the folders
+	
+	1. 	complex
+		Complex implementation of the elliptic functions (Matlab script)
+		
+	2.	cpp
+		C++ source of the library
+		
+	3.	examples
+		Examples of library functions usage
+		
+	4.	real
+		Real arguments functions

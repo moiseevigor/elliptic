@@ -1,1 +1,2 @@
+#summary elliptic package usage and installation requirements
 = Elliptic integrals and Jacobi functions package wiki. =

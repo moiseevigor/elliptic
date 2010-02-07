@@ -14,6 +14,9 @@ http://www.sitmo.com/gg/latex/latex2png.2.php?z=100&eq=\int^\infty_0\left(\frac{
 
 Here we present some basic theory related the Elliptic Integral of the First Kind http://www.sitmo.com/gg/latex/latex2png.2.php?z=70&eq=F(\varphi\,|\,\rho^2)&a=a.png and give some examples of usage and problem solving.
 
+Another inline formulas http://latex.codecogs.com/gif.latex?\inline%20\int_{a}^{b}xdx%.png
+
+
 = Theory =
 
 = Examples =

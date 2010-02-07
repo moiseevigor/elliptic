@@ -5,9 +5,6 @@ Elliptic integrals originally arose in connection with the problem of giving the
 
 http://latex.codecogs.com/gif.latex?\int^x_cR(t,P(t)\,dt%.png
 
-{{{
-f(x) = Integral(R(t,P(t), c, x)dt,
-}}}
 where `R` is a rational function of its two arguments, `P` is the square root of a polynomial of degree `3` or `4` with no repeated roots, and `c` is a constant.
 In general, elliptic integrals cannot be expressed in terms of elementary functions. Exceptions to this general rule are when `P` has repeated roots, or when `R(x,y)` contains no odd powers of `y`. However, with the appropriate reduction formula, every elliptic integral can be brought into a form that involves integrals over rational functions and the three canonical forms (i.e. the elliptic integrals of the first, second and third kind).
 

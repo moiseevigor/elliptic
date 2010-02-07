@@ -1,8 +1,9 @@
 #summary Here we present some basic theory related the Elliptic Integrals and give some examples of usage and problem solving.
 
 = Elliptic Integral of the First Kind =
+Elliptic integral of the first kind ...
 
-*Definition*
+== Definition ==
 
 http://latex.codecogs.com/gif.latex?\int^\infty_0\left(\frac{1}{\sqrt{1-\rho^2\sin(x)}}\right)dx%.png
 
@@ -16,7 +17,24 @@ Here we present some basic theory related the Elliptic Integral of the First Kin
 
 Another inline formulas http://latex.codecogs.com/gif.latex?\inline%20\int_{a}^{b}xdx%.png
 
+== Numerical evaluation ==
 
-= Theory =
+= Elliptic Integral of the Second Kind =
+Elliptic integral of the first kind ...
+
+== Definition ==
+
+== Numerical evaluation ==
+
+= Elliptic Integral of the Third Kind =
+
+Elliptic integral of the first kind ...
+
+== Definition ==
+
+== Numerical evaluation ==
+
 
 = Examples =
+
+= Problem Solving with Elliptic Integrals = 

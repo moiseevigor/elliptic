@@ -7,12 +7,12 @@
 http://latex.codecogs.com/gif.latex?\int^\infty_0\left(\frac{1}{\sqrt{1-\rho^2\sin(x)}}\right)dx%.png
 
 
-http://www.sitmo.com/gg/latex/latex2png.2.php?z=100&eq=\prod_{a}^{b}x_a&a=a.png
+http://www.sitmo.com/gg/latex/latex2png.2.php?z=100&eq=x_a&a.png
 
 http://www.sitmo.com/gg/latex/latex2png.2.php?z=100&eq=\int^\infty_0\left(\frac{1}{\sqrt{1-\rho^2\sin(x)}}\right)dx&a=a.png
 
 
-Here we present some basic theory related the Elliptic Integral of the First Kind http://www.sitmo.com/gg/latex/latex2png.2.php?z=50&eq=\prod_{a}^{b}x_a&a=a.png and give some examples of usage and problem solving.
+Here we present some basic theory related the Elliptic Integral of the First Kind http://www.sitmo.com/gg/latex/latex2png.2.php?z=70&eq=F(\varphi\,|\,\rho^2)&a=a.png and give some examples of usage and problem solving.
 
 = Theory =
 

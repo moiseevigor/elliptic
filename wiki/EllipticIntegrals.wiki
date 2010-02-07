@@ -1,4 +1,5 @@
 #summary Here we present some basic theory related the Elliptic Integrals and give some examples of usage and problem solving.
+#sidebar Contents
 
 = Elliptic Integral of the First Kind =
 Elliptic integrals originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler. Modern mathematics defines an elliptic integral as any function f which can be expressed in the form

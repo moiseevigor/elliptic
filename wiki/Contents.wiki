@@ -1,1 +1,2 @@
 <wiki:toc max_depth="3" />
+<wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />

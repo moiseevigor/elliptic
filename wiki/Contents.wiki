@@ -1,13 +1,1 @@
- * [Definition]
-  * [Numerical evaluation]
-  * [Elliptic Integral of the Second Kind]
-Definition
-Numerical evaluation
-Elliptic Integral of the Third Kind
-Definition
-Numerical evaluation
-Examples
-Problem Solving with Elliptic Integrals
-
-
-<wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />
+<wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-2.xml" border="0" width="120" height="600" />

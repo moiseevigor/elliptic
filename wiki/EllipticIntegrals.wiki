@@ -1,4 +1,4 @@
-#summary Here we present some basic theory related the Elliptic Integrals and give some examples of usage and problem solving.
+#summary Elliptic Integrals, numerical methods, examples of usage and problem solving.
 
 = Elliptic Integral of the First Kind =
 <wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />

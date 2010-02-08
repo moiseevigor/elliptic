@@ -1,7 +1,9 @@
 #summary Elliptic Integrals, numerical methods, examples of usage and problem solving.
 
-= Elliptic Integral of the First Kind =
+= Elliptic Integrals =
 <wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />
+<wiki:toc max_depth="3" />
+
 
 Elliptic integrals originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler. Modern mathematics defines an elliptic integral as any function `f` which can be expressed in the form
 
@@ -10,9 +12,7 @@ http://latex.codecogs.com/gif.latex?\int^x_cR(t,P(t))\,dt%.png
 where `R` is a rational function of its two arguments, `P` is the square root of a polynomial of degree `3` or `4` with no repeated roots, and `c` is a constant.
 In general, elliptic integrals cannot be expressed in terms of elementary functions. Exceptions to this general rule are when `P` has repeated roots, or when `R(x,y)` contains no odd powers of `y`. However, with the appropriate reduction formula, every elliptic integral can be brought into a form that involves integrals over rational functions and the three canonical forms (i.e. the elliptic integrals of the first, second and third kind).
 
-= Contents =
-<wiki:toc max_depth="3" />
-
+= Elliptic Integral of the First Kind =
 
 == Definition ==
 

@@ -1,9 +1,8 @@
 #summary Elliptic Integrals, numerical methods, examples of usage and problem solving.
+<wiki:toc max_depth="3" />
 
 = Elliptic Integrals =
 <wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />
-<wiki:toc max_depth="3" />
-
 
 Elliptic integrals originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler. Modern mathematics defines an elliptic integral as any function `f` which can be expressed in the form
 

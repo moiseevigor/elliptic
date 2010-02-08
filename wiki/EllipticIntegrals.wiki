@@ -1,4 +1,4 @@
-#summary Elliptic Integrals, numerical methods, examples of usage and problem solving.
+#summary Elliptic integrals, numerical methods, Matlab examples of usage and problem solving.
 <wiki:toc max_depth="3" />
 
 = Elliptic Integrals =

@@ -48,6 +48,7 @@ Elliptic integral of the first kind ...
 = Examples =
 == M. Abramowitz and I.A. Stegun Mathematical tables generation for elliptic integrals==
 == Conversion between differently defined elliptic integrals ==
+== Elliptic integrals and derivatives ==
 
 = Problem Solving with Elliptic Integrals = 
 == Period of the physical pendulum ==

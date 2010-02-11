@@ -4,7 +4,7 @@
 
 = Elliptic Integrals =
 
-Elliptic integrals originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler. Modern mathematics defines an elliptic integral as any function `f` which can be expressed in the form
+Elliptic integrals originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler. Modern mathematics defines an elliptic integral as any function `f(x)` which can be expressed in the form
 
 http://latex.codecogs.com/gif.latex?f(x)=\int^x_cR(t,P(t))\,dt%.png
 
@@ -46,6 +46,7 @@ Elliptic integral of the first kind ...
 
 
 = Examples =
+== Period of the physical pendulum ==
 
 = Problem Solving with Elliptic Integrals = 
 

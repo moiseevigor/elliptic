@@ -36,6 +36,7 @@ Elliptic integral of the first kind ...
 == Definition ==
 
 == Numerical evaluation ==
+[http://www.research.att.com/~njas/sequences/A120362 Sequence A120362] represents 	 the numerators of bivariate Taylor expansion of the incomplete elliptic integral of the second kind.
 
 = Elliptic Integral of the Third Kind =
 

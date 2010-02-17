@@ -28,6 +28,7 @@ Here we present some basic theory related the Elliptic Integral of the First Kin
 Another inline formulas http://latex.codecogs.com/gif.latex?\inline%20\int_{a}^{b}xdx%.png
 
 == Numerical evaluation ==
+[http://www.research.att.com/~njas/sequences/ The On-Line Encyclopedia of Integer Sequences] 
 
 = Elliptic Integral of the Second Kind =
 Elliptic integral of the first kind ...

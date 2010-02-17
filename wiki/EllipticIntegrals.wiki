@@ -56,5 +56,11 @@ Elliptic integral of the first kind ...
 == Complex arguments and visualisations ==
 
 = References =
+  # M. Abramowitz and I.A. Stegun, "[http://www.math.ucla.edu/~cbm/aands/ Handbook of Mathematical Functions]" Dover Publications", 1965, Ch. 17.1 - 17.6.
+  # D. F. Lawden, "[http://www.amazon.com/Elliptic-Functions-Applications-Mathematical-Sciences/dp/0387969659 Elliptic Functions and Applications]" Springer-Verlag, vol. 80, 1989
+  # S. Zhang, J. Jin, "[http://jin.ece.uiuc.edu/specfunc.html Computation of Special Functions]" (Wiley, 1996).
+  # B. Carlson, "[http://nvl.nist.gov/pub/nistpubs/jres/107/5/j75car.pdf Three Improvements in Reduction and Computation of Elliptic Integrals]", J. Res. Natl. Inst. Stand. Technol. 107 (2002) 413-418.
 
-= Links =
+
+= External Links =
+  * [http://www.alglib.net/ ALGLIB] - cross-platform numerical analysis and data processing library.

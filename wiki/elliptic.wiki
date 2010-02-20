@@ -209,23 +209,6 @@ _See also_ `ELLIPTIC12I`, `ELLIPTIC3`, `THETA`.
   # N. H. Abel, "[http://mathdl.maa.org/mathDL/46/?pa=content&sa=viewDocument&nodeId=1557 Studies on Elliptic Functions]", english translation from french by Marcus Emmanuel Barnes. Original "Recherches sur les fonctions elliptiques", Journal fr die reine und angewandte Mathematik, Vol. 2, 1827. pp. 101-181.
   # B. C. Berndt, H. H. Chan, S.-S. Huang, "[http://www.math.uiuc.edu/~berndt/articles/ellipticintegral.pdf Incomplete Elliptic Integrals in Ramanujan's Lost Notebook]" in q-series from a Contemporary Perspective, M. E. H. Ismail and D. Stanton, eds., Amer. Math. Soc., 2000, pp. 79-126.
 
-
-= External Links =
-  * [http://en.wikipedia.org/wiki/Elliptic_integral Elliptic integrals] and [http://en.wikipedia.org/wiki/Jacobi's_elliptic_functions Jacobi's elliptic functions] from Wikipedia.
-  * [http://www.alglib.net/ ALGLIB] - cross-platform numerical analysis and data processing library.
-  * [http://www.youtube.com/user/kojocho2 Graphs by Kojocho2], Graph of complex functions and complex analysis.
-
-=Some interesting applications=
- 
-== Fingerprints In The Sky Explained By 'Beautiful Mathematics'.  [http://www.sciencedaily.com/releases/2004/11/041123112414.htm  ScienceDaily (Nov. 23, 2004)] ==
-
-  _This is beautiful mathematics in the sky. Using elliptic integrals, we’ve been able to replace pages and pages of formulae with one very simple solution that predicts the pattern extremely well._ 
-
-== Mathematicians Solve 'Trillion Triangle' Problem.  [http://www.sciencedaily.com/releases/2009/09/090922095651.htm ScienceDaily (Sep. 22, 2009)] ==
-
-  _According to Brian Conrey, Director of the American Institute of Mathematics, "Old problems like this may seem obscure, but they generate a lot of interesting and useful research as people develop new ways to attack them."_
-
-
 <br>
 <br>
 <wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />

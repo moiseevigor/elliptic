@@ -5,9 +5,9 @@
 = Elliptic Functions =
 <wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />
 
-*The Jacobi's elliptic functions* are a set of basic elliptic functions, and auxiliary theta functions, that have historical importance with also many features that show up important structure, and have direct relevance to some applications (e.g. the equation of the pendulum). They also have useful analogies to the functions of trigonometry, as indicated by the matching notation `SN` for `SIN`. They are not the simplest way to develop a general theory, as now seen: that can be said for the Weierstrass elliptic functions. They are not, however, outmoded. They were introduced by Carl Gustav Jakob Jacobi, around 1830.
+*[http://code.google.com/p/elliptic/wiki/JacobiEllipticFunctions The Jacobi's elliptic functions]* are a set of basic elliptic functions, and auxiliary theta functions, that have historical importance with also many features that show up important structure, and have direct relevance to some applications (e.g. the equation of the pendulum). They also have useful analogies to the functions of trigonometry, as indicated by the matching notation `SN` for `SIN`. They are not the simplest way to develop a general theory, as now seen: that can be said for the Weierstrass elliptic functions. They are not, however, outmoded. They were introduced by Carl Gustav Jakob Jacobi, around 1830.
 
-*Theta functions* are special functions of several complex variables. They are important in several areas, including the theories of abelian varieties and moduli spaces, and of quadratic forms. They have also been applied to soliton theory. When generalized to a Grassmann algebra, they also appear in quantum field theory, specifically string theory and D-branes.
+*[http://code.google.com/p/elliptic/wiki/ThetaFunctions Theta functions]* are special functions of several complex variables. They are important in several areas, including the theories of abelian varieties and moduli spaces, and of quadratic forms. They have also been applied to soliton theory. When generalized to a Grassmann algebra, they also appear in quantum field theory, specifically string theory and D-branes.
 
 == ELLIPJ: Jacobi's elliptic functions ==
 
@@ -151,7 +151,7 @@ Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
 
 <font color="red">!IN DEVELOPMENT, help needed!</font> See [http://groups.google.com/group/pelliptic/browse_frm/thread/f1eeff5553d3533b forum discussion].
 
-*Weierstrass's elliptic functions* are elliptic functions that take a particularly simple form (cf Jacobi's elliptic functions); they are named for Karl Weierstrass. This class of functions are also referred to as p-functions and generally written using the symbol ℘ (a stylised letter p called Weierstrass p).
+*[http://code.google.com/p/elliptic/wiki/WeierstrassEllipticFunctions Weierstrass's elliptic functions]* are elliptic functions that take a particularly simple form (cf Jacobi's elliptic functions); they are named for Karl Weierstrass. This class of functions are also referred to as p-functions and generally written using the symbol ℘ (a stylised letter p called Weierstrass p).
 
 The Weierstrass elliptic function can be defined in three closely related ways, each of which possesses certain advantages. One is as a function of a complex variable z and a lattice Λ in the complex plane. Another is in terms of z and two complex numbers ω1 and ω2 defining a pair of generators, or periods, for the lattice. The third is in terms z and of a modulus τ in the upper half-plane. This is related to the previous definition by τ = ω2 / ω1, which by the conventional choice on the pair of periods is in the upper half-plane. Using this approach, for fixed z the Weierstrass functions become modular functions of τ.
 

@@ -80,7 +80,7 @@ Th4 = theta(4, pi/180*phi, sin(pi/180*alpha).^2);
 _Depends on_ `AGM`, `ELLIPJ`, `ELLIPKE`, `JACOBITHETAETA`<br>
 _See also_ `ELLIPTIC12`, `ELLIPTIC12I`
 
-= Elliptic Intergrals =
+= Elliptic Integrals =
 *[http://code.google.com/p/elliptic/wiki/EllipticIntegrals Elliptic integrals]* originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler. Modern mathematics defines an elliptic integral as any function f which can be expressed in the form
 {{{
 f(x) = Integral(R(t,P(t), c, x)dt,

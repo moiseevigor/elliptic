@@ -5,8 +5,6 @@
 = Elliptic Functions =
 <wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />
 
-<wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-4.xml" border="0" width="300" height="250" />
-
 *[http://code.google.com/p/elliptic/wiki/JacobiEllipticFunctions The Jacobi's elliptic functions]* are a set of basic elliptic functions, and auxiliary theta functions, that have historical importance with also many features that show up important structure, and have direct relevance to some applications (e.g. the equation of the pendulum). They also have useful analogies to the functions of trigonometry, as indicated by the matching notation `SN` for `SIN`. They are not the simplest way to develop a general theory, as now seen: that can be said for the Weierstrass elliptic functions. They are not, however, outmoded. They were introduced by Carl Gustav Jakob Jacobi, around 1830.
 
 *[http://code.google.com/p/elliptic/wiki/ThetaFunctions Theta functions]* are special functions of several complex variables. They are important in several areas, including the theories of abelian varieties and moduli spaces, and of quadratic forms. They have also been applied to soliton theory. When generalized to a Grassmann algebra, they also appear in quantum field theory, specifically string theory and D-branes.

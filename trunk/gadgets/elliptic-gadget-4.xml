@@ -2,7 +2,7 @@
   <ModulePrefs author_email="moiseev.igor@gmail.com" author="Igor" author_link="http://elliptic.googlecode.com/" description="I love adsense" height="60" title="Adsense" title_url="http://elliptic.googlecode.com/"/> 
   <Content type="html"> 
    <![CDATA[
-      <div style="float:right; width:300px;">
+      ><div style="float:right; width:300px;">
       <script type="text/javascript">
       <!--
          google_ad_client = "pub-5691181666134402";

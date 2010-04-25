@@ -41,6 +41,10 @@ Numerical evaluation of the elliptic integrals are based on various expansion in
 
 [http://www.research.att.com/~njas/sequences/ The On-Line Encyclopedia of Integer Sequences] 
 
+
+The conventional methods for computing elliptic integrals are Gauss and Landen transformations, which converge quadratically and work well for elliptic integrals of the first and second kinds. Unfortunately they suffer from loss of significant digits for the third kind. Carlson's algorithm [Carlson79] [Carlson78], by contrast, provides a unified method for all three kinds of elliptic integrals with satisfactory precisions.
+
+
 === The arithmetic-geometric mean ===
 The arithmetic-geometric mean (AGM) of two positive real numbers x and y is defined as follows:
 First compute the arithmetic mean of x and y and call it a1. Next compute the geometric mean of x and y and call it g1; this is the square root of the product xy:
@@ -87,4 +91,5 @@ Elliptic integral of the first kind ...
 
 
 = External Links =
-  * [http://www.alglib.net/ ALGLIB] - cross-platform numerical analysis and data processing library.
+  * [http://www.alglib.net/ ALGLIB] - Cross-platform numerical analysis and data processing library.
+  * [http://www.boost.org/doc/libs/1_36_0/libs/math/doc/sf_and_dist/html/math_toolkit/special/ellint/ellint_intro.htmlhttp://www.boost.org/doc/libs/1_36_0/libs/math/doc/sf_and_dist/html/math_toolkit/special/ellint/ellint_intro.html Boost C++ Library] - Elliptic Integral Overview.

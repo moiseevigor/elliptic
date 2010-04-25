@@ -42,7 +42,7 @@ Numerical evaluation of the elliptic integrals are based on various expansion in
 [http://www.research.att.com/~njas/sequences/ The On-Line Encyclopedia of Integer Sequences] 
 
 
-The conventional methods for computing elliptic integrals are Gauss and Landen transformations, which converge quadratically and work well for elliptic integrals of the first and second kinds. Unfortunately they suffer from loss of significant digits for the third kind. Carlson's algorithm [Carlson79] [Carlson78], by contrast, provides a unified method for all three kinds of elliptic integrals with satisfactory precisions.
+The conventional methods for computing elliptic integrals are Gauss and Landen transformations, which converge quadratically and work well for elliptic integrals of the first and second kinds. Unfortunately they suffer from loss of significant digits for the third kind. Carlson's algorithm, by contrast, provides a unified method for all three kinds of elliptic integrals with satisfactory precisions.
 
 
 === The arithmetic-geometric mean ===

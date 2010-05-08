@@ -92,6 +92,8 @@ Elliptic integral of the first kind ...
   # S. Zhang, J. Jin, "[http://jin.ece.uiuc.edu/specfunc.html Computation of Special Functions]" (Wiley, 1996).
   # B. Carlson, "[http://nvl.nist.gov/pub/nistpubs/jres/107/5/j75car.pdf Three Improvements in Reduction and Computation of Elliptic Integrals]", J. Res. Natl. Inst. Stand. Technol. 107 (2002) 413-418.
 
+= Wiki references =
+  # [http://en.wikipedia.org/wiki/Landen's_transformation Landen's transformation]: Landen's-Gauss transformation used in the elliptic integral numerical evaluations.
 
 = External Links =
   * [http://www.alglib.net/ ALGLIB] - Cross-platform numerical analysis and data processing library.

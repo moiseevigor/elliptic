@@ -61,7 +61,7 @@ The conventional methods for computing elliptic integrals are Gauss and Landen t
 
 
 = Elliptic Integral of the Second Kind =
-Elliptic integral of the first kind ...
+Elliptic integral of the second kind ... is to appear
 
 == Definition ==
 

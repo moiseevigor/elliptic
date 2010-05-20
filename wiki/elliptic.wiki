@@ -104,7 +104,7 @@ Z(phi,m) = E(u,m) - E(m)/K(m)*F(phi,m).
 }}}
 
 
-Tables generating code (see [http://code.google.com/p/elliptic/#References 1], pp. 613-621):
+Tables generating code (see [http://code.google.com/p/elliptic/wiki/elliptic#References 1], pp. 613-621):
 {{{
 [phi,alpha] = meshgrid(0:5:90, 0:2:90);                  % modulus and phase in degrees
 [F,E,Z] = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);  % values of integrals
@@ -140,7 +140,7 @@ _See also_ `ELLIPKE`, `ELLIPJ`, `ELLIPTIC3`, `THETA`.
 Pi(u,m,c) = int(1/((1 - c*sin(t)^2)*sqrt(1 - m*sin(t)^2)), t=0..u)
 }}}
 
-Tables generating code ([1], pp. 625-626):
+Tables generating code ([http://code.google.com/p/elliptic/wiki/elliptic#References 1], pp. 625-626):
 {{{
 [phi,alpha,c] = meshgrid(0:15:90, 0:15:90, 0:0.1:1);
 Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals

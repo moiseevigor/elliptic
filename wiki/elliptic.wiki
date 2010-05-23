@@ -1,4 +1,4 @@
-#summary elliptic package contents, usage example and installation requirements
+#summary elliptic package procedures, usage example and installation requirements
 
 <wiki:toc max_depth="3" />
 

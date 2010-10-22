@@ -3,7 +3,6 @@
 <wiki:toc max_depth="3" />
 
 = Elliptic Functions =
-<wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />
 
 *[http://code.google.com/p/elliptic/wiki/JacobiEllipticFunctions The Jacobi's elliptic functions]* are a set of basic elliptic functions, and auxiliary theta functions, that have historical importance with also many features that show up important structure, and have direct relevance to some applications (e.g. the equation of the pendulum). They also have useful analogies to the functions of trigonometry, as indicated by the matching notation `SN` for `SIN`. They are not the simplest way to develop a general theory, as now seen: that can be said for the Weierstrass elliptic functions. They are not, however, outmoded. They were introduced by Carl Gustav Jakob Jacobi, around 1830.
 
@@ -82,7 +81,6 @@ _Depends on_ `AGM`, `ELLIPJ`, `ELLIPKE`, `JACOBITHETAETA`<br>
 _See also_ `ELLIPTIC12`, `ELLIPTIC12I`
 
 = Elliptic Integrals =
-<wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />
 
 *[http://code.google.com/p/elliptic/wiki/EllipticIntegrals Elliptic integrals]* originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler. Modern mathematics defines an elliptic integral as any function f which can be expressed in the form
 {{{
@@ -147,7 +145,6 @@ Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
 }}}
 
 = Weierstrass's elliptic functions (in development)=
-<wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />
 
 <font color="red">!IN DEVELOPMENT, help needed!</font> See [http://groups.google.com/group/pelliptic/browse_frm/thread/f1eeff5553d3533b forum discussion].
 
@@ -157,7 +154,6 @@ The Weierstrass elliptic function can be defined in three closely related ways, 
 
 
 = Elliptic Related Functions =
-<wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />
 
 == AGM: Artihmetic Geometric Mean ==
 [http://code.google.com/p/elliptic/source/browse/trunk/agm.m AGM] calculates the [http://en.wikipedia.org/wiki/Arithmetic-geometric_mean Artihmetic Geometric Mean] of `A` and `B` (see [http://code.google.com/p/elliptic/#References 1]). 
@@ -214,7 +210,3 @@ _See also_ `ELLIPTIC12I`, `ELLIPTIC3`, `THETA`.
   # B. Carlson, "[http://nvl.nist.gov/pub/nistpubs/jres/107/5/j75car.pdf Three Improvements in Reduction and Computation of Elliptic Integrals]", J. Res. Natl. Inst. Stand. Technol. 107 (2002) 413-418.
   # N. H. Abel, "[http://mathdl.maa.org/mathDL/46/?pa=content&sa=viewDocument&nodeId=1557 Studies on Elliptic Functions]", english translation from french by Marcus Emmanuel Barnes. Original "Recherches sur les fonctions elliptiques", Journal fr die reine und angewandte Mathematik, Vol. 2, 1827. pp. 101-181.
   # B. C. Berndt, H. H. Chan, S.-S. Huang, "[http://www.math.uiuc.edu/~berndt/articles/ellipticintegral.pdf Incomplete Elliptic Integrals in Ramanujan's Lost Notebook]" in q-series from a Contemporary Perspective, M. E. H. Ismail and D. Stanton, eds., Amer. Math. Soc., 2000, pp. 79-126.
-
-<br>
-<br>
-<wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />

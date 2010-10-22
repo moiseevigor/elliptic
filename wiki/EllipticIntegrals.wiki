@@ -2,8 +2,9 @@
 
 <wiki:comment>
 <wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-1.xml" border="0" width="728" height="15" />
-<wiki:toc max_depth="3" />
 </wiki:comment>
+
+<wiki:toc max_depth="3" />
 
 
 <wiki:comment>

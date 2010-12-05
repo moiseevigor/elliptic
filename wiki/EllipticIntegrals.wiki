@@ -109,7 +109,7 @@ Elliptic integral of the first kind ...
 
 = Wiki references =
   # [http://en.wikipedia.org/wiki/Landen's_transformation Landen's transformation]: Landen's-Gauss transformation used in the elliptic integral numerical evaluations.
-
+  # [http://en.wikipedia.org/wiki/Elliptic_integral Elliptic integral]: the wiki community  article on the theoretical aspects of elliptic intergral
 = External Links =
   * [http://www.alglib.net/ ALGLIB] - Cross-platform numerical analysis and data processing library.
   * [http://www.boost.org/doc/libs/1_36_0/libs/math/doc/sf_and_dist/html/math_toolkit/special/ellint/ellint_intro.htmlhttp://www.boost.org/doc/libs/1_36_0/libs/math/doc/sf_and_dist/html/math_toolkit/special/ellint/ellint_intro.html Boost C++ Library] - Elliptic Integral Overview.

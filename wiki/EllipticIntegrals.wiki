@@ -19,11 +19,11 @@ In general, elliptic integrals cannot be expressed in terms of elementary functi
 Elliptic integrals have many applications, for example in mathematics and physics
 
  * arc-length of plane curves (ellipse, hyperbola, Bernoulli's lemniscate)
- * surface are of ellipsoid in 3-dimensional space
+ * surface area of ellipsoid in 3-dimensional space
  * electric and magnetic field associated with ellipsoid
- * periodicity of an an-harmonic oscillator
+ * periodicity of an anharmonic oscillator
  * mutual inductance of coaxial circles
- * age of the universe in the Friedman model 
+ * age of the universe in the Friedman model
 
 = Elliptic Integral of the First Kind =
 

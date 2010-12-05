@@ -31,7 +31,7 @@ There are known different ways of noting the elliptic integral of the first kind
 
 http://latex.codecogs.com/gif.latex?F(\varphi\backslash\alpha)=F(\varphi|m)=\int^\varphi_0\frac{d\theta}{\sqrt{1-\sin^2\alpha\sin^2\theta}}%.png
 
-
+where `m=sin`^2^`alpha` and `m` is the parameter, `alpha` is the modular angle.
 
 
 

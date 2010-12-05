@@ -27,6 +27,8 @@ Elliptic integrals have many applications, for example in mathematics and physic
  * [http://arxiv.org/find/all/1/all:+AND+elliptic+integral/0/1/0/all/0/1 and many others].
 
 = Elliptic Integral of the First Kind =
+== Definition ==
+
 There are known different ways of noting the elliptic integral of the first kind, we follow here the Abramowitz et al notions.
 
 http://latex.codecogs.com/gif.latex?F(\varphi\backslash\alpha)=F(\varphi|m)=\int^\varphi_0\frac{d\theta}{\sqrt{1-\sin^2\alpha\sin^2\theta}}%.png
@@ -44,23 +46,7 @@ where `m=sin`^2^`alpha` and `m` is the parameter, `alpha` is the modular angle.
 
 
 
-<wiki:comment>
 
-== Definition ==
-
-http://latex.codecogs.com/gif.latex?\int^\infty_0\left(\frac{1}{\sqrt{1-\rho^2\sin(x)}}\right)dx%.png
-
-
-
-
-http://www.sitmo.com/gg/latex/latex2png.2.php?z=100&eq=x_a&a.png
-
-http://www.sitmo.com/gg/latex/latex2png.2.php?z=100&eq=\int^\infty_0\left(\frac{1}{\sqrt{1-\rho^2\sin(x)}}\right)dx&a=a.png
-
-
-Here we present some basic theory related the Elliptic Integral of the First Kind http://www.sitmo.com/gg/latex/latex2png.2.php?z=70&eq=F(\varphi\,|\,\rho^2)&a=a.png and give some examples of usage and problem solving.
-
-Another inline formulas http://latex.codecogs.com/gif.latex?\inline%20\int_{a}^{b}xdx%.png
 
 == Numerical evaluation ==
 Numerical evaluation of the elliptic integrals are based on various expansion in terms of elementary and transcendental functions.
@@ -85,6 +71,7 @@ This can be used for algorithmic purposes as in the AGM method.
 The conventional methods for computing elliptic integrals are Gauss and Landen transformations, which converge quadratically and work well for elliptic integrals of the first and second kinds. Unfortunately they suffer from loss of significant digits for the third kind. Carlson's algorithm, by contrast, provides a unified method for all three kinds of elliptic integrals with satisfactory precisions.
 
 
+<wiki:comment>
 
 = Elliptic Integral of the Second Kind =
 Elliptic integral of the second kind ... is to appear

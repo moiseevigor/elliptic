@@ -24,6 +24,7 @@ Elliptic integrals have many applications, for example in mathematics and physic
  * periodicity of an anharmonic oscillator
  * mutual inductance of coaxial circles
  * age of the universe in the Friedman model
+ * [http://arxiv.org/find/all/1/all:+AND+elliptic+integral/0/1/0/all/0/1 and many others].
 
 = Elliptic Integral of the First Kind =
 

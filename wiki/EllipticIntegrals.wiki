@@ -12,7 +12,7 @@ If `R(x,y)` is a rational function of `x` and `y`, where `y`^2^ is equal to a cu
 http://latex.codecogs.com/gif.latex?\int\,R(x,y)\,dx%.png
 
 is called an *elliptic integral*.
-Elliptic integrals originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler.
+Elliptic integrals originally arose in the connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler.
 
 In general, elliptic integrals cannot be expressed in terms of elementary functions. Exceptions to this general rule are when `P` has repeated roots, or when `R(x,y)` contains no odd powers of `y`. However, with the appropriate reduction formula, every elliptic integral can be brought into a form that involves integrals over rational functions and the three canonical forms (i.e. the elliptic integrals of the first, second and third kind).
 
@@ -27,6 +27,21 @@ Elliptic integrals have many applications, for example in mathematics and physic
  * [http://arxiv.org/find/all/1/all:+AND+elliptic+integral/0/1/0/all/0/1 and many others].
 
 = Elliptic Integral of the First Kind =
+There are known different ways of noting the elliptic integral of the first kind, we follow here the Abramowitz et al notions.
+
+http://latex.codecogs.com/gif.latex?F(\varphi\backslash\alpha)=F(\varphi|m)=\int^\varphi_0\frac{d\theta}{\sqrt{1-\sin^2\alpha\sin^2\theta}}%.png
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 <wiki:comment>
@@ -97,6 +112,8 @@ Elliptic integral of the first kind ...
 == Period of the physical pendulum ==
 == Complex arguments and visualisations ==
 
+</wiki:comment>
+
 = References =
   # M. Abramowitz and I.A. Stegun, "[http://www.math.ucla.edu/~cbm/aands/ Handbook of Mathematical Functions]" Dover Publications", 1965, Ch. 17.1 - 17.6.
   # D. F. Lawden, "[http://www.amazon.com/Elliptic-Functions-Applications-Mathematical-Sciences/dp/0387969659 Elliptic Functions and Applications]" Springer-Verlag, vol. 80, 1989
@@ -109,5 +126,3 @@ Elliptic integral of the first kind ...
 = External Links =
   * [http://www.alglib.net/ ALGLIB] - Cross-platform numerical analysis and data processing library.
   * [http://www.boost.org/doc/libs/1_36_0/libs/math/doc/sf_and_dist/html/math_toolkit/special/ellint/ellint_intro.htmlhttp://www.boost.org/doc/libs/1_36_0/libs/math/doc/sf_and_dist/html/math_toolkit/special/ellint/ellint_intro.html Boost C++ Library] - Elliptic Integral Overview.
-
-</wiki:comment>

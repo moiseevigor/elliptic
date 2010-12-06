@@ -31,7 +31,10 @@ Elliptic integrals have many applications, for example in mathematics and physic
 
 There are known different ways of noting the elliptic integral of the first kind, we follow here the Abramowitz et al notions.
 
-http://latex.codecogs.com/gif.latex?F(\varphi\backslash\alpha)=F(\varphi|m)=\int^\varphi_0\frac{d\theta}{\sqrt{1-\sin^2\alpha\sin^2\theta}}%.png
+http://latex.codecogs.com/gif.latex?\begin{aligned}F(\varphi\backslash\alpha)=F(\varphi|m)=\int^\varphi_0\frac{d\theta}{\sqrt{1-\sin^2\alpha\sin^2\theta}}=\int_0^x\frac{dt}{\sqrt{(1-t^2)(1-mt^2)}}=\int_0^udw=u\end{aligned}%.png
+
+http://latex.codecogs.com/gif.latex?\mbox{where\,}m=\sin^2\alpha%.png
+
 
 where `m=sin`^2^`alpha` and `m` is the parameter, `alpha` is the modular angle.
 

@@ -9,7 +9,9 @@
 = Elliptic Integrals =
 If `R(x,y)` is a rational function of `x` and `y`, where `y`^2^ is equal to a cubic or quadratic polynomial in `x`, the integral
 
-http://latex.codecogs.com/gif.latex?\int\,R(x,y)\,dx%.png
+{{{
+f(x) = Integral(R(x,y))dx
+}}}
 
 is called an *elliptic integral*.
 Elliptic integrals originally arose in the connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler.

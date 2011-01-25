@@ -1,6 +1,13 @@
-function arclength = arclength_ellipse()
+function arclength = arclength_ellipse(t, a, b)
+% ARCLENGTH
+%   t - measured in radians
+%
+%
+%   @see http://mathworld.wolfram.com/Ellipse.html
+%
 
-arclength = 1;
+[F, E] = elliptic12( t, sqrt(1 - (b./a).^2) );
+arclength = a.*E;
 
 return;
 

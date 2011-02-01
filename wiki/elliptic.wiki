@@ -144,6 +144,18 @@ Tables generating code ([http://code.google.com/p/elliptic/wiki/elliptic#Referen
 Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
 }}}
 
+
+== ELLIPTIC123: Complete and Incomplete Elliptic Integrals of the First, Second, and Third Kind ==
+[http://code.google.com/p/elliptic/source/browse/trunk/elliptic123.m ELLIPTIC123] is a wrapper around the different elliptic integral functions provided a unified interface and greater range of input parameters. (Unlike ELLIPKE, ELLIPTIC12, and ELLIPTIC3, which all require a phase between zero and pi/2 and a parameter between zero and one.)
+
+`[F,E] = ELLIPTIC123(m)` — complete Elliptic Integrals of the first and second kind.  
+`[F,E] = ELLIPTIC123(b,m)` — incomplete Elliptic Integrals of the first and second kind.
+
+`[F,E,PI] = ELLIPTIC123(m,n)` — complete Elliptic Integrals of the first to third kind.  
+`[F,E,PI] = ELLIPTIC123(b,m,n)` — incomplete Elliptic Integrals of the first to third kind.
+
+This function is still under development and its results are not always well-defined or even able to be calculated (especially for the third elliptic integral with n>1). Please see the documentation for further details.
+
 = Weierstrass's elliptic functions (in development)=
 
 <font color="red">!IN DEVELOPMENT, help needed!</font> See [http://groups.google.com/group/pelliptic/browse_frm/thread/f1eeff5553d3533b forum discussion].

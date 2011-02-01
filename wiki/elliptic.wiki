@@ -146,7 +146,7 @@ Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
 
 
 == ELLIPTIC123: Complete and Incomplete Elliptic Integrals of the First, Second, and Third Kind ==
-[http://code.google.com/p/elliptic/source/browse/trunk/elliptic123.m ELLIPTIC123] is a wrapper around the different elliptic integral functions provided a unified interface and greater range of input parameters. (Unlike ELLIPKE, ELLIPTIC12, and ELLIPTIC3, which all require a phase between zero and pi/2 and a parameter between zero and one.)
+[http://code.google.com/p/elliptic/source/browse/trunk/elliptic123.m ELLIPTIC123] is a wrapper around the different elliptic integral functions, providing a unified interface and greater range of input parameters. (Unlike ELLIPKE, ELLIPTIC12, and ELLIPTIC3, which all require a phase between zero and pi/2 and a parameter between zero and one.)
 
 `[F,E] = ELLIPTIC123(m)` — complete Elliptic Integrals of the first and second kind.  
 
@@ -155,6 +155,8 @@ Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
 `[F,E,PI] = ELLIPTIC123(m,n)` — complete Elliptic Integrals of the first to third kind.  
 
 `[F,E,PI] = ELLIPTIC123(b,m,n)` — incomplete Elliptic Integrals of the first to third kind.
+
+The order of the input arguments has been chosen to be consistent with the pre-existing `elliptic12` and `elliptic3` functions.
 
 This function is still under development and its results are not always well-defined or even able to be calculated (especially for the third elliptic integral with n>1). Please see the documentation for further details.
 

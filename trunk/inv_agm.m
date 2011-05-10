@@ -1,5 +1,5 @@
-function [a,b,c,n] = agm(a0,b0,c0,tol)
-% AGM calculates the Artihmetic Geometric Mean of A and B (see [1]). 
+function [a,b,c,n] = inv_agm(a0,b0,c0,tol)
+% INV_AGM calculates the Inverse Artihmetic Geometric Mean of A and B (see [1]). 
 % The function is used by routines ELLIPJ and ELLIPTIC12.
 %
 %   [A,B,C,N] = AGM(A0,B0,C0,TOL) carry out the process of the arithmetic geometric 
@@ -48,5 +48,6 @@ while any(abs(c(i,:)) > tol)
       n(in) = ones(mi,ni)*(i-1);
     end
 end
+[a, b, c]
 
 % END FUNCTION AGM()

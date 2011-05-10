@@ -1,13 +1,53 @@
 function arclength = arclength_ellipse(t, a, b)
-% ARCLENGTH
-%   t - measured in radians
+%ARCLENGTH_ELLIPSE Calculates the arclength of ellipse.
 %
+%   ARCLENGTH_ELLIPSE(T, A, B) Calculates the arclength of ellipse 
+%   using the precise formulas based on the representation of 
+%   the arclength by the Elliptic integral of the second kind.
 %
+%   Ellipse parameters:
+%       T - measured in radians from 0 in the positive direction, 
+%           Period: 2*Pi
+%       A - major axis
+%       B - minor axis
+%   
+%   Parametric equations:
+%       x(t) = a.cos(t)
+%       y(t) = b.sin(t)
+%
+%   Cartesian equation:
+%   x^2/a^2 + y^2/b^2 = 1
+%
+%   Eccentricity:
+%       e = Sqrt(1 - (a/b)^2)
+%
+%   Focal parameter:
+%       b^2/Sqrt(a^2 - b^2)
+%
+%   Foci:
+%       (-Sqrt(a^2 - b^2), 0)   OR   (Sqrt(a^2 - b^2), 0)
+%
+%   Arclength:
+%       b*EllipticE( t, 1 - (a/b)^2 )
+%
+%   Mathematica Test:
+%       In:= b = 10; a = 5;
+%            SetPrecision[b*EllipticE[2Pi, 1.0- a^2/b^2],20]
+%      Out:= 48.442241102738385905
+%
+%   MATLAB:
+%       arclength = arclength_ellipse(2*pi,5,10)
+%       arclength =
+%           48.442241102738436
+%
+%   References:
 %   @see http://mathworld.wolfram.com/Ellipse.html
+%   @see http://www.wolframalpha.com/input/?i=ellipse+arc+length&lk=1&a=ClashPrefs_*PlaneCurve.Ellipse.PlaneCurveProperty.ArcLength-
 %
+%Copyright Elliptic Project 2011
 
-[F, E] = elliptic12( t, sqrt(1 - (b./a).^2) );
-arclength = a.*E;
+[F, E] = elliptic12( t, 1 - (a./b).^2 );
+arclength = b.*E;
 
 return;
 

@@ -1,7 +1,7 @@
-function arclength = arclength_ellipse(t, a, b)
+function arclength = arclength_ellipse(a, b, theta0, theta1)
 %ARCLENGTH_ELLIPSE Calculates the arclength of ellipse.
 %
-%   ARCLENGTH_ELLIPSE(T, A, B) Calculates the arclength of ellipse 
+%   ARCLENGTH_ELLIPSE(A, B, THETA0, THETA1) Calculates the arclength of ellipse 
 %   using the precise formulas based on the representation of 
 %   the arclength by the Elliptic integral of the second kind.
 %
@@ -36,18 +36,42 @@ function arclength = arclength_ellipse(t, a, b)
 %      Out:= 48.442241102738385905
 %
 %   MATLAB:
-%       arclength = arclength_ellipse(2*pi,5,10)
+%       % full ellipse
+%       arclength = arclength_ellipse(5,10)
 %       arclength =
 %           48.442241102738436
 %
+%       % arclength ellipse
+%       arclength = arclength_ellipse(5,10,pi/10,pi/2)
+%       arclength =
+%           7.363580791393055
 %   References:
 %   @see http://mathworld.wolfram.com/Ellipse.html
 %   @see http://www.wolframalpha.com/input/?i=ellipse+arc+length&lk=1&a=ClashPrefs_*PlaneCurve.Ellipse.PlaneCurveProperty.ArcLength-
 %
 %Copyright Elliptic Project 2011
 
-[F, E] = elliptic12( t, 1 - (a./b).^2 );
-arclength = b.*E;
+%arguments
+if nargin ~= 2 && nargin ~= 4,
+ error('ARCLENGTH_ELLIPSE: Requires two or four inputs.')
+ return
+end
+
+if nargin == 2,
+ theta0 = 0;
+ theta1 = 2*pi;
+end
+
+arclength = a.*(theta1-theta0);
+if(a<b)
+    [F1, E1] = elliptic12( theta1-theta0, 1 - (a./b).^2 );
+    [F0, E0] = elliptic12( theta0, 1 - (a./b).^2 );
+    arclength = b.*(E1 - E0);
+elseif(a>b)   
+    [F1, E1] = elliptic12( theta1-theta0, 1 - (b./a).^2 );
+    [F0, E0] = elliptic12( theta0, 1 - (b./a).^2 );
+    arclength = a.*(E1 - E0);
+end
 
 return;
 

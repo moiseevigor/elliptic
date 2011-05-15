@@ -1,4 +1,4 @@
-function arclength = arclength_ellipse(a, b, theta0, theta1)
+function [arclength] = arclength_ellipse(a, b, theta0, theta1)
 %ARCLENGTH_ELLIPSE Calculates the arclength of ellipse.
 %
 %   ARCLENGTH_ELLIPSE(A, B, THETA0, THETA1) Calculates the arclength of ellipse 
@@ -49,7 +49,11 @@ function arclength = arclength_ellipse(a, b, theta0, theta1)
 %   @see http://mathworld.wolfram.com/Ellipse.html
 %   @see http://www.wolframalpha.com/input/?i=ellipse+arc+length&lk=1&a=ClashPrefs_*PlaneCurve.Ellipse.PlaneCurveProperty.ArcLength-
 %
-%Copyright Elliptic Project 2011
+
+% Copyright Elliptic Project 2011
+% For support, please reply to 
+%     moiseev.igor[at]gmail.com
+%     Moiseev Igor, 
 
 %arguments
 if nargin ~= 2 && nargin ~= 4,
@@ -106,17 +110,10 @@ function [F,E,Z] = elliptic12(u,m,tol)
 %   [2] D. F. Lawden, "Elliptic Functions and Applications"
 %       Springer-Verlag, vol. 80, 1989
 
-% GNU GENERAL PUBLIC LICENSE Version 2, June 1991
-% http://www.gnu.org/licenses/gpl.html 
-% Everyone is permitted to copy and distribute verbatim copies of this 
-% script under terms and conditions of GNU GENERAL PUBLIC LICENSE. 
-%  
-% Copyright (C) 2007 by Moiseev Igor. All rights reserved.
-% 34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
+% Copyright Elliptic Project 2011
 % For support, please reply to 
-%     moiseev[at]sissa.it, moiseev.igor[at]gmail.com
+%     moiseev.igor[at]gmail.com
 %     Moiseev Igor, 
-%     34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
 %
 % The code is optimized for ordered inputs produced by the functions 
 % meshgrid, ndgrid. To obtain maximum performace (up to 30%) for singleton, 

@@ -29,16 +29,11 @@ function invE = inverselliptic2(E,m,tol)
 %       zeta = 1 - z/E(pi/2,m)
 %       theta = atan((1 - m)/zeta)
 %
-%   Tables generating code
-%       [phi,alpha] = meshgrid(0:5:90, 0:2:90);                    % modulus and phase in degrees
-%       [F,E,Z] = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);    % values of integrals
-%       invE = inverselliptic2(E, sin(pi/180*alpha).^2);  % values of integrals
-%
-%   See also ELLIPKE, ELLIPTIC12, AGM.
+%   See also ELLIPKE, ELLIPTIC12.
 %
 %   References:
 %   [1] J. P. Boyd, "Numerical, Perturbative and Chebyshev Inversion 
-%       of the Incomplete Elliptic Integral of the Second Kind", to appear
+%       of the Incomplete Elliptic Integral of the Second Kind", Applied Mathematics and Computation (January 2012)
 %   [2] M. Abramowitz and I.A. Stegun, "Handbook of Mathematical Functions", 
 %       Dover Publications", 1965, Ch. 17.1 - 17.6 (by L.M. Milne-Thomson).
 %   [3] D. F. Lawden, "Elliptic Functions and Applications"

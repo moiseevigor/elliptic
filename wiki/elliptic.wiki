@@ -160,6 +160,42 @@ The order of the input arguments has been chosen to be consistent with the pre-e
 
 This function is still under development and its results are not always well-defined or even able to be calculated (especially for the third elliptic integral with n>1). Please see the documentation for further details.
 
+== INVERSELLIPTIC2: INVERSE Incomplete Elliptic Integrals of the Second Kind ==
+[http://code.google.com/p/elliptic/source/browse/trunk/inverselliptic2.m INVERSELLIPTIC2] evaluates the value of the INVERSE Incomplete Elliptic Integrals of the Second Kind.
+
+INVERSELLIPTIC2 uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the “Empirical” initialization to the Newton’s iteration method [http://code.google.com/p/elliptic/#References 8]. 
+
+Elliptic integral of the second kind:
+{{{
+E(phi,m) = int(sqrt(1-m*sin(t)^2), t=0..phi);
+}}}
+ 
+“Empirical” initialization [http://code.google.com/p/elliptic/#References 8]:
+{{{ 
+T0(z,m) = pi/2 + sqrt(r)/(theta − pi/2)
+}}}
+
+where 
+{{{
+z \in [−E(pi/2,m), E(pi/2,m)]x[0, 1] - value of the entire parameter space
+r = sqrt((1-m)^2 + zeta^2)
+zeta = 1 - z/E(pi/2,m)
+theta = atan((1 - m)/zeta)
+}}}
+ 
+Example:
+{{{
+% modulus and phase in degrees
+[phi,alpha] = meshgrid(0:5:90, 0:2:90);
+% values of integrals
+[F,E] = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);
+% values of inverse 
+invE = inverselliptic2(E, sin(pi/180*alpha).^2);
+% the difference between phase phi and invE should close to zero
+phi - invE * 180/pi
+}}}
+
+
 = Weierstrass's elliptic functions (in development)=
 
 <font color="red">!IN DEVELOPMENT, help needed!</font> See [http://groups.google.com/group/pelliptic/browse_frm/thread/f1eeff5553d3533b forum discussion].
@@ -226,3 +262,4 @@ _See also_ `ELLIPTIC12I`, `ELLIPTIC3`, `THETA`.
   # B. Carlson, "[http://nvl.nist.gov/pub/nistpubs/jres/107/5/j75car.pdf Three Improvements in Reduction and Computation of Elliptic Integrals]", J. Res. Natl. Inst. Stand. Technol. 107 (2002) 413-418.
   # N. H. Abel, "[http://mathdl.maa.org/mathDL/46/?pa=content&sa=viewDocument&nodeId=1557 Studies on Elliptic Functions]", english translation from french by Marcus Emmanuel Barnes. Original "Recherches sur les fonctions elliptiques", Journal fr die reine und angewandte Mathematik, Vol. 2, 1827. pp. 101-181.
   # B. C. Berndt, H. H. Chan, S.-S. Huang, "[http://www.math.uiuc.edu/~berndt/articles/ellipticintegral.pdf Incomplete Elliptic Integrals in Ramanujan's Lost Notebook]" in q-series from a Contemporary Perspective, M. E. H. Ismail and D. Stanton, eds., Amer. Math. Soc., 2000, pp. 79-126.
+  # J. P. Boyd, "Numerical, Perturbative and Chebyshev Inversion of the Incomplete Elliptic Integral of the Second Kind", Applied Mathematics and Computation (January 2012)

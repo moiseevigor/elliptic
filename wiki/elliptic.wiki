@@ -163,14 +163,14 @@ This function is still under development and its results are not always well-def
 == INVERSELLIPTIC2: INVERSE Incomplete Elliptic Integrals of the Second Kind ==
 [http://code.google.com/p/elliptic/source/browse/trunk/inverselliptic2.m INVERSELLIPTIC2] evaluates the value of the INVERSE Incomplete Elliptic Integrals of the Second Kind.
 
-INVERSELLIPTIC2 uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the “Empirical” initialization to the Newton’s iteration method [http://code.google.com/p/elliptic/#References 8]. 
+INVERSELLIPTIC2 uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the “Empirical” initialization to the Newton’s iteration method [http://code.google.com/p/elliptic/wiki/elliptic#References 7]. 
 
 Elliptic integral of the second kind:
 {{{
 E(phi,m) = int(sqrt(1-m*sin(t)^2), t=0..phi);
 }}}
  
-“Empirical” initialization [http://code.google.com/p/elliptic/#References 8]:
+“Empirical” initialization [http://code.google.com/p/elliptic/wiki/elliptic#References 7]:
 {{{ 
 T0(z,m) = pi/2 + sqrt(r)/(theta − pi/2)
 }}}

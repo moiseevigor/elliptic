@@ -71,7 +71,7 @@ if ~isreal(E) || ~isreal(m)
     error('Input arguments must be real.');
 end
 
-if length(m)==1, m = m(ones(size(u))); end
+if length(m)==1, m = m(ones(size(E))); end
 if length(E)==1, E = E(ones(size(m))); end
 if ~isequal(size(m),size(E)), error('E and M must be the same size.'); end
 

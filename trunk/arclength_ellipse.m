@@ -1,4 +1,4 @@
-function [arclength] = arclength_ellipse(a, b, theta0, theta1)
+cdfunction [arclength] = arclength_ellipse(a, b, theta0, theta1)
 %ARCLENGTH_ELLIPSE Calculates the arclength of ellipse.
 %
 %   ARCLENGTH_ELLIPSE(A, B, THETA0, THETA1) Calculates the arclength of ellipse 
@@ -30,21 +30,28 @@ function [arclength] = arclength_ellipse(a, b, theta0, theta1)
 %   Arclength:
 %       b*EllipticE( t, 1 - (a/b)^2 )
 %
-%   Mathematica Test:
+%   Mathematica Test 1:
 %       In:= b = 10; a = 5;
 %            SetPrecision[b*EllipticE[2Pi, 1.0- a^2/b^2],20]
 %      Out:= 48.442241102738385905
 %
-%   MATLAB:
+%   Mathematica Test 2:
+%       In:= b = 10; a = 5;
+%            SetPrecision[b*(EllipticE[Pi/2-Pi/10, 1.0- a^2/b^2]-EllipticE[Pi/10, 1.0- a^2/b^2]),20]
+%      Out:= 7.3635807913930495516
+%
+%   MATLAB Test 1:
 %       % full ellipse
 %       arclength = arclength_ellipse(5,10)
 %       arclength =
 %           48.442241102738436
 %
+%   MATLAB Test 2:
 %       % arclength ellipse
 %       arclength = arclength_ellipse(5,10,pi/10,pi/2)
 %       arclength =
 %           7.363580791393055
+%
 %   References:
 %   @see http://mathworld.wolfram.com/Ellipse.html
 %   @see http://www.wolframalpha.com/input/?i=ellipse+arc+length&lk=1&a=ClashPrefs_*PlaneCurve.Ellipse.PlaneCurveProperty.ArcLength-

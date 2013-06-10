@@ -75,6 +75,10 @@ if length(m)==1, m = m(ones(size(E))); end
 if length(E)==1, E = E(ones(size(m))); end
 if ~isequal(size(m),size(E)), error('E and M must be the same size.'); end
 
+% check whether we've been asked to evaluate the integrals for values 
+% smaller than eps = 2.220446049250313e-16, if so we suppose it equal zero
+m(m<eps) = 0;
+
 invE = zeros(size(E)); 
 
 % make a row vector

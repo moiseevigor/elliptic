@@ -63,6 +63,10 @@ u = u(:).';
 
 if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 
+% check whether we've been asked to evaluate the integrals for values 
+% smaller than eps = 2.220446049250313e-16, if so we suppose it equal zero
+m(m<eps) = 0;
+
 I = uint32( find(m ~= 1 & m ~= 0) );
 if ~isempty(I)
     [mu,J,K] = unique(m(I));   % extracts unique values from m

@@ -52,8 +52,6 @@ if ~isequal(size(m),size(u)), error('U and M must be the same size.'); end
 
 Th = zeros(size(u));
 H = Th;
-mm = m;
-uu = u;
 m = m(:).';    % make a row vector
 u = u(:).';
 
@@ -130,8 +128,10 @@ if ~isempty(I)
           end
         end
     end
-    Th(I) = sqrt(2*sqrt(1-m(I)).* KK(I)/pi.* cos(phin_pred - phin)./cos(phin) ).* prod(prodth,1);
-    H(I) = sqrt(sqrt(m(I))).* sin(phin).* Th(I); 
+    
+    th_save = sqrt(2*sqrt(1-m(I)).* KK(I)/pi.* cos(phin_pred - phin)./cos(phin) ).* prod(prodth,1);
+    Th(I) = th_save;
+    H(I) = sqrt(sqrt(m(I))).* sin(phin).* th_save; 
 end
 
 % special values of u = (2n+1)*KK, odd periods

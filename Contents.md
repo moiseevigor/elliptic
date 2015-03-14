@@ -1,0 +1,1 @@
+&lt;wiki:gadget url="http://elliptic.googlecode.com/svn/trunk/gadgets/elliptic-gadget-2.xml" border="0" width="120" height="600" /&gt;

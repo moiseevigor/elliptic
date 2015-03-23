@@ -1,9 +1,7 @@
 
-# Elliptic package for Matlab and Octave
+# Elliptic functions for Matlab and Octave 
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/moiseevigor/elliptic?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-
-## Elliptic integrals, Jacobi's elliptic functions and Theta function. 
 
 The [Matlab](http://www.mathworks.com/) script implementations of [Elliptic integrals of three types](http://code.google.com/p/elliptic/wiki/EllipticIntegrals), [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi theta functions](http://en.wikipedia.org/wiki/Theta_function) of four types.
 

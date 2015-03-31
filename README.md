@@ -9,7 +9,7 @@ The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT
 
 # Contents of the package
 
-  - [Elliptic Functions](http://code.google.com/p/elliptic/wiki/elliptic#Elliptic_Functions)
+  - [Elliptic Functions](#elliptic-functions)
     - [ELLIPJ: Jacobi's elliptic functions](http://code.google.com/p/elliptic/wiki/elliptic#ELLIPJ:_Jacobi's_elliptic_functions)
     - [ELLIPJI: Jacobi's elliptic functions of the complex argument](http://code.google.com/p/elliptic/wiki/elliptic?#ELLIPJI:_Jacobi's_elliptic_functions_of_the_complex_argumen)
     - [JACOBITHETAETA: Jacobi's Theta and Eta Functions](http://code.google.com/p/elliptic/wiki/elliptic#JACOBITHETAETA:_Jacobi's_Theta_and_Eta_Functions)

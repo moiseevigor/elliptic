@@ -39,7 +39,7 @@ The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT
 
 [ELLIPJ](http://code.google.com/p/elliptic/source/browse/trunk/ellipj.m) evaluates the [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi's amplitude](http://mathworld.wolfram.com/JacobiAmplitude.html).
 
-`[= ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SN`, `CN`, `DN` and `AM` evaluated for corresponding elements of argument U and parameter M.  The arrays U and M must be of the same size (or either can be scalar).  As currently implemented, M is limited to `0 <= M <= 1`. 
+`[Sn,Cn,Dn,Am] = ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SN`, `CN`, `DN` and `AM` evaluated for corresponding elements of argument U and parameter M.  The arrays U and M must be of the same size (or either can be scalar).  As currently implemented, M is limited to `0 <= M <= 1`. 
 
 *General definition:*
 ```
@@ -58,7 +58,7 @@ _See also_ `ELLIPKE`.
 
 [http://code.google.com/p/elliptic/source/browse/trunk/ellipji.m ELLIPJI](Sn,Cn,Dn,Am]) evaluates the Jacobi elliptic functions of complex phase `U`.
 
-`[= ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SNI`, `CNI` and `DNI` evaluated for corresponding  elements of argument `U` and parameter `M`. The arrays `U` and `M` must  be of the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`. 
+`[Sni,Cni,Dni] = ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SNI`, `CNI` and `DNI` evaluated for corresponding  elements of argument `U` and parameter `M`. The arrays `U` and `M` must  be of the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`. 
 
 
 *Example:
@@ -75,12 +75,12 @@ _See also_ `ELLIPTIC12`, `ELLIPTIC12I`
 
 [http://code.google.com/p/elliptic/source/browse/trunk/jacobiThetaEta.m JACOBITHETAETA](Sni,Cni,Dni]) evaluates Jacobi's theta and eta functions.
 
-`[H](Th,) = JACOBITHETAETA(U,M)` returns the values of the Jacobi's theta and eta elliptic functions `TH` and `H` evaluated for corresponding elements of argument `U` and parameter `M`.  The arrays `U` and `M` must be the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`. 
+`[Th, H] = JACOBITHETAETA(U,M)` returns the values of the Jacobi's theta and eta elliptic functions `TH` and `H` evaluated for corresponding elements of argument `U` and parameter `M`.  The arrays `U` and `M` must be the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`. 
 
 *Example:
 ```
-[= meshgrid(0:5:90, 0:2:90);                  
-[Th, H](phi,alpha]) = jacobiThetaEta(pi/180*phi, sin(pi/180*alpha).^2);  
+[phi,alpha]= meshgrid(0:5:90, 0:2:90);                  
+[Th, H] = jacobiThetaEta(pi/180*phi, sin(pi/180*alpha).^2);  
 ```
 
 *Depends on* `AGM`, `ELLIPJ`, `ELLIPKE`<br>
@@ -99,7 +99,7 @@ The parameter `M` is related to the nome `Q` as `Q = exp(-pi*K(1-M)/K(M))`. Some
 
 **Example:
 ```
-[= meshgrid(0:5:90, 0:2:90);                  
+[phi,alpha] = meshgrid(0:5:90, 0:2:90);                  
 Th1 = theta(1, pi/180*phi, sin(pi/180*alpha).^2);  
 Th2 = theta(2, pi/180*phi, sin(pi/180*alpha).^2);  
 Th3 = theta(3, pi/180*phi, sin(pi/180*alpha).^2);  
@@ -112,9 +112,11 @@ _See also_ `ELLIPTIC12`, `ELLIPTIC12I`
 # Elliptic Integrals
 
 *[http://code.google.com/p/elliptic/wiki/EllipticIntegrals Elliptic integrals](phi,alpha])** originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler. Modern mathematics defines an elliptic integral as any function f which can be expressed in the form
+
 ```
 f(x) = Integral(R(t,P(t), c, x)dt,
 ```
+
 where `R` is a rational function of its two arguments, `P` is the square root of a polynomial of degree `3` or `4` with no repeated roots, and `c` is a constant.
 In general, elliptic integrals cannot be expressed in terms of elementary functions. Exceptions to this general rule are when `P` has repeated roots, or when `R(x,y)` contains no odd powers of `y`. However, with the appropriate reduction formula, every elliptic integral can be brought into a form that involves integrals over rational functions and the three canonical forms (i.e. the elliptic integrals of the first, second and third kind).
 
@@ -122,7 +124,7 @@ In general, elliptic integrals cannot be expressed in terms of elementary functi
 
 [ELLIPTIC12](http://code.google.com/p/elliptic/source/browse/trunk/elliptic12.m) evaluates the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function.
 
-`[= ELLIPTIC12(U,M,TOL)` uses the method of the Arithmetic-Geometric Mean and Descending Landen Transformation described in [http://code.google.com/p/elliptic/#References 1](F,E,Z]) Ch. 17.6, to determine the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function (see [1](http://code.google.com/p/elliptic/#References), [2](http://code.google.com/p/elliptic/#References)).
+`[F,E,Z] = ELLIPTIC12(U,M,TOL)` uses the method of the Arithmetic-Geometric Mean and Descending Landen Transformation described in [1](http://code.google.com/p/elliptic/#References) Ch. 17.6, to determine the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function (see [1](http://code.google.com/p/elliptic/#References), [2](http://code.google.com/p/elliptic/#References)).
 
 **General definition:**
 ```
@@ -134,8 +136,8 @@ Z(phi,m) = E(u,m) - E(m)/K(m)*F(phi,m).
 
 Tables generating code (see [1](http://code.google.com/p/elliptic/wiki/elliptic#References), pp. 613-621):
 ```
-[= meshgrid(0:5:90, 0:2:90);                  % modulus and phase in degrees
-[F,E,Z](phi,alpha]) = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);  % values of integrals
+[phi,alpha] = meshgrid(0:5:90, 0:2:90);                  % modulus and phase in degrees
+[F,E,Z] = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);  % values of integrals
 ```
 
 *Depends on* `AGM`<br>
@@ -145,15 +147,15 @@ Tables generating code (see [1](http://code.google.com/p/elliptic/wiki/elliptic#
 
 [ELLIPTIC12i](http://code.google.com/p/elliptic/source/browse/trunk/elliptic12i.m) evaluates the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function for the complex value of phase `U`. Parameter `M` must be in the range `0 <= M <= 1`. 
 
-`[= ELLIPTIC12i(U,M,TOL)` where `U` is a complex phase in radians, `M` is the real parameter and `TOL` is the tolerance (optional). Default value for the tolerance is `eps = 2.220e-16`.
+`[Fi,Ei,Zi] = ELLIPTIC12i(U,M,TOL)` where `U` is a complex phase in radians, `M` is the real parameter and `TOL` is the tolerance (optional). Default value for the tolerance is `eps = 2.220e-16`.
 
 `ELLIPTIC12i` uses the function `ELLIPTIC12` to evaluate the values of corresponding integrals.
 
 *Example:
 ```
-[phi1,phi2](Fi,Ei,Zi]) = meshgrid(-2*pi:3/20:2*pi, -2*pi:3/20:2*pi);
+[phi1,phi2] = meshgrid(-2*pi:3/20:2*pi, -2*pi:3/20:2*pi);
 phi = phi1 + phi2*i;
-[= elliptic12i(phi, 0.5);
+[Fi,Ei,Zi] = elliptic12i(phi, 0.5);
 ```
 
 _Depends on_ `ELLIPTIC12`, `AGM`<br>
@@ -161,9 +163,9 @@ _See also_ `ELLIPKE`, `ELLIPJ`, `ELLIPTIC3`, `THETA`.
  
 ## ELLIPTIC3: Incomplete Elliptic Integral of the Third Kind
 
-[http://code.google.com/p/elliptic/source/browse/trunk/elliptic3.m ELLIPTIC3](Fi,Ei,Zi]) evaluates incomplete elliptic integral of the third kind `Pi = ELLIPTIC3(U,M,C)` where `U` is a phase in radians, `0 < M < 1` is the module and `0 < C < 1` is a parameter. 
+`ELLIPTIC3` evaluates incomplete elliptic integral of the third kind `Pi = ELLIPTIC3(U,M,C)` where `U` is a phase in radians, `0 < M < 1` is the module and `0 < C < 1` is a parameter. 
 
-`ELLIPTIC3` uses Gauss-Legendre 10 points quadrature template described in `[to determine the value of the Incomplete Elliptic Integral of the Third Kind (see `[1, 2](3]`)`).
+`ELLIPTIC3` uses Gauss-Legendre 10 points quadrature template described in [3] to determine the value of the Incomplete Elliptic Integral of the Third Kind (see [1, 2]).
 
 *General definition:
 ```

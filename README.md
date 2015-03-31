@@ -61,7 +61,8 @@ _See also_ `ELLIPKE`.
 `[Sni,Cni,Dni] = ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SNI`, `CNI` and `DNI` evaluated for corresponding  elements of argument `U` and parameter `M`. The arrays `U` and `M` must  be of the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`. 
 
 
-*Example:
+### Example:
+
 ```
 [phi1,phi2](Sni,Cni,Dni]) = meshgrid(-pi:3/20:pi, -pi:3/20:pi);
 phi = phi1 + phi2*i;
@@ -88,7 +89,7 @@ _See also_ `ELLIPTIC12`, `ELLIPTIC12I`
  
 ## THETA: Theta Functions of Four Types
 
-[THETA](http://code.google.com/p/elliptic/source/browse/trunk/theta.m) evaluates theta functions of four types.
+`THETA` evaluates theta functions of four types.
 
 `Th = THETA(TYPE,V,M)` returns values of theta functions
 evaluated for corresponding values of argument `V` and parameter `M`. `TYPE` is a type of the theta function, there are four numbered types. The arrays `V` and `M` must be the same size (or either can be scalar). As currently implemented, `M` is limited to `0 <= M <= 1`. 
@@ -111,7 +112,7 @@ _See also_ `ELLIPTIC12`, `ELLIPTIC12I`
 
 # Elliptic Integrals
 
-*[http://code.google.com/p/elliptic/wiki/EllipticIntegrals Elliptic integrals](phi,alpha])** originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler. Modern mathematics defines an elliptic integral as any function f which can be expressed in the form
+Elliptic integrals originally arose in connection with the problem of giving the arc length of an ellipse. They were first studied by Giulio Fagnano and Leonhard Euler. Modern mathematics defines an elliptic integral as any function f which can be expressed in the form
 
 ```
 f(x) = Integral(R(t,P(t), c, x)dt,
@@ -122,19 +123,20 @@ In general, elliptic integrals cannot be expressed in terms of elementary functi
 
 ## ELLIPTIC12: Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function
 
-[ELLIPTIC12](http://code.google.com/p/elliptic/source/browse/trunk/elliptic12.m) evaluates the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function.
+`ELLIPTIC12` evaluates the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function.
 
 `[F,E,Z] = ELLIPTIC12(U,M,TOL)` uses the method of the Arithmetic-Geometric Mean and Descending Landen Transformation described in [1](http://code.google.com/p/elliptic/#References) Ch. 17.6, to determine the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function (see [1](http://code.google.com/p/elliptic/#References), [2](http://code.google.com/p/elliptic/#References)).
 
-**General definition:**
+### General definition:
+
 ```
 F(phi,m) = int(1/sqrt(1-m*sin(t)^2), t=0..phi);
 E(phi,m) = int(sqrt(1-m*sin(t)^2), t=0..phi);
 Z(phi,m) = E(u,m) - E(m)/K(m)*F(phi,m).
 ```
 
-
 Tables generating code (see [1](http://code.google.com/p/elliptic/wiki/elliptic#References), pp. 613-621):
+
 ```
 [phi,alpha] = meshgrid(0:5:90, 0:2:90);                  % modulus and phase in degrees
 [F,E,Z] = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);  % values of integrals
@@ -145,13 +147,14 @@ Tables generating code (see [1](http://code.google.com/p/elliptic/wiki/elliptic#
 
 ## ELLIPTIC12I: Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function of the complex argument
 
-[ELLIPTIC12i](http://code.google.com/p/elliptic/source/browse/trunk/elliptic12i.m) evaluates the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function for the complex value of phase `U`. Parameter `M` must be in the range `0 <= M <= 1`. 
+`ELLIPTIC12i` evaluates the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function for the complex value of phase `U`. Parameter `M` must be in the range `0 <= M <= 1`. 
 
 `[Fi,Ei,Zi] = ELLIPTIC12i(U,M,TOL)` where `U` is a complex phase in radians, `M` is the real parameter and `TOL` is the tolerance (optional). Default value for the tolerance is `eps = 2.220e-16`.
 
 `ELLIPTIC12i` uses the function `ELLIPTIC12` to evaluate the values of corresponding integrals.
 
-*Example:
+### Example:
+
 ```
 [phi1,phi2] = meshgrid(-2*pi:3/20:2*pi, -2*pi:3/20:2*pi);
 phi = phi1 + phi2*i;
@@ -167,51 +170,54 @@ _See also_ `ELLIPKE`, `ELLIPJ`, `ELLIPTIC3`, `THETA`.
 
 `ELLIPTIC3` uses Gauss-Legendre 10 points quadrature template described in [3] to determine the value of the Incomplete Elliptic Integral of the Third Kind (see [1, 2]).
 
-*General definition:
+### General definition:
+
 ```
 Pi(u,m,c) = int(1/((1 - c*sin(t)^2)*sqrt(1 - m*sin(t)^2)), t=0..u)
 ```
 
 Tables generating code ([1](http://code.google.com/p/elliptic/wiki/elliptic#References), pp. 625-626):
 ```
-[= meshgrid(0:15:90, 0:15:90, 0:0.1:1);
+[phi,alpha,c] = meshgrid(0:15:90, 0:15:90, 0:0.1:1);
 Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
 ```
 
-
 ## ELLIPTIC123: Complete and Incomplete Elliptic Integrals of the First, Second, and Third Kind
 
-[http://code.google.com/p/elliptic/source/browse/trunk/elliptic123.m ELLIPTIC123](phi,alpha,c]) is a wrapper around the different elliptic integral functions, providing a unified interface and greater range of input parameters. (Unlike ELLIPKE, ELLIPTIC12 and ELLIPTIC3, which all require a phase between zero and pi/2 and a parameter between zero and one.)
+`ELLIPTIC123` is a wrapper around the different elliptic integral functions, providing a unified interface and greater range of input parameters. (Unlike ELLIPKE, ELLIPTIC12 and ELLIPTIC3, which all require a phase between zero and pi/2 and a parameter between zero and one.)
 
-`[= ELLIPTIC123(m)` — complete Elliptic Integrals of the first and second kind.  
+`[F,E] = ELLIPTIC123(m)` — complete Elliptic Integrals of the first and second kind.  
 
-`[F,E](F,E]) = ELLIPTIC123(b,m)` — incomplete Elliptic Integrals of the first and second kind.
+`[F,E] = ELLIPTIC123(b,m)` — incomplete Elliptic Integrals of the first and second kind.
 
-`[= ELLIPTIC123(m,n)` — complete Elliptic Integrals of the first to third kind.  
+`[F,E,PI] = ELLIPTIC123(m,n)` — complete Elliptic Integrals of the first to third kind.  
 
-`[F,E,PI](F,E,PI]) = ELLIPTIC123(b,m,n)` — incomplete Elliptic Integrals of the first to third kind.
+`[F,E,PI] = ELLIPTIC123(b,m,n)` — incomplete Elliptic Integrals of the first to third kind.
 
 The order of the input arguments has been chosen to be consistent with the pre-existing `elliptic12` and `elliptic3` functions.
 
-This function is still under development and its results are not always well-defined or even able to be calculated (especially for the third elliptic integral with n>1). Please see the documentation for further details.
+This function is still under development and its results are not always well-defined or even able to be calculated (especially for the third elliptic integral with `n>1`). Please see the documentation for further details.
 
 ## INVERSELLIPTIC2: INVERSE Incomplete Elliptic Integrals of the Second Kind
 
-[INVERSELLIPTIC2](http://code.google.com/p/elliptic/source/browse/trunk/inverselliptic2.m) evaluates the value of the INVERSE Incomplete Elliptic Integrals of the Second Kind.
+`INVERSELLIPTIC2` evaluates the value of the INVERSE Incomplete Elliptic Integrals of the Second Kind.
 
-INVERSELLIPTIC2 uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the “Empirical” initialization to the Newton’s iteration method [7](http://code.google.com/p/elliptic/wiki/elliptic#References). 
+`INVERSELLIPTIC2` uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the “Empirical” initialization to the Newton’s iteration method [7](http://code.google.com/p/elliptic/wiki/elliptic#References). 
 
 Elliptic integral of the second kind:
+
 ```
 E(phi,m) = int(sqrt(1-m*sin(t)^2), t=0..phi);
 ```
  
 “Empirical” initialization [7](http://code.google.com/p/elliptic/wiki/elliptic#References):
+
 ```
 T0(z,m) = pi/2 + sqrt(r)/(theta − pi/2)
 ```
 
 where 
+
 ```
 z \in [E(pi/2,m)](−E(pi/2,m),)x[1](0,) - value of the entire parameter space
 r = sqrt((1-m)^2 + zeta^2)
@@ -222,47 +228,48 @@ theta = atan((1 - m)/zeta)
 Example:
 ```
 % modulus and phase in degrees
-[= meshgrid(0:5:90, 0:2:90);
+[phi,alpha] = meshgrid(0:5:90, 0:2:90);
 % values of integrals
-[F,E](phi,alpha]) = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);
+[F,E] = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);
 % values of inverse 
 invE = inverselliptic2(E, sin(pi/180*alpha).^2);
 % the difference between phase phi and invE should close to zero
 phi - invE * 180/pi
 ```
 
-
 # Weierstrass's elliptic functions (in development)
 
-<font color="red">!IN DEVELOPMENT, help needed!</font> See [forum discussion](http://groups.google.com/group/pelliptic/browse_frm/thread/f1eeff5553d3533b).
+<font color="red">!IN DEVELOPMENT, help needed!</font>.
 
-**[Weierstrass's elliptic functions](http://code.google.com/p/elliptic/wiki/WeierstrassEllipticFunctions)** are elliptic functions that take a particularly simple form (cf Jacobi's elliptic functions); they are named for Karl Weierstrass. This class of functions are also referred to as p-functions and generally written using the symbol ℘ (a stylised letter p called Weierstrass p).
+Weierstrass's elliptic functions are elliptic functions that take a particularly simple form (cf Jacobi's elliptic functions); they are named for Karl Weierstrass. This class of functions are also referred to as p-functions and generally written using the symbol `℘` (a stylised letter p called Weierstrass p).
 
-The Weierstrass elliptic function can be defined in three closely related ways, each of which possesses certain advantages. One is as a function of a complex variable z and a lattice Λ in the complex plane. Another is in terms of z and two complex numbers ω1 and ω2 defining a pair of generators, or periods, for the lattice. The third is in terms z and of a modulus τ in the upper half-plane. This is related to the previous definition by τ = ω2 / ω1, which by the conventional choice on the pair of periods is in the upper half-plane. Using this approach, for fixed z the Weierstrass functions become modular functions of τ.
+The Weierstrass elliptic function can be defined in three closely related ways, each of which possesses certain advantages. One is as a function of a complex variable z and a lattice Λ in the complex plane. Another is in terms of z and two complex numbers ω1 and ω2 defining a pair of generators, or periods, for the lattice. The third is in terms z and of a modulus τ in the upper half-plane. This is related to the previous definition by `τ = ω2 / ω1`, which by the conventional choice on the pair of periods is in the upper half-plane. Using this approach, for fixed z the Weierstrass functions become modular functions of τ.
 
 
 # Elliptic Related Functions
 
 ## AGM: Artihmetic Geometric Mean
 
-[AGM](http://code.google.com/p/elliptic/source/browse/trunk/agm.m) calculates the [Artihmetic Geometric Mean](http://en.wikipedia.org/wiki/Arithmetic-geometric_mean) of `A` and `B` (see [1](http://code.google.com/p/elliptic/#References)). 
+`AGM` calculates the [Artihmetic Geometric Mean](http://en.wikipedia.org/wiki/Arithmetic-geometric_mean) of `A` and `B` (see [1](http://code.google.com/p/elliptic/#References)). 
 
-`[= AGM(A0,B0,C0,TOL)` carry out the process of the arithmetic geometric mean, starting with a given positive numbers triple `(A0, B0, C0)` and returns in 
+`[A,B,C,N]= AGM(A0,B0,C0,TOL)` carry out the process of the arithmetic geometric mean, starting with a given positive numbers triple `(A0, B0, C0)` and returns in 
 `(A, B, C)` the generated sequence. `N` is a number of steps (returns in the value`uint32`).
 
 The general scheme of the procedure:
+
 ```
 A(i) = 1/2*( A(i-1)+B(i-1) );     A(0) = A0;
 B(i) = sqrt( A(i-1)*B(i-1) );     B(0) = B0;
 C(i) = 1/2*( A(i-1)+B(i-1) );     C(0) = C0;
 ```
+
 Stop at the `N`-th step when `A(N) = B(N)`, i.e., when `C(N) = 0`. 
 
 _Used by_  `ELLIPJ` and `ELLIPTIC12`.<br>_See also_ `ELLIPKE`, `ELLIPTIC3`, `THETA`.
 
 ## NOMEQ: The Value of Nome `q = q(m)`
 
-[http://code.google.com/p/elliptic/source/browse/trunk/nomeq.m NOMEQ](A,B,C,N]) gives the value of Nome `q = q(m)`.
+`NOMEQ` gives the value of Nome `q = q(m)`.
 
 Nome `Q = nomeq(M,TOL)`, where `0<=M<=1` is the module and `TOL` is the tolerance (optional). Default value for the tolerance is `eps = 2.220e-16`.
 
@@ -272,19 +279,21 @@ Nome `Q = nomeq(M,TOL)`, where `0<=M<=1` is the module and `TOL` is the toleranc
 
 ## INVERSENOMEQ: The Value of Nome `m = m(q)`
 
-[INVERSENOMEQ](http://code.google.com/p/elliptic/source/browse/trunk/inversenomeq.m) gives the value of Nome `m = m(q)`.
+`INVERSENOMEQ` gives the value of Nome `m = m(q)`.
 
 `M = inversenomeq(q)`, where `Q` is the Nome of q-series.
 
 **WARNING**. The function `INVERSENOMEQ` does not return correct values of `M` for `Q > 0.6`, because of computer precision limitation. The function `NomeQ(m)` has an essential singularity at `M = 1`, so it cannot be inverted at this point and actually it is very hard to find and inverse in the neigborhood also.
 
 More preciesly:
+
 ```
 nomeq(1) = 1
 nomeq(1-eps) = 0.77548641878026
 ```
 
-*Example:
+### Example:
+
 ```
 nomeq(inversenomeq([0.3 0.4 0.5 0.6 0.7 0.8](0.001)))
 ```

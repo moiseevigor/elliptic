@@ -23,7 +23,7 @@ The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT
 
   - [Weierstrass's elliptic functions (in development)](#weierstrasss-elliptic-functions-in-development)
   - [Elliptic Related Functions](#elliptic-related-functions)
-    - [AGM: Artihmetic Geometric Mean]#agm-artihmetic-geometric-mean)
+    - [AGM: Artihmetic Geometric Mean](#agm-artihmetic-geometric-mean)
     - [NOMEQ: The Value of Nome q = q(m)](#nomeq-the-value-of-nome-q--qm)
     - [INVERSENOMEQ: The Value of Nome m = m(q)](#inversenomeq-the-value-of-nome-m--mq)
   - [References](#references)

@@ -35,7 +35,7 @@
 
 <p><a href="https://gitter.im/moiseevigor/elliptic?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Gitter"></a></p>
 
-<p>The <a href="http://www.mathworks.com/">Matlab</a> script implementations of <a href="http://code.google.com/p/elliptic/wiki/EllipticIntegrals">Elliptic integrals of three types</a>, <a href="http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions">Jacobi's elliptic functions</a> and <a href="http://en.wikipedia.org/wiki/Theta_function">Jacobi theta functions</a> of four types.</p>
+<p>The <a href="http://www.mathworks.com/">Matlab</a> script implementations of <a href="http://en.wikipedia.org/wiki/Elliptic_integral">Elliptic integrals of three types</a>, <a href="http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions">Jacobi's elliptic functions</a> and <a href="http://en.wikipedia.org/wiki/Theta_function">Jacobi theta functions</a> of four types.</p>
 
 <p>The main <em>GOAL</em> of the project is to provide the natural Matlab scripts <em>WITHOUT</em> external library calls like Maple and others. All scripts are developed to accept tensors as arguments and almost all of them have their complex versions. Performance and complete control on the execution are the main features.</p>
 
@@ -81,14 +81,14 @@
 <h1>
 <a id="elliptic-functions" class="anchor" href="#elliptic-functions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Elliptic Functions</h1>
 
-<p><strong><a href="http://code.google.com/p/elliptic/wiki/JacobiEllipticFunctions">The Jacobi's elliptic functions</a></strong> are a set of basic elliptic functions, and auxiliary theta functions, that have historical importance with also many features that show up important structure, and have direct relevance to some applications (e.g. the equation of the pendulum). They also have useful analogies to the functions of trigonometry, as indicated by the matching notation <code>SN</code> for <code>SIN</code>. They are not the simplest way to develop a general theory, as now seen: that can be said for the Weierstrass elliptic functions. They are not, however, outmoded. They were introduced by Carl Gustav Jakob Jacobi, around 1830.</p>
+<p><strong>The Jacobi's elliptic functions</strong> are a set of basic elliptic functions, and auxiliary theta functions, that have historical importance with also many features that show up important structure, and have direct relevance to some applications (e.g. the equation of the pendulum). They also have useful analogies to the functions of trigonometry, as indicated by the matching notation <code>SN</code> for <code>SIN</code>. They are not the simplest way to develop a general theory, as now seen: that can be said for the Weierstrass elliptic functions. They are not, however, outmoded. They were introduced by Carl Gustav Jakob Jacobi, around 1830.</p>
 
-<p><strong><a href="http://code.google.com/p/elliptic/wiki/ThetaFunctions">Theta functions</a></strong> are special functions of several complex variables. They are important in several areas, including the theories of abelian varieties and moduli spaces, and of quadratic forms. They have also been applied to soliton theory. When generalized to a Grassmann algebra, they also appear in quantum field theory, specifically string theory and D-branes.</p>
+<p><strong>Theta functions</strong> are special functions of several complex variables. They are important in several areas, including the theories of abelian varieties and moduli spaces, and of quadratic forms. They have also been applied to soliton theory. When generalized to a Grassmann algebra, they also appear in quantum field theory, specifically string theory and D-branes.</p>
 
 <h2>
 <a id="ellipj-jacobis-elliptic-functions" class="anchor" href="#ellipj-jacobis-elliptic-functions" aria-hidden="true"><span class="octicon octicon-link"></span></a>ELLIPJ: Jacobi's elliptic functions</h2>
 
-<p><a href="http://code.google.com/p/elliptic/source/browse/trunk/ellipj.m">ELLIPJ</a> evaluates the <a href="http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions">Jacobi's elliptic functions</a> and <a href="http://mathworld.wolfram.com/JacobiAmplitude.html">Jacobi's amplitude</a>.</p>
+<p><code>ELLIPJ</code> evaluates the <a href="http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions">Jacobi's elliptic functions</a> and <a href="http://mathworld.wolfram.com/JacobiAmplitude.html">Jacobi's amplitude</a>.</p>
 
 <p><code>[Sn,Cn,Dn,Am] = ELLIPJ(U,M)</code> returns the values of the Jacobi elliptic functions <code>SN</code>, <code>CN</code>, <code>DN</code> and <code>AM</code> evaluated for corresponding elements of argument U and parameter M.  The arrays U and M must be of the same size (or either can be scalar).  As currently implemented, M is limited to <code>0 &lt;= M &lt;= 1</code>. </p>
 
@@ -107,7 +107,7 @@ Dn(u) = sqrt(1-m^2*sin(phi)^2);
 <h2>
 <a id="ellipji-jacobis-elliptic-functions-of-the-complex-argument" class="anchor" href="#ellipji-jacobis-elliptic-functions-of-the-complex-argument" aria-hidden="true"><span class="octicon octicon-link"></span></a>ELLIPJI: Jacobi's elliptic functions of the complex argument</h2>
 
-<p><a href="Sn,Cn,Dn,Am%5D">http://code.google.com/p/elliptic/source/browse/trunk/ellipji.m ELLIPJI</a> evaluates the Jacobi elliptic functions of complex phase <code>U</code>.</p>
+<p><code>ELLIPJI</code> evaluates the Jacobi elliptic functions of complex phase <code>U</code>.</p>
 
 <p><code>[Sni,Cni,Dni] = ELLIPJ(U,M)</code> returns the values of the Jacobi elliptic functions <code>SNI</code>, <code>CNI</code> and <code>DNI</code> evaluated for corresponding  elements of argument <code>U</code> and parameter <code>M</code>. The arrays <code>U</code> and <code>M</code> must  be of the same size (or either can be scalar).  As currently implemented, <code>M</code> is real and limited to <code>0 &lt;= M &lt;= 1</code>. </p>
 
@@ -125,11 +125,12 @@ phi = phi1 + phi2*i;
 <h2>
 <a id="jacobithetaeta-jacobis-theta-and-eta-functions" class="anchor" href="#jacobithetaeta-jacobis-theta-and-eta-functions" aria-hidden="true"><span class="octicon octicon-link"></span></a>JACOBITHETAETA: Jacobi's Theta and Eta Functions</h2>
 
-<p><a href="Sni,Cni,Dni%5D">http://code.google.com/p/elliptic/source/browse/trunk/jacobiThetaEta.m JACOBITHETAETA</a> evaluates Jacobi's theta and eta functions.</p>
+<p><code>JACOBITHETAETA</code> evaluates Jacobi's theta and eta functions.</p>
 
 <p><code>[Th, H] = JACOBITHETAETA(U,M)</code> returns the values of the Jacobi's theta and eta elliptic functions <code>TH</code> and <code>H</code> evaluated for corresponding elements of argument <code>U</code> and parameter <code>M</code>.  The arrays <code>U</code> and <code>M</code> must be the same size (or either can be scalar).  As currently implemented, <code>M</code> is real and limited to <code>0 &lt;= M &lt;= 1</code>. </p>
 
-<p>*Example:</p>
+<h3>
+<a id="example-1" class="anchor" href="#example-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example:</h3>
 
 <pre><code>[phi,alpha]= meshgrid(0:5:90, 0:2:90);                  
 [Th, H] = jacobiThetaEta(pi/180*phi, sin(pi/180*alpha).^2);  
@@ -150,7 +151,8 @@ evaluated for corresponding values of argument <code>V</code> and parameter <cod
 
 <p>The parameter <code>M</code> is related to the nome <code>Q</code> as <code>Q = exp(-pi*K(1-M)/K(M))</code>. Some definitions of the Jacobi's elliptic functions use the modulus <code>k</code> instead of the parameter <code>m</code>.  They are related by <code>m = k^2</code>.</p>
 
-<p>**Example:</p>
+<h3>
+<a id="example-2" class="anchor" href="#example-2" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example:</h3>
 
 <pre><code>[phi,alpha] = meshgrid(0:5:90, 0:2:90);                  
 Th1 = theta(1, pi/180*phi, sin(pi/180*alpha).^2);  
@@ -178,7 +180,7 @@ In general, elliptic integrals cannot be expressed in terms of elementary functi
 
 <p><code>ELLIPTIC12</code> evaluates the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function.</p>
 
-<p><code>[F,E,Z] = ELLIPTIC12(U,M,TOL)</code> uses the method of the Arithmetic-Geometric Mean and Descending Landen Transformation described in <a href="http://code.google.com/p/elliptic/#References">1</a> Ch. 17.6, to determine the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function (see <a href="http://code.google.com/p/elliptic/#References">1</a>, <a href="http://code.google.com/p/elliptic/#References">2</a>).</p>
+<p><code>[F,E,Z] = ELLIPTIC12(U,M,TOL)</code> uses the method of the Arithmetic-Geometric Mean and Descending Landen Transformation described in <a href="#references">1</a> Ch. 17.6, to determine the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function (see <a href="#references">1</a>, <a href="#references">2</a>).</p>
 
 <h3>
 <a id="general-definition" class="anchor" href="#general-definition" aria-hidden="true"><span class="octicon octicon-link"></span></a>General definition:</h3>
@@ -188,7 +190,7 @@ E(phi,m) = int(sqrt(1-m*sin(t)^2), t=0..phi);
 Z(phi,m) = E(u,m) - E(m)/K(m)*F(phi,m).
 </code></pre>
 
-<p>Tables generating code (see <a href="http://code.google.com/p/elliptic/wiki/elliptic#References">1</a>, pp. 613-621):</p>
+<p>Tables generating code (see <a href="#references">1</a>, pp. 613-621):</p>
 
 <pre><code>[phi,alpha] = meshgrid(0:5:90, 0:2:90);                  % modulus and phase in degrees
 [F,E,Z] = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);  % values of integrals
@@ -207,7 +209,7 @@ Z(phi,m) = E(u,m) - E(m)/K(m)*F(phi,m).
 <p><code>ELLIPTIC12i</code> uses the function <code>ELLIPTIC12</code> to evaluate the values of corresponding integrals.</p>
 
 <h3>
-<a id="example-1" class="anchor" href="#example-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example:</h3>
+<a id="example-3" class="anchor" href="#example-3" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example:</h3>
 
 <pre><code>[phi1,phi2] = meshgrid(-2*pi:3/20:2*pi, -2*pi:3/20:2*pi);
 phi = phi1 + phi2*i;
@@ -230,7 +232,7 @@ phi = phi1 + phi2*i;
 <pre><code>Pi(u,m,c) = int(1/((1 - c*sin(t)^2)*sqrt(1 - m*sin(t)^2)), t=0..u)
 </code></pre>
 
-<p>Tables generating code (<a href="http://code.google.com/p/elliptic/wiki/elliptic#References">1</a>, pp. 625-626):</p>
+<p>Tables generating code (<a href="#references">1</a>, pp. 625-626):</p>
 
 <pre><code>[phi,alpha,c] = meshgrid(0:15:90, 0:15:90, 0:0.1:1);
 Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
@@ -258,14 +260,14 @@ Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
 
 <p><code>INVERSELLIPTIC2</code> evaluates the value of the INVERSE Incomplete Elliptic Integrals of the Second Kind.</p>
 
-<p><code>INVERSELLIPTIC2</code> uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the “Empirical” initialization to the Newton’s iteration method <a href="http://code.google.com/p/elliptic/wiki/elliptic#References">7</a>. </p>
+<p><code>INVERSELLIPTIC2</code> uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the “Empirical” initialization to the Newton’s iteration method <a href="#references">7</a>. </p>
 
 <p>Elliptic integral of the second kind:</p>
 
 <pre><code>E(phi,m) = int(sqrt(1-m*sin(t)^2), t=0..phi);
 </code></pre>
 
-<p>“Empirical” initialization <a href="http://code.google.com/p/elliptic/wiki/elliptic#References">7</a>:</p>
+<p>“Empirical” initialization <a href="#references">7</a>:</p>
 
 <pre><code>T0(z,m) = pi/2 + sqrt(r)/(theta − pi/2)
 </code></pre>
@@ -305,7 +307,7 @@ phi - invE * 180/pi
 <h2>
 <a id="agm-artihmetic-geometric-mean" class="anchor" href="#agm-artihmetic-geometric-mean" aria-hidden="true"><span class="octicon octicon-link"></span></a>AGM: Artihmetic Geometric Mean</h2>
 
-<p><code>AGM</code> calculates the <a href="http://en.wikipedia.org/wiki/Arithmetic-geometric_mean">Artihmetic Geometric Mean</a> of <code>A</code> and <code>B</code> (see <a href="http://code.google.com/p/elliptic/#References">1</a>). </p>
+<p><code>AGM</code> calculates the <a href="http://en.wikipedia.org/wiki/Arithmetic-geometric_mean">Artihmetic Geometric Mean</a> of <code>A</code> and <code>B</code> (see <a href="#references">1</a>). </p>
 
 <p><code>[A,B,C,N]= AGM(A0,B0,C0,TOL)</code> carry out the process of the arithmetic geometric mean, starting with a given positive numbers triple <code>(A0, B0, C0)</code> and returns in 
 <code>(A, B, C)</code> the generated sequence. <code>N</code> is a number of steps (returns in the value<code>uint32</code>).</p>
@@ -350,7 +352,7 @@ nomeq(1-eps) = 0.77548641878026
 </code></pre>
 
 <h3>
-<a id="example-2" class="anchor" href="#example-2" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example:</h3>
+<a id="example-4" class="anchor" href="#example-4" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example:</h3>
 
 <pre><code>nomeq(inversenomeq([0.3 0.4 0.5 0.6 0.7 0.8](0.001)))
 </code></pre>
@@ -384,7 +386,7 @@ nomeq(1-eps) = 0.77548641878026
           </script>
           <script type="text/javascript">
             try {
-              var pageTracker = _gat._getTracker("UA-12212145-1");
+              var pageTracker = _gat._getTracker("UA-56946191-1");
             pageTracker._trackPageview();
             } catch(err) {}
           </script>

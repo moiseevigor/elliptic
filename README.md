@@ -3,7 +3,7 @@
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/moiseevigor/elliptic?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-The [Matlab](http://www.mathworks.com/) script implementations of [Elliptic integrals of three types](http://code.google.com/p/elliptic/wiki/EllipticIntegrals), [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi theta functions](http://en.wikipedia.org/wiki/Theta_function) of four types.
+The [Matlab](http://www.mathworks.com/) script implementations of [Elliptic integrals of three types](http://en.wikipedia.org/wiki/Elliptic_integral), [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi theta functions](http://en.wikipedia.org/wiki/Theta_function) of four types.
 
 The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT* external library calls like Maple and others. All scripts are developed to accept tensors as arguments and almost all of them have their complex versions. Performance and complete control on the execution are the main features.
 
@@ -30,13 +30,13 @@ The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT
   
 # Elliptic Functions
 
-**[The Jacobi's elliptic functions](http://code.google.com/p/elliptic/wiki/JacobiEllipticFunctions)** are a set of basic elliptic functions, and auxiliary theta functions, that have historical importance with also many features that show up important structure, and have direct relevance to some applications (e.g. the equation of the pendulum). They also have useful analogies to the functions of trigonometry, as indicated by the matching notation `SN` for `SIN`. They are not the simplest way to develop a general theory, as now seen: that can be said for the Weierstrass elliptic functions. They are not, however, outmoded. They were introduced by Carl Gustav Jakob Jacobi, around 1830.
+**The Jacobi's elliptic functions** are a set of basic elliptic functions, and auxiliary theta functions, that have historical importance with also many features that show up important structure, and have direct relevance to some applications (e.g. the equation of the pendulum). They also have useful analogies to the functions of trigonometry, as indicated by the matching notation `SN` for `SIN`. They are not the simplest way to develop a general theory, as now seen: that can be said for the Weierstrass elliptic functions. They are not, however, outmoded. They were introduced by Carl Gustav Jakob Jacobi, around 1830.
 
-**[Theta functions](http://code.google.com/p/elliptic/wiki/ThetaFunctions)** are special functions of several complex variables. They are important in several areas, including the theories of abelian varieties and moduli spaces, and of quadratic forms. They have also been applied to soliton theory. When generalized to a Grassmann algebra, they also appear in quantum field theory, specifically string theory and D-branes.
+**Theta functions** are special functions of several complex variables. They are important in several areas, including the theories of abelian varieties and moduli spaces, and of quadratic forms. They have also been applied to soliton theory. When generalized to a Grassmann algebra, they also appear in quantum field theory, specifically string theory and D-branes.
 
 ## ELLIPJ: Jacobi's elliptic functions
 
-[ELLIPJ](http://code.google.com/p/elliptic/source/browse/trunk/ellipj.m) evaluates the [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi's amplitude](http://mathworld.wolfram.com/JacobiAmplitude.html).
+`ELLIPJ` evaluates the [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi's amplitude](http://mathworld.wolfram.com/JacobiAmplitude.html).
 
 `[Sn,Cn,Dn,Am] = ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SN`, `CN`, `DN` and `AM` evaluated for corresponding elements of argument U and parameter M.  The arrays U and M must be of the same size (or either can be scalar).  As currently implemented, M is limited to `0 <= M <= 1`. 
 
@@ -55,7 +55,7 @@ _See also_ `ELLIPKE`.
 
 ## ELLIPJI: Jacobi's elliptic functions of the complex argument
 
-[http://code.google.com/p/elliptic/source/browse/trunk/ellipji.m ELLIPJI](Sn,Cn,Dn,Am]) evaluates the Jacobi elliptic functions of complex phase `U`.
+`ELLIPJI` evaluates the Jacobi elliptic functions of complex phase `U`.
 
 `[Sni,Cni,Dni] = ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SNI`, `CNI` and `DNI` evaluated for corresponding  elements of argument `U` and parameter `M`. The arrays `U` and `M` must  be of the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`. 
 
@@ -73,7 +73,7 @@ _See also_ `ELLIPTIC12`, `ELLIPTIC12I`
 
 ## JACOBITHETAETA: Jacobi's Theta and Eta Functions
 
-[http://code.google.com/p/elliptic/source/browse/trunk/jacobiThetaEta.m JACOBITHETAETA](Sni,Cni,Dni]) evaluates Jacobi's theta and eta functions.
+`JACOBITHETAETA` evaluates Jacobi's theta and eta functions.
 
 `[Th, H] = JACOBITHETAETA(U,M)` returns the values of the Jacobi's theta and eta elliptic functions `TH` and `H` evaluated for corresponding elements of argument `U` and parameter `M`.  The arrays `U` and `M` must be the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`. 
 
@@ -124,7 +124,7 @@ In general, elliptic integrals cannot be expressed in terms of elementary functi
 
 `ELLIPTIC12` evaluates the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function.
 
-`[F,E,Z] = ELLIPTIC12(U,M,TOL)` uses the method of the Arithmetic-Geometric Mean and Descending Landen Transformation described in [1](http://code.google.com/p/elliptic/#References) Ch. 17.6, to determine the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function (see [1](http://code.google.com/p/elliptic/#References), [2](http://code.google.com/p/elliptic/#References)).
+`[F,E,Z] = ELLIPTIC12(U,M,TOL)` uses the method of the Arithmetic-Geometric Mean and Descending Landen Transformation described in [1](#references) Ch. 17.6, to determine the value of the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function (see [1](#references), [2](#references)).
 
 ### General definition:
 
@@ -134,7 +134,7 @@ E(phi,m) = int(sqrt(1-m*sin(t)^2), t=0..phi);
 Z(phi,m) = E(u,m) - E(m)/K(m)*F(phi,m).
 ```
 
-Tables generating code (see [1](http://code.google.com/p/elliptic/wiki/elliptic#References), pp. 613-621):
+Tables generating code (see [1](#references), pp. 613-621):
 
 ```
 [phi,alpha] = meshgrid(0:5:90, 0:2:90);                  % modulus and phase in degrees
@@ -175,7 +175,7 @@ _See also_ `ELLIPKE`, `ELLIPJ`, `ELLIPTIC3`, `THETA`.
 Pi(u,m,c) = int(1/((1 - c*sin(t)^2)*sqrt(1 - m*sin(t)^2)), t=0..u)
 ```
 
-Tables generating code ([1](http://code.google.com/p/elliptic/wiki/elliptic#References), pp. 625-626):
+Tables generating code ([1](#references), pp. 625-626):
 ```
 [phi,alpha,c] = meshgrid(0:15:90, 0:15:90, 0:0.1:1);
 Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
@@ -201,7 +201,7 @@ This function is still under development and its results are not always well-def
 
 `INVERSELLIPTIC2` evaluates the value of the INVERSE Incomplete Elliptic Integrals of the Second Kind.
 
-`INVERSELLIPTIC2` uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the “Empirical” initialization to the Newton’s iteration method [7](http://code.google.com/p/elliptic/wiki/elliptic#References). 
+`INVERSELLIPTIC2` uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the “Empirical” initialization to the Newton’s iteration method [7](#references). 
 
 Elliptic integral of the second kind:
 
@@ -209,7 +209,7 @@ Elliptic integral of the second kind:
 E(phi,m) = int(sqrt(1-m*sin(t)^2), t=0..phi);
 ```
  
-“Empirical” initialization [7](http://code.google.com/p/elliptic/wiki/elliptic#References):
+“Empirical” initialization [7](#references):
 
 ```
 T0(z,m) = pi/2 + sqrt(r)/(theta − pi/2)
@@ -249,7 +249,7 @@ The Weierstrass elliptic function can be defined in three closely related ways, 
 
 ## AGM: Artihmetic Geometric Mean
 
-`AGM` calculates the [Artihmetic Geometric Mean](http://en.wikipedia.org/wiki/Arithmetic-geometric_mean) of `A` and `B` (see [1](http://code.google.com/p/elliptic/#References)). 
+`AGM` calculates the [Artihmetic Geometric Mean](http://en.wikipedia.org/wiki/Arithmetic-geometric_mean) of `A` and `B` (see [1](#references)). 
 
 `[A,B,C,N]= AGM(A0,B0,C0,TOL)` carry out the process of the arithmetic geometric mean, starting with a given positive numbers triple `(A0, B0, C0)` and returns in 
 `(A, B, C)` the generated sequence. `N` is a number of steps (returns in the value`uint32`).

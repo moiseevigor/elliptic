@@ -77,7 +77,7 @@ _See also_ `ELLIPTIC12`, `ELLIPTIC12I`
 
 `[Th, H] = JACOBITHETAETA(U,M)` returns the values of the Jacobi's theta and eta elliptic functions `TH` and `H` evaluated for corresponding elements of argument `U` and parameter `M`.  The arrays `U` and `M` must be the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`. 
 
-*Example:
+### Example:
 ```
 [phi,alpha]= meshgrid(0:5:90, 0:2:90);                  
 [Th, H] = jacobiThetaEta(pi/180*phi, sin(pi/180*alpha).^2);  
@@ -97,7 +97,7 @@ evaluated for corresponding values of argument `V` and parameter `M`. `TYPE` is 
 
 The parameter `M` is related to the nome `Q` as `Q = exp(-pi*K(1-M)/K(M))`. Some definitions of the Jacobi's elliptic functions use the modulus `k` instead of the parameter `m`.  They are related by `m = k^2`.
 
-**Example:
+### Example:
 ```
 [phi,alpha] = meshgrid(0:5:90, 0:2:90);                  
 Th1 = theta(1, pi/180*phi, sin(pi/180*alpha).^2);  

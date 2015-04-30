@@ -303,9 +303,8 @@ nomeq(inversenomeq([0.3 0.4 0.5 0.6 0.7 0.8](0.001)))
 
 # Contributors
 
-@moiseevigor (Moiseev Igor)
-
-@wspr (Will Robertson)
+- [@moiseevigor](http://github.com/moiseevigor/) (Igor Moiseev)
+- [@wspr](https://github.com/wspr) (Will Robertson)
 
 
 # References

@@ -301,6 +301,12 @@ nomeq(inversenomeq([0.3 0.4 0.5 0.6 0.7 0.8](0.001)))
 *Depends on* `ELLIPKE`<br>
 *See also* `ELLIPTIC12I`, `ELLIPTIC3`, `THETA`.
 
+# Contributors
+
+@moiseevigor (Moiseev Igor)
+
+@wspr (Will Robertson)
+
 
 # References
 

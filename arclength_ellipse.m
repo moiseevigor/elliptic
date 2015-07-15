@@ -73,15 +73,50 @@ if nargin == 2,
  theta1 = 2*pi;
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Comments inserted here to document this change; feel free to delete
+%%% or modify them or move them to commit comments if you accept the
+%%% pull request
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% 2015-07-14 (New Horizons flyby of Pluto)
+%%% drbitboy (Brian Carcich)
+%%% 1) Old code returned values that were in error
+%%% 1.1)  arclength_ellipse(1., .5, pi*.001, pi*.002) returned 0
+%%% 1.2)  arclength_ellipse(1., .5, pi*.002, pi*.001) returned -.0003*pi instead of pi correct .0005*pi
+%%% 1.3)  arclength_ellipse(1., .5, theta0, theta1) did not return the negative of the same call with the thetas reversed
+%%% 2) Angles theta0 and theta1 were always interpreted as measured from the semi-minor axis
+%%%
+%%% 3) Corrected code:
+%%% 3.1) Angle theta is measured from the positive a axis
+%%% 3.2) The standard form of the b*E(phi,m) arc length integral has m = 1 - (a/b)^2
+%%% 3.2.1) N.B. That only only works if b>a
+%%% 3.3) If a>b, then an alternate formula is used:  a*E(PI/2 - phi, m') where m' = 1 - (b/a)^2
+%%% 3.4) A few simple cases will show that the new code is correct
+%%%        arclength_ellipse(1, .5, pi*.001, pi*.002) ~  pi*.0005
+%%%        arclength_ellipse(1, .5, pi*.002, pi*.001) = -arclength(1, .5, pi*.001, pi*.002) ~ -pi*.0005
+%%%        arclength_ellipse(1., 2., pi*.001, pi*.002) ~ pi*.002
+%%%        arclength_ellipse(1, .5, pi/2 - pi*.002, pi/2 - pi*.001) ~ -pi*.001
+%%%        arclength_ellipse(1, 2., pi/2 - pi*.002, pi/2 - pi*.001) ~ -pi*.001
+%%%        etc.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Default solution for a==b (circles)
 arclength = a.*(theta1-theta0);
+
+%%% Ellipses (a<b or a>b)
 if(a<b)
-    [F1, E1] = elliptic12( theta1-theta0, 1 - (a./b).^2 );
+    %%% Theta measured from a axis = semi-MINOR axis
+    %%% Use standard formulation for E(phi,m)
+    [F1, E1] = elliptic12( theta1, 1 - (a./b).^2 );
     [F0, E0] = elliptic12( theta0, 1 - (a./b).^2 );
     arclength = b.*(E1 - E0);
 elseif(a>b)   
-    [F1, E1] = elliptic12( theta1-theta0, 1 - (b./a).^2 );
-    [F0, E0] = elliptic12( theta0, 1 - (b./a).^2 );
-    arclength = a.*(E1 - E0);
+    %%% Theta measured from a axis = semi-MAJOR axis
+    %%% Standard formulation will not work ((1-(a/b)^2) < 0); instead use PI/2 - phi and b/a instead of a/b
+    [F1, E1] = elliptic12( pi/2 - theta1, 1 - (b./a).^2 );
+    [F0, E0] = elliptic12( pi/2 - theta0, 1 - (b./a).^2 );
+    %%% d(PI/2 - phi)/dphi = -1, so reverse operands in this difference to flip sign:
+    arclength = a.*(E0 - E1);
 end
 
 return;

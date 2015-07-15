@@ -1,4 +1,4 @@
-cdfunction [arclength] = arclength_ellipse(a, b, theta0, theta1)
+function [arclength] = arclength_ellipse(a, b, theta0, theta1)
 %ARCLENGTH_ELLIPSE Calculates the arclength of ellipse.
 %
 %   ARCLENGTH_ELLIPSE(A, B, THETA0, THETA1) Calculates the arclength of ellipse 

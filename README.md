@@ -8,6 +8,30 @@ The [Matlab](http://www.mathworks.com/) script implementations of [Elliptic inte
 
 The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT* external library calls like Maple and others. All scripts are developed to accept tensors as arguments and almost all of them have their complex versions. Performance and complete control on the execution are the main features.
 
+# Citations and references
+
+If you've used any of the routines in this package please cite and support the effort. Here is the example of the BibTeX entry
+
+```
+@misc{elliptic,
+  author = {Moiseev I.},
+  title = {Elliptic functions for Matlab and Octave},
+  year = {2008},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/moiseevigor/elliptic}},
+  commit = {98181c4c0d8992746bcc6bea75740bb11b74b51b},
+  doi = {10.5281/zenodo.48264},
+  url = {http://dx.doi.org/10.5281/zenodo.48264}
+}
+```
+
+or simply 
+
+```
+Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository, DOI: http://dx.doi.org/10.5281/zenodo.48264
+```
+
 # Contents of the package
 
   - [Elliptic Functions](#elliptic-functions)
@@ -65,9 +89,9 @@ _See also_ `ELLIPKE`.
 ### Example:
 
 ```
-[phi1,phi2](Sni,Cni,Dni]) = meshgrid(-pi:3/20:pi, -pi:3/20:pi);
+[phi1,phi2] = meshgrid(-pi:3/20:pi, -pi:3/20:pi);
 phi = phi1 + phi2*i;
-[= ellipji(phi, 0.99);
+[Sni,Cni,Dni]= ellipji(phi, 0.99);
 ```
 
 _Depends on_ `AGM`, `ELLIPJ`, `ELLIPKE`<br>
@@ -305,10 +329,10 @@ nomeq(inversenomeq([0.3 0.4 0.5 0.6 0.7 0.8](0.001)))
 
 # Contributors
 
-Contributors (in alfabetic order) 
+Contributors
 
+- [@moiseevigor](http://github.com/moiseevigor/) - maintainer (Igor Moiseev)
 - [@drbitboy](https://github.com/drbitboy) (Brian Carcich)
-- [@moiseevigor](http://github.com/moiseevigor/) (Igor Moiseev)
 - [@wspr](https://github.com/wspr) (Will Robertson)
 
 

@@ -285,7 +285,7 @@ The general scheme of the procedure:
 ```
 A(i) = 1/2*( A(i-1)+B(i-1) );     A(0) = A0;
 B(i) = sqrt( A(i-1)*B(i-1) );     B(0) = B0;
-C(i) = 1/2*( A(i-1)+B(i-1) );     C(0) = C0;
+C(i) = 1/2*( A(i-1)-B(i-1) );     C(0) = C0;
 ```
 
 Stop at the `N`-th step when `A(N) = B(N)`, i.e., when `C(N) = 0`. 

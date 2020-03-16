@@ -112,6 +112,11 @@ else
   error('Wrong number of output arguments')
 end 
 
+% multidimensional input reshape
+F = reshape(F,size(a1));
+E = reshape(E,size(a1));
+P = reshape(E,size(a1));
+
 end
 
 function [F,E]=elliptic12c(m)

@@ -842,8 +842,9 @@ Q0 = 1;
 QQ = Q0;
 
 ss = ones(size(m));
+Q1 = ones(size(m));
 
-while max(ss(:)) > eps % assume ellip2 converges slower than ellip3
+while max(abs([ss(:);Q1(:)])) > eps
   
   % for Elliptic I
   a1 = (a0+g0)/2;
@@ -896,8 +897,9 @@ Q0 = 1;
 QQ = Q0;
 
 ss = ones(size(m));
+Q1 = ones(size(m));
 
-while max(ss(:)) > eps % assume ellip2 converges slower than ellip3
+while max(abs([ss(:);Q1(:)])) > eps
   
   % for Elliptic I
   a1 = (a0+g0)/2;

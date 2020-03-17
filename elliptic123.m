@@ -115,7 +115,7 @@ end
 % multidimensional input reshape
 F = reshape(F,size(a1));
 E = reshape(E,size(a1));
-P = reshape(E,size(a1));
+P = reshape(P,size(a1));
 
 end
 
@@ -897,7 +897,7 @@ g0 = sqrt(1-m);
 s0 = m;
 nn = 0;
 
-p0 = sqrt(1-(m/n));
+p0 = sqrt(1-(m./n));
 Q0 = 1;
 QQ = Q0;
 
@@ -929,7 +929,7 @@ while max(abs([ss(:);Q1(:)])) > eps
   
 end
 
-PI = pi./(4.*a1).*((m/(m-n)).*QQ);
+PI = pi/(4*a1).*m./(m-n).*QQ;
 
 im = find(m == 1);
 if ~isempty(im)

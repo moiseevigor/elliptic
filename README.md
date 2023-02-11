@@ -320,7 +320,15 @@ nomeq(1-eps) = 0.77548641878026
 ### Example:
 
 ```
-nomeq(inversenomeq([0.3 0.4 0.5 0.6 0.7 0.8](0.001)))
+nomeq(inversenomeq([0.3 0.4 0.5 0.6 0.7 0.8]))
+warning: The function INVERSENOMEQ does not return 
+correct values of M for Q < 0.00001 and Q > 0.76, because of computer precision limitation.
+warning: called from
+    inversenomeq at line 54 column 5
+
+ans =
+
+   0.3000   0.4000   0.5000   0.5948   0.7000   0.7447
 ```
 
 *Used by*  `ELLIPJ`.<br>

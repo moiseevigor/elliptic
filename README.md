@@ -345,6 +345,7 @@ Processing files in /home/igor/Work/elliptic/tests:
 
   testEllipj.m ................................................ PASS      5/5   
   testElliptic12.m ............................................ PASS      5/5   
+  testElliptic3.m ............................................. PASS      5/5
 ```
 
 # Contributors

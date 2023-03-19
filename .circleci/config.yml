@@ -9,7 +9,7 @@ jobs:
       - checkout
       - matlab/install
       - matlab/run-tests:
-          test-results-junit: test-results/results.xml
+          # test-results-junit: test-results/results.xml
           test-results-html: test-results/results.html
           # code-coverage-html: test-results/coverage.html
           # code-coverage-cobertura: test-results/coverage-cobertura.xml

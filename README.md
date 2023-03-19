@@ -335,6 +335,18 @@ ans =
 *Depends on* `ELLIPKE`<br>
 *See also* `ELLIPTIC12I`, `ELLIPTIC3`, `THETA`.
 
+# Running tests
+
+From root folder run `runtests` or check the CI build status [![CircleCI](https://dl.circleci.com/status-badge/img/gh/moiseevigor/elliptic/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/moiseevigor/elliptic/tree/master)
+
+```
+runtests("tests")
+Processing files in /home/igor/Work/elliptic/tests:
+
+  testEllipj.m ................................................ PASS      5/5   
+  testElliptic12.m ............................................ PASS      5/5   
+```
+
 # Contributors
 
 Contributors

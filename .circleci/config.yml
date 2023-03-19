@@ -10,6 +10,7 @@ jobs:
       - matlab/install
       - matlab/run-tests:
           test-results-junit: test-results/matlab/results.xml
+          select-by-folder: tests
       - store_test_results:
           path: test-results
 workflows:

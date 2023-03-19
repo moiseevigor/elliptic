@@ -8,9 +8,6 @@ jobs:
     steps:
       - checkout
       - matlab/install
-      - matlab/run-build:
-          tasks: test
-workflows:
-  build:
-    jobs:
-      - build
+      - tests/run-tests:
+          tasks: 
+            - testElliptic12

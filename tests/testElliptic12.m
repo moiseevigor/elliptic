@@ -15,7 +15,6 @@ function testResult = testElliptic12()
         elliptic12(0, 0.5i); % complex input
         assert(false, "Complex input didn't throw an error.");
     catch err
-        % print(err.message)
         % Verify that the error message contains the expected string
         assert(~isempty(strfind(err.message, 'Input arguments must be real. Use ELLIPTIC12i for complex arguments')), ...
             'Unexpected error message: %s', err.message);

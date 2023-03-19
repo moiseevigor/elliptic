@@ -26,13 +26,13 @@ function Pi = elliptic3(u,m,c);
 %       34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
 
 if nargin<3, error('Not enough input arguments.'); end
-if ~isreal(u) | ~isreal(m) | ~isreal(c)
+if ~isreal(u) || ~isreal(m) || ~isreal(c)
     error('Input arguments must be real.')
 end
-if any(m < 0) | any(m > 1) | any(c < 0) | any(c > 1),  
+if any(m < 0) || any(m > 1) || any(c < 0) || any(c > 1),  
   error('M and C must be in the range [0, 1].');
 end
-if any(u > pi/2) | any(u < 0),  
+if any(u > pi/2) || any(u < 0),  
     error('U must be in the range [0, pi/2].'); 
 end
 

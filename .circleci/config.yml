@@ -1,0 +1,23 @@
+version: '2.1'
+orbs:
+  matlab: mathworks/matlab@0
+jobs:
+  build:
+    machine:
+      image: 'ubuntu-2204:2022.07.1'
+    steps:
+      - checkout
+      - matlab/install
+      - matlab/run-tests:
+          test-results-junit: test-results/results.xml
+          # test-results-html: test-results/results.html
+          # code-coverage-html: test-results/coverage.html
+          # code-coverage-cobertura: test-results/coverage-cobertura.xml
+          logging-level: 'Detailed'
+          select-by-folder: tests
+      - store_test_results:
+          path: test-results
+workflows:
+  build:
+    jobs:
+      - build

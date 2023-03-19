@@ -39,7 +39,7 @@ if nargin<3, tol = eps; end
 if nargin<2, error('Not enough input arguments.'); end
 
 if ~isreal(u) | ~isreal(m)
-    error('Input arguments must be real.')
+    error('Input arguments must be real. Use ELLIPJI for complex arguments')
 end
 
 if length(m)==1, m = m(ones(size(u))); end

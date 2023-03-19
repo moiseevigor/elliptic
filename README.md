@@ -1,10 +1,10 @@
 
 # Elliptic functions for Matlab and Octave 
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/moiseevigor/elliptic?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) [![DOI](https://zenodo.org/badge/5762/moiseevigor/elliptic.svg)](https://zenodo.org/badge/latestdoi/5762/moiseevigor/elliptic)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/moiseevigor/elliptic/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/moiseevigor/elliptic/tree/master) [![DOI](https://zenodo.org/badge/5762/moiseevigor/elliptic.svg)](https://zenodo.org/badge/latestdoi/5762/moiseevigor/elliptic)
 
 
-The [Matlab](http://www.mathworks.com/) script implementations of [Elliptic integrals of three types](http://en.wikipedia.org/wiki/Elliptic_integral), [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi theta functions](http://en.wikipedia.org/wiki/Theta_function) of four types.
+The Matlab/Octave implementation of [Elliptic integrals of three types](http://en.wikipedia.org/wiki/Elliptic_integral), [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi theta functions](http://en.wikipedia.org/wiki/Theta_function) of four types.
 
 The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT* external library calls like Maple and others. All scripts are developed to accept tensors as arguments and almost all of them have their complex versions. Performance and complete control on the execution are the main features.
 
@@ -334,6 +334,18 @@ ans =
 *Used by*  `ELLIPJ`.<br>
 *Depends on* `ELLIPKE`<br>
 *See also* `ELLIPTIC12I`, `ELLIPTIC3`, `THETA`.
+
+# Running tests
+
+From root folder run `runtests` or check the CI build status [![CircleCI](https://dl.circleci.com/status-badge/img/gh/moiseevigor/elliptic/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/moiseevigor/elliptic/tree/master)
+
+```
+runtests("tests")
+Processing files in /home/igor/Work/elliptic/tests:
+
+  testEllipj.m ................................................ PASS      5/5   
+  testElliptic12.m ............................................ PASS      5/5   
+```
 
 # Contributors
 

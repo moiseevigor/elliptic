@@ -1,7 +1,8 @@
 %Test function for elliptic3.m
 
-%!test
 % Test error handling
+%!test
+%! clear
 %! try
 %!     elliptic3(0, 2, 1); % module out of range
 %!     assert(false, "Module out of range didn't throw an error.");
@@ -12,6 +13,7 @@
 %! end
 
 %!test
+%! clear
 %! try
 %!     elliptic3(0, 0.5i, 0.5); % complex input
 %!     assert(false, "Complex input didn't throw an error.");
@@ -21,18 +23,21 @@
 %!         'Unexpected error message: %s', err.message);
 %! end
 
-%!test
 % Test some simple inputs
+%!test
+%! clear
 %! Pi = elliptic3(0, 0.5, 1);
 %! assert(abs(Pi - 0) < 1e-12, 'Pi value is incorrect.');
 
-%!test
 % Test the output of elliptic3 for some inputs
+%!test
+%! clear
 %! Pi = elliptic3(pi/4, 0.5, 0.5);
 %! assert(abs(Pi - 0.919022739165697) < 1e-10, 'Unexpected value for K');
     
-%!test
 % Test a range of inputs
+%!test
+%! clear
 %! [phi,alpha,c] = meshgrid(0:25:90, 0:25:90, 0:0.4:1); 
 %! Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
 %! expectedPi = [
@@ -56,3 +61,24 @@
 %! assert(size(Pi) == [4 4 3], 'Pi size is incorrect.')
 %! Pi = reshape(Pi, [], size(Pi, 3));
 %! assert(norm(Pi-expectedPi) < 1e-12, 'Pi value is incorrect.')
+
+% Benchmark time and memory
+%!test
+%! clear
+%! elapsedTime = [];
+%! mem = [];
+%! for i=1:10
+%!     [phi,alpha,c] = meshgrid(0:0.5:90, 0:0.5:90, 0:0.1:1); 
+%!     tic
+%!     mem1 = whos();
+%!     Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
+%!     mem2 = whos();
+%!     elapsedTime(i) = toc;
+%!     mem(i) = sum([mem2.bytes]) - sum([mem1.bytes]);
+%!     clear Pi phi alpha;
+%! end
+% fprintf('\nAverage execution time for elliptic3 calculations: %f seconds\n', mean(elapsedTime));
+% fprintf('Average Mem: %f\n', mean(mem));
+%! assert(mean(elapsedTime) < 0.15, 'Average execution time for elliptic3 calculations: %f seconds is greater than 0.15\n', mean(elapsedTime))
+%! assert(mean(mem) < 2883013.7, 'Average memory used for elliptic3 run: %f bytes is greater than 2883013.7\n', mean(mem))
+

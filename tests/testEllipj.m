@@ -21,24 +21,27 @@
 %!         'Unexpected error message: %s', err.message);
 %! end
 
-%!test
 % Test some simple inputs
+%!test
+%! clear
 %! [Sn,Cn,Dn,Am] = ellipj(0, 0.5);
 %! assert(abs(Sn - 0) < 1e-12, 'Sn value is incorrect.');
 %! assert(abs(Cn - 1) < 1e-12, 'Cn value is incorrect.');
 %! assert(abs(Dn - 1) < 1e-12, 'Dn value is incorrect.');
 %! assert(abs(Am - 0) < 1e-12, 'Am value is incorrect.');
 
-%!test
 % Test the output of ellipj for some inputs
+%!test
+%! clear
 %! [Sn,Cn,Dn,Am] = ellipj(1000*pi/e, 0.5);
 %! assert(abs(Sn - (-0.893107245788960)) < 1e-10, 'Unexpected value for K');
 %! assert(abs(Cn - 0.449843803468780) < 1e-10, 'Unexpected value for E');
 %! assert(abs(Dn - 0.775357803700736) < 1e-10, 'Unexpected value for Z');
 %! assert(abs(Am - 979.0727020334380) < 1e-10, 'Unexpected value for Z');
     
-%!test
 % Test a range of inputs
+%!test
+%! clear
 %! [phi,alpha] = meshgrid(0:15:90, 0:20:90); 
 %! [Sn,Cn,Dn,Am] = ellipj(pi/180*phi, sin(pi/180*alpha).^2);
 %! expectedSn = [

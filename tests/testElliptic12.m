@@ -79,6 +79,8 @@
 %!     mem(i) = sum([mem2.bytes]) - sum([mem1.bytes]);
 %!     clear F E Z phi alpha;
 %! end
+%! fprintf('Average execution time for elliptic12 calculations: %f seconds\n', mean(elapsedTime));
+%! fprintf('Average Mem: %f\n', mean(mem));
 %! assert(mean(elapsedTime) < 0.15, 'Average execution time for elliptic12 calculations: %f seconds is greater than 0.15\n', mean(elapsedTime))
 %! assert(abs(mean(mem)-6259742.1) < 1e-12, 'Average memory used for elliptic12 run: %f bytes is greater than 6259742.1\n', mean(mem))
 

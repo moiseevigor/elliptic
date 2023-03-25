@@ -31,7 +31,7 @@
 %!test
 % Test the output of elliptic12 for some inputs
 %! [F,E,Z] = elliptic12(1000*pi/e, 0.5);
-%! assert(abs(F - 1364.215673994739) < 1e-10, 'Unexpected value for K');
+%! assert(abs(F - 1364.215673994739) < 1e-10, 'Unexpected value for F');
 %! assert(abs(E - 993.6995958059659) < 1e-10, 'Unexpected value for E');
 %! assert(abs(Z - (-9.508521098575250e-02)) < 1e-10, 'Unexpected value for Z');
     
@@ -63,4 +63,22 @@
 %!     0   0.171585306172434   0.319849389939710   0.420318939400386   0.443516115310938   0.339266830849054   0.000000000000000
 %! ];
 %! assert(norm(Z-expectedZ) < 1e-12, 'Z value is incorrect.')
+
+%!test
+% Benchmark time and memory
+%!
+%! elapsedTime = [];
+%! mem = [];
+%! for i=1:10
+%!     [phi,alpha] = meshgrid(0:0.5:720, 0:0.5:90); 
+%!     tic
+%!     mem1 = whos();
+%!     [F,E,Z] = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);
+%!     mem2 = whos();
+%!     elapsedTime(i) = toc;
+%!     mem(i) = sum([mem2.bytes]) - sum([mem1.bytes]);
+%!     clear F E Z phi alpha;
+%! end
+%! assert(mean(elapsedTime) < 0.15, 'Average execution time for elliptic12 calculations: %f seconds is greater than 0.15\n', mean(elapsedTime))
+%! assert(abs(mean(mem)-6259742.1) < 1e-12, 'Average memory used for elliptic12 run: %f bytes is greater than 6259742.1\n', mean(mem))
 

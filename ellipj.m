@@ -92,7 +92,7 @@ if ~isempty(I)
 
     mmax = length(I);
 	phin = zeros(1,mmax);
-	phin(:) = (2 .^ double(n(K))).*a(i,K).*u(I);
+	phin(:) = (2 .^ double(n(K)')).*a(i,K).*u(I);
 	while i > 1
         i = i - 1;
         in = uint32( find(n(K) >= i) );

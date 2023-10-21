@@ -115,7 +115,7 @@ end
 % multidimensional input reshape
 F = reshape(F,size(a1));
 E = reshape(E,size(a1));
-P = reshape(P,size(a1));
+if nargin==3, P = reshape(P,size(a1)); end
 
 end
 

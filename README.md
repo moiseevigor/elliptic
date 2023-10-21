@@ -68,10 +68,10 @@ Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository,
 
 *General definition:*
 ```
-u = Integral(1/sqrt(1-m^2*sin(theta)^2), 0, phi);
+u = Integral(1/sqrt(1-m*sin(theta)^2), 0, phi);
 Sn(u) = sin(phi);
 Cn(u) = cos(phi);
-Dn(u) = sqrt(1-m^2*sin(phi)^2);
+Dn(u) = sqrt(1-m*sin(phi)^2);
 ```
 
 _Depends on_  `AGM`, `ELLIPKE`.<br>

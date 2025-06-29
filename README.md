@@ -4,7 +4,7 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/moiseevigor/elliptic/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/moiseevigor/elliptic/tree/master) [![DOI](https://zenodo.org/badge/5762/moiseevigor/elliptic.svg)](https://zenodo.org/badge/latestdoi/5762/moiseevigor/elliptic)
 
 
-The Matlab/Octave implementation of [Elliptic integrals of three types](http://en.wikipedia.org/wiki/Elliptic_integral), [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi theta functions](http://en.wikipedia.org/wiki/Theta_function) of four types.
+The Matlab/Octave implementation of [Elliptic integrals of three types](http://en.wikipedia.org/wiki/Elliptic_integral), [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi theta functions](http://en.wikipedia.org/wiki/Theta_function) of four types with their derivatives.
 
 The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT* external library calls like Maple and others. All scripts are developed to accept tensors as arguments and almost all of them have their complex versions. Performance and complete control on the execution are the main features.
 
@@ -39,6 +39,7 @@ Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository,
     - [ELLIPJI: Jacobi's elliptic functions of the complex argument](#ellipji-jacobis-elliptic-functions-of-the-complex-argument)
     - [JACOBITHETAETA: Jacobi's Theta and Eta Functions](#jacobithetaeta-jacobis-theta-and-eta-functions)
     - [THETA: Theta Functions of Four Types](#theta-theta-functions-of-four-types)
+    - [THETA_PRIME: Theta Functions and Their Derivatives](#theta_prime-theta-functions-and-their-derivatives)
   - [Elliptic Integrals](#elliptic-integrals)
     - [ELLIPTIC12: Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function](#elliptic12-incomplete-elliptic-integrals-of-the-first-second-kind-and-jacobis-zeta-function)
     - [ELLIPTIC12I: Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function of the complex argument](#elliptic12i-incomplete-elliptic-integrals-of-the-first-second-kind-and-jacobis-zeta-function-of-the-complex-argument)
@@ -134,6 +135,36 @@ Th4 = theta(4, pi/180*phi, sin(pi/180*alpha).^2);
 
 _Depends on_ `AGM`, `ELLIPJ`, `ELLIPKE`, `JACOBITHETAETA`<br>
 _See also_ `ELLIPTIC12`, `ELLIPTIC12I`
+
+## THETA_PRIME: Theta Functions and Their Derivatives
+
+`THETA_PRIME` evaluates theta functions and their derivatives with respect to the argument.
+
+`[TH, THP] = THETA_PRIME(J, Z, M)` returns values of the Jacobi theta function `TH` and its derivative `THP` with respect to the argument `Z`. `J` is the type of theta function (1, 2, 3, or 4), `Z` is the argument, and `M` is the parameter (0 <= M <= 1).
+
+`[TH, THP] = THETA_PRIME(J, Z, M, TOL)` computes the theta function and its derivative to the accuracy `TOL` instead of the default `TOL = EPS`.
+
+The arrays `Z` and `M` must be the same size (or either can be scalar). As currently implemented, `M` is limited to `0 <= M <= 1`.
+
+The derivatives are computed using the relation:
+```
+θ'ⱼ(z,m) = θⱼ(z,m) * (2K/π) * (Z + δⱼ)
+```
+where `K` is the complete elliptic integral, `Z` is the Jacobi zeta function, and `δⱼ` depends on the theta function type.
+
+### Example:
+```
+j = 1; z = 0.5; m = 0.8;
+[th, thp] = theta_prime(j, z, m);
+```
+
+**Note:** To reproduce results in Mathematica, use the `inversenomeq` function to convert from Mathematica's nome parameter to the parameter `m`:
+```
+[th_4, thp_4] = theta_prime(4, z, inversenomeq(0.1));
+```
+
+_Depends on_ `THETA`, `ELLIPJ`, `ELLIPTIC12`, `ELLIPKE`<br>
+_See also_ `THETA`, `JACOBITHETAETA`, `INVERSENOMEQ`
 
 # Elliptic Integrals
 
@@ -346,6 +377,7 @@ Processing files in /home/igor/Work/elliptic/tests:
   testEllipj.m ................................................ PASS      5/5   
   testElliptic12.m ............................................ PASS      5/5   
   testElliptic3.m ............................................. PASS      5/5
+  testThetaPrime.m ............................................ PASS     15/15
 ```
 
 # Contributors

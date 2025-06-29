@@ -69,8 +69,13 @@ m(m<eps) = 0;
 
 I = uint32( find(m ~= 1 & m ~= 0) );
 if ~isempty(I)
-    [mu,J,K] = unique(m(I));   % extracts unique values from m
-    K = uint32(K);
+    % Use standard uniquetol for numerical precision issues
+    % This is the recommended MATLAB approach since R2015a
+    m_vals = m(I);
+    tol_unique = 1e-11;
+    
+    [mu, ~, K] = uniquetol(m_vals, tol_unique);
+    K = uint32(K(:).');  % Ensure K is a row vector
     mumax = length(mu);
     signU = sign(u(I));
 

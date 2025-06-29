@@ -4,10 +4,10 @@ function [sn,cn,dn,am] = ellipj(u,m,tol)
 %   elliptic functions SN, CN, DN and AM evaluated for corresponding
 %   elements of argument U and parameter M.  The arrays U and M must
 %   be the same size (or either can be scalar).  As currently
-%   implemented, M is limited to 0 <= M <= 1. 
+%   implemented, M is limited to 0 <= M <= 1.
 %
 %   [Sn,Cn,Dn,Am] = ELLIPJ(U,M,TOL) computes the elliptic functions to
-%   the accuracy TOL instead of the default TOL = EPS.  
+%   the accuracy TOL instead of the default TOL = EPS.
 %
 %   Some definitions of the Jacobi elliptic functions use the modulus
 %   k instead of the parameter m.  They are related by m = k^2.
@@ -15,10 +15,10 @@ function [sn,cn,dn,am] = ellipj(u,m,tol)
 %   See also ELLIPKE.
 
 %   L. Shure 1-9-88
-%   Copyright 1984-2001 The MathWorks, Inc. 
+%   Copyright 1984-2001 The MathWorks, Inc.
 %   $Revision: 5.14 $  $Date: 2001/04/15 12:01:40 $
 %
-%   Modified by Moiseev Igor, 
+%   Modified by Moiseev Igor,
 %   moiseev[at]sissa.it
 %   34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
 %   Date: 2005/10/04
@@ -53,20 +53,26 @@ dn = sn;
 m = m(:).';    % make a row vector
 u = u(:).';
 
-if any(m < 0) | any(m > 1), 
+if any(m < 0) | any(m > 1),
   error('M must be in the range 0 <= M <= 1.');
 end
 
 I = uint32( find(m ~= 1 & m ~= 0) );
 if ~isempty(I)
-    [mu,J,K] = unique(m(I));   % extracts unique values from m
-    K = uint32(K);
+    % Use standard uniquetol for numerical precision issues
+    % This is the recommended MATLAB approach since R2015a
+    m_vals = m(I);
+    tol_unique = 1e-11;
+
+    [mu, ~, K] = uniquetol(m_vals, tol_unique);
+    K = uint32(K(:).');  % Ensure K is a row vector
+
     mumax = length(mu);
 
     % pre-allocate space and augment if needed
 	chunk = 7;
 	a = zeros(chunk,mumax);
-	c = a; 
+	c = a;
 	b = a;
 	a(1,:) = ones(1,mumax);
 	c(1,:) = sqrt(mu);
@@ -92,7 +98,7 @@ if ~isempty(I)
 
     mmax = length(I);
 	phin = zeros(1,mmax);
-	phin(:) = (2 .^ double(n(K)')).*a(i,K).*u(I);
+	phin(:) = (2 .^ double(n(K))).*a(i,K).*u(I);
 	while i > 1
         i = i - 1;
         in = uint32( find(n(K) >= i) );
@@ -106,7 +112,7 @@ if ~isempty(I)
 	dn(I) = sqrt(1 - m(I).*sin(phin).^2);
 end
 
-% Special cases: m = {0, 1} 
+% Special cases: m = {0, 1}
 m0 = find(m == 0);
 am(m0) = u(m0);
 sn(m0) = sin(u(m0));

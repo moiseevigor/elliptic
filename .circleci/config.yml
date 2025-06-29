@@ -7,7 +7,11 @@ jobs:
       image: 'ubuntu-2204:current'
     resource_class: large
     steps:
-      - checkout
+      - run:
+          name: Checkout code via HTTPS
+          command: |
+            git clone https://github.com/moiseevigor/elliptic.git .
+            git checkout $CIRCLE_SHA1
       - matlab/install
       - matlab/run-tests:
           test-results-junit: test-results/results.xml

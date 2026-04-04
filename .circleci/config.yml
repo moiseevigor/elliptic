@@ -15,14 +15,27 @@ jobs:
       - matlab/install
       - matlab/run-tests:
           test-results-junit: test-results/results.xml
-          # test-results-html: test-results/results.html
-          # code-coverage-html: test-results/coverage.html
-          # code-coverage-cobertura: test-results/coverage-cobertura.xml
           logging-level: 'Detailed'
           select-by-folder: tests
+          source-folder: src
       - store_test_results:
           path: test-results
+  build-octave:
+    docker:
+      - image: gnuoctave/octave:9.2.0
+    steps:
+      - run:
+          name: Checkout code via HTTPS
+          command: |
+            apt-get update && apt-get install -y git
+            git clone https://github.com/moiseevigor/elliptic.git .
+            git checkout $CIRCLE_SHA1
+      - run:
+          name: Run Octave tests
+          command: |
+            octave --eval "addpath(fullfile(pwd, 'src')); cd tests; test testElliptic12; test testElliptic3; test testEllipj; test testThetaPrime; test testAgm; test testJacobiThetaEta;"
 workflows:
   build:
     jobs:
       - build
+      - build-octave

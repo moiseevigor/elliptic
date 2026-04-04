@@ -43,7 +43,7 @@ function Th = theta(type,v,m,tol)
 if nargin<4, tol = eps; end
 if nargin<3, error('Not enough input arguments.'); end
 
-if ~isreal(v) | ~isreal(m)
+if ~isreal(v) || ~isreal(m)
     error('Input arguments must be real.')
 end
 
@@ -57,7 +57,7 @@ if ~isequal(size(m),size(v)), error('V and M must be the same size.'); end
 % m = m(:).';    % make a row vector
 % v = v(:).';
 
-if any(m < 0) | any(m > 1), 
+if any(m < 0) || any(m > 1),
   error('M must be in the range 0 <= M <= 1.');
 end
 

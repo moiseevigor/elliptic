@@ -38,7 +38,7 @@ function [sn,cn,dn,am] = ellipj(u,m,tol)
 if nargin<3, tol = eps; end
 if nargin<2, error('Not enough input arguments.'); end
 
-if ~isreal(u) | ~isreal(m)
+if ~isreal(u) || ~isreal(m)
     error('Input arguments must be real. Use ELLIPJI for complex arguments')
 end
 
@@ -53,7 +53,7 @@ dn = sn;
 m = m(:).';    % make a row vector
 u = u(:).';
 
-if any(m < 0) | any(m > 1),
+if any(m < 0) || any(m > 1),
   error('M must be in the range 0 <= M <= 1.');
 end
 
@@ -64,7 +64,7 @@ if ~isempty(I)
     m_vals = m(I);
     tol_unique = 1e-11;
 
-    [mu, ~, K] = uniquetol(m_vals, tol_unique);
+    [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
     K = uint32(K(:).');  % Ensure K is a row vector
 
     mumax = length(mu);
@@ -89,11 +89,8 @@ if ~isempty(I)
         a(i,:) = 0.5 * (a(i-1,:) + b(i-1,:));
         b(i,:) = sqrt(a(i-1,:) .* b(i-1,:));
         c(i,:) = 0.5 * (a(i-1,:) - b(i-1,:));
-        in = uint32( find((abs(c(i,:)) <= tol) & (abs(c(i-1,:)) > tol)) );
-        if ~isempty(in)
-          [mi,ni] = size(in);
-          n(in) = ones(mi,ni)*(i-1);
-        end
+        mask = (abs(c(i,:)) <= tol) & (abs(c(i-1,:)) > tol);
+        n(mask) = i-1;
 	end
 
     mmax = length(I);
@@ -101,9 +98,9 @@ if ~isempty(I)
 	phin(:) = (2 .^ double(n(K))).*a(i,K).*u(I);
 	while i > 1
         i = i - 1;
-        in = uint32( find(n(K) >= i) );
-        if ~isempty(in)
-          phin(in) = 0.5*(asin(c(i+1,K(in)).*sin(phin(in))./a(i+1,K(in))) + phin(in));
+        mask = n(K) >= i;
+        if any(mask)
+          phin(mask) = 0.5*(asin(c(i+1,K(mask)).*sin(phin(mask))./a(i+1,K(mask))) + phin(mask));
         end
 	end
 	am(I) = phin;

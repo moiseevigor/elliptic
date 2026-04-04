@@ -686,7 +686,7 @@ if ~isempty(I)
     m_vals = m(I);
     tol_unique = 1e-11;
     
-    [mu, ~, K] = uniquetol(m_vals, tol_unique);
+    [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
     K = uint32(K(:).');  % Ensure K is a row vector
     mumax = length(mu);
     signU = sign(u(I));
@@ -767,16 +767,16 @@ function Pi = elliptic3ic(u,m,c)
 % This function should disappear when the fixes appear there.
 
 if nargin<3, error('Not enough input arguments.'); end
-if ~isreal(u) | ~isreal(m) | ~isreal(c)
+if ~isreal(u) || ~isreal(m) || ~isreal(c)
     error('Input arguments must be real.')
 end
-if any(m < 0) | any(m > 1),  
+if any(m < 0) || any(m > 1),
   error('M must be in the range [0, 1].');
 end
 if any(c > 1),  
   error('C must be in the range [-inf, 1].');
 end
-if any(u > pi/2) | any(u < 0),  
+if any(u > pi/2) || any(u < 0),
     error('U must be in the range [0, pi/2].'); 
 end
 

@@ -1,5 +1,5 @@
 
-# Elliptic functions for Matlab and Octave 
+# Elliptic functions for Matlab and Octave
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/moiseevigor/elliptic/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/moiseevigor/elliptic/tree/master) [![DOI](https://zenodo.org/badge/5762/moiseevigor/elliptic.svg)](https://zenodo.org/badge/latestdoi/5762/moiseevigor/elliptic)
 
@@ -7,6 +7,18 @@
 The Matlab/Octave implementation of [Elliptic integrals of three types](http://en.wikipedia.org/wiki/Elliptic_integral), [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi theta functions](http://en.wikipedia.org/wiki/Theta_function) of four types with their derivatives.
 
 The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT* external library calls like Maple and others. All scripts are developed to accept tensors as arguments and almost all of them have their complex versions. Performance and complete control on the execution are the main features.
+
+# Installation
+
+Clone the repository and run the setup script to add the library to your path:
+
+```matlab
+git clone https://github.com/moiseevigor/elliptic.git
+cd elliptic
+setup    % adds src/ to the MATLAB/Octave path
+```
+
+All source files are located in the `src/` directory. Tests are in the `tests/` directory.
 
 # Citations and references
 
@@ -26,7 +38,7 @@ If you've used any of the routines in this package please cite and support the e
 }
 ```
 
-or simply 
+or simply
 
 ```
 Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository, DOI: http://dx.doi.org/10.5281/zenodo.48264
@@ -45,16 +57,16 @@ Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository,
     - [ELLIPTIC12I: Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function of the complex argument](#elliptic12i-incomplete-elliptic-integrals-of-the-first-second-kind-and-jacobis-zeta-function-of-the-complex-argument)
     - [ELLIPTIC3: Incomplete Elliptic Integral of the Third Kind](#elliptic3-incomplete-elliptic-integral-of-the-third-kind)
     - [ELLIPTIC123: Complete and Incomplete Elliptic Integrals of the First, Second, and Third Kind](#elliptic123-complete-and-incomplete-elliptic-integrals-of-the-first-second-and-third-kind)
-    - <font color="red"></font> [INVERSELLIPTIC2: INVERSE Incomplete Elliptic Integrals of the Second Kind](#inverselliptic2-inverse-incomplete-elliptic-integrals-of-the-second-kind)
+    - [INVERSELLIPTIC2: INVERSE Incomplete Elliptic Integrals of the Second Kind](#inverselliptic2-inverse-incomplete-elliptic-integrals-of-the-second-kind)
 
   - [Weierstrass's elliptic functions (in development)](#weierstrasss-elliptic-functions-in-development)
   - [Elliptic Related Functions](#elliptic-related-functions)
-    - [AGM: Artihmetic Geometric Mean](#agm-artihmetic-geometric-mean)
+    - [AGM: Arithmetic Geometric Mean](#agm-arithmetic-geometric-mean)
     - [NOMEQ: The Value of Nome q = q(m)](#nomeq-the-value-of-nome-q--qm)
     - [INVERSENOMEQ: The Value of Nome m = m(q)](#inversenomeq-the-value-of-nome-m--mq)
   - [Contributors](#contributors)
   - [References](#references)
-  
+
 # Elliptic Functions
 
 **The Jacobi's elliptic functions** are a set of basic elliptic functions, and auxiliary theta functions, that have historical importance with also many features that show up important structure, and have direct relevance to some applications (e.g. the equation of the pendulum). They also have useful analogies to the functions of trigonometry, as indicated by the matching notation `SN` for `SIN`. They are not the simplest way to develop a general theory, as now seen: that can be said for the Weierstrass elliptic functions. They are not, however, outmoded. They were introduced by Carl Gustav Jakob Jacobi, around 1830.
@@ -65,7 +77,7 @@ Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository,
 
 `ELLIPJ` evaluates the [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi's amplitude](http://mathworld.wolfram.com/JacobiAmplitude.html).
 
-`[Sn,Cn,Dn,Am] = ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SN`, `CN`, `DN` and `AM` evaluated for corresponding elements of argument U and parameter M.  The arrays U and M must be of the same size (or either can be scalar).  As currently implemented, M is limited to `0 <= M <= 1`. 
+`[Sn,Cn,Dn,Am] = ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SN`, `CN`, `DN` and `AM` evaluated for corresponding elements of argument U and parameter M.  The arrays U and M must be of the same size (or either can be scalar).  As currently implemented, M is limited to `0 <= M <= 1`.
 
 *General definition:*
 ```
@@ -84,7 +96,7 @@ _See also_ `ELLIPKE`.
 
 `ELLIPJI` evaluates the Jacobi elliptic functions of complex phase `U`.
 
-`[Sni,Cni,Dni] = ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SNI`, `CNI` and `DNI` evaluated for corresponding  elements of argument `U` and parameter `M`. The arrays `U` and `M` must  be of the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`. 
+`[Sni,Cni,Dni] = ELLIPJ(U,M)` returns the values of the Jacobi elliptic functions `SNI`, `CNI` and `DNI` evaluated for corresponding  elements of argument `U` and parameter `M`. The arrays `U` and `M` must  be of the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`.
 
 
 ### Example:
@@ -102,35 +114,35 @@ _See also_ `ELLIPTIC12`, `ELLIPTIC12I`
 
 `JACOBITHETAETA` evaluates Jacobi's theta and eta functions.
 
-`[Th, H] = JACOBITHETAETA(U,M)` returns the values of the Jacobi's theta and eta elliptic functions `TH` and `H` evaluated for corresponding elements of argument `U` and parameter `M`.  The arrays `U` and `M` must be the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`. 
+`[Th, H] = JACOBITHETAETA(U,M)` returns the values of the Jacobi's theta and eta elliptic functions `TH` and `H` evaluated for corresponding elements of argument `U` and parameter `M`.  The arrays `U` and `M` must be the same size (or either can be scalar).  As currently implemented, `M` is real and limited to `0 <= M <= 1`.
 
 ### Example:
 ```
-[phi,alpha]= meshgrid(0:5:90, 0:2:90);                  
-[Th, H] = jacobiThetaEta(pi/180*phi, sin(pi/180*alpha).^2);  
+[phi,alpha]= meshgrid(0:5:90, 0:2:90);
+[Th, H] = jacobiThetaEta(pi/180*phi, sin(pi/180*alpha).^2);
 ```
 
 *Depends on* `AGM`, `ELLIPJ`, `ELLIPKE`<br>
-*See also* `ELLIPTIC12`, `ELLIPTIC12I`, `THETA` 
- 
+*See also* `ELLIPTIC12`, `ELLIPTIC12I`, `THETA`
+
 ## THETA: Theta Functions of Four Types
 
 `THETA` evaluates theta functions of four types.
 
 `Th = THETA(TYPE,V,M)` returns values of theta functions
-evaluated for corresponding values of argument `V` and parameter `M`. `TYPE` is a type of the theta function, there are four numbered types. The arrays `V` and `M` must be the same size (or either can be scalar). As currently implemented, `M` is limited to `0 <= M <= 1`. 
+evaluated for corresponding values of argument `V` and parameter `M`. `TYPE` is a type of the theta function, there are four numbered types. The arrays `V` and `M` must be the same size (or either can be scalar). As currently implemented, `M` is limited to `0 <= M <= 1`.
 
-`Th = THETA(TYPE,V,M,TOL)` computes the theta and eta elliptic functions to the accuracy `TOL` instead of the default `TOL = EPS`.  
+`Th = THETA(TYPE,V,M,TOL)` computes the theta and eta elliptic functions to the accuracy `TOL` instead of the default `TOL = EPS`.
 
 The parameter `M` is related to the nome `Q` as `Q = exp(-pi*K(1-M)/K(M))`. Some definitions of the Jacobi's elliptic functions use the modulus `k` instead of the parameter `m`.  They are related by `m = k^2`.
 
 ### Example:
 ```
-[phi,alpha] = meshgrid(0:5:90, 0:2:90);                  
-Th1 = theta(1, pi/180*phi, sin(pi/180*alpha).^2);  
-Th2 = theta(2, pi/180*phi, sin(pi/180*alpha).^2);  
-Th3 = theta(3, pi/180*phi, sin(pi/180*alpha).^2);  
-Th4 = theta(4, pi/180*phi, sin(pi/180*alpha).^2);  
+[phi,alpha] = meshgrid(0:5:90, 0:2:90);
+Th1 = theta(1, pi/180*phi, sin(pi/180*alpha).^2);
+Th2 = theta(2, pi/180*phi, sin(pi/180*alpha).^2);
+Th3 = theta(3, pi/180*phi, sin(pi/180*alpha).^2);
+Th4 = theta(4, pi/180*phi, sin(pi/180*alpha).^2);
 ```
 
 _Depends on_ `AGM`, `ELLIPJ`, `ELLIPKE`, `JACOBITHETAETA`<br>
@@ -148,9 +160,9 @@ The arrays `Z` and `M` must be the same size (or either can be scalar). As curre
 
 The derivatives are computed using the relation:
 ```
-θ'ⱼ(z,m) = θⱼ(z,m) * (2K/π) * (Z + δⱼ)
+theta'_j(z,m) = theta_j(z,m) * (2K/pi) * (Z + delta_j)
 ```
-where `K` is the complete elliptic integral, `Z` is the Jacobi zeta function, and `δⱼ` depends on the theta function type.
+where `K` is the complete elliptic integral, `Z` is the Jacobi zeta function, and `delta_j` depends on the theta function type.
 
 ### Example:
 ```
@@ -203,7 +215,7 @@ Tables generating code (see [1](#references), pp. 613-621):
 
 ## ELLIPTIC12I: Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function of the complex argument
 
-`ELLIPTIC12i` evaluates the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function for the complex value of phase `U`. Parameter `M` must be in the range `0 <= M <= 1`. 
+`ELLIPTIC12i` evaluates the Incomplete Elliptic Integrals of the First, Second Kind and Jacobi's Zeta Function for the complex value of phase `U`. Parameter `M` must be in the range `0 <= M <= 1`.
 
 `[Fi,Ei,Zi] = ELLIPTIC12i(U,M,TOL)` where `U` is a complex phase in radians, `M` is the real parameter and `TOL` is the tolerance (optional). Default value for the tolerance is `eps = 2.220e-16`.
 
@@ -219,10 +231,10 @@ phi = phi1 + phi2*i;
 
 _Depends on_ `ELLIPTIC12`, `AGM`<br>
 _See also_ `ELLIPKE`, `ELLIPJ`, `ELLIPTIC3`, `THETA`.
- 
+
 ## ELLIPTIC3: Incomplete Elliptic Integral of the Third Kind
 
-`ELLIPTIC3` evaluates incomplete elliptic integral of the third kind `Pi = ELLIPTIC3(U,M,C)` where `U` is a phase in radians, `0 < M < 1` is the module and `0 < C < 1` is a parameter. 
+`ELLIPTIC3` evaluates incomplete elliptic integral of the third kind `Pi = ELLIPTIC3(U,M,C)` where `U` is a phase in radians, `0 < M < 1` is the module and `0 < C < 1` is a parameter.
 
 `ELLIPTIC3` uses Gauss-Legendre 10 points quadrature template described in [3] to determine the value of the Incomplete Elliptic Integral of the Third Kind (see [1, 2]).
 
@@ -242,13 +254,13 @@ Pi = elliptic3(pi/180*phi, sin(pi/180*alpha).^2, c);  % values of integrals
 
 `ELLIPTIC123` is a wrapper around the different elliptic integral functions, providing a unified interface and greater range of input parameters. (Unlike ELLIPKE, ELLIPTIC12 and ELLIPTIC3, which all require a phase between zero and pi/2 and a parameter between zero and one.)
 
-`[F,E] = ELLIPTIC123(m)` — complete Elliptic Integrals of the first and second kind.  
+`[F,E] = ELLIPTIC123(m)` -- complete Elliptic Integrals of the first and second kind.
 
-`[F,E] = ELLIPTIC123(b,m)` — incomplete Elliptic Integrals of the first and second kind.
+`[F,E] = ELLIPTIC123(b,m)` -- incomplete Elliptic Integrals of the first and second kind.
 
-`[F,E,PI] = ELLIPTIC123(m,n)` — complete Elliptic Integrals of the first to third kind.  
+`[F,E,PI] = ELLIPTIC123(m,n)` -- complete Elliptic Integrals of the first to third kind.
 
-`[F,E,PI] = ELLIPTIC123(b,m,n)` — incomplete Elliptic Integrals of the first to third kind.
+`[F,E,PI] = ELLIPTIC123(b,m,n)` -- incomplete Elliptic Integrals of the first to third kind.
 
 The order of the input arguments has been chosen to be consistent with the pre-existing `elliptic12` and `elliptic3` functions.
 
@@ -258,36 +270,36 @@ This function is still under development and its results are not always well-def
 
 `INVERSELLIPTIC2` evaluates the value of the INVERSE Incomplete Elliptic Integrals of the Second Kind.
 
-`INVERSELLIPTIC2` uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the “Empirical” initialization to the Newton’s iteration method [7](#references). 
+`INVERSELLIPTIC2` uses the method described by Boyd J. P. to determine the value of the inverse Incomplete Elliptic Integrals of the Second Kind using the "Empirical" initialization to the Newton's iteration method [7](#references).
 
 Elliptic integral of the second kind:
 
 ```
 E(phi,m) = int(sqrt(1-m*sin(t)^2), t=0..phi);
 ```
- 
-“Empirical” initialization [7](#references):
+
+"Empirical" initialization [7](#references):
 
 ```
-T0(z,m) = pi/2 + sqrt(r)/(theta − pi/2)
+T0(z,m) = pi/2 + sqrt(r)/(theta - pi/2)
 ```
 
-where 
+where
 
 ```
-z \in [E(pi/2,m)](−E(pi/2,m),)x[1](0,) - value of the entire parameter space
+z in (-E(pi/2,m), E(pi/2,m)) x (0, 1) - value of the entire parameter space
 r = sqrt((1-m)^2 + zeta^2)
 zeta = 1 - z/E(pi/2,m)
 theta = atan((1 - m)/zeta)
 ```
- 
+
 Example:
 ```
 % modulus and phase in degrees
 [phi,alpha] = meshgrid(0:5:90, 0:2:90);
 % values of integrals
 [F,E] = elliptic12(pi/180*phi, sin(pi/180*alpha).^2);
-% values of inverse 
+% values of inverse
 invE = inverselliptic2(E, sin(pi/180*alpha).^2);
 % the difference between phase phi and invE should close to zero
 phi - invE * 180/pi
@@ -295,21 +307,19 @@ phi - invE * 180/pi
 
 # Weierstrass's elliptic functions (in development)
 
-<font color="red">!IN DEVELOPMENT, help needed!</font>.
+Weierstrass's elliptic functions are elliptic functions that take a particularly simple form (cf Jacobi's elliptic functions); they are named for Karl Weierstrass. This class of functions are also referred to as p-functions and generally written using the symbol &#8472; (a stylised letter p called Weierstrass p).
 
-Weierstrass's elliptic functions are elliptic functions that take a particularly simple form (cf Jacobi's elliptic functions); they are named for Karl Weierstrass. This class of functions are also referred to as p-functions and generally written using the symbol `℘` (a stylised letter p called Weierstrass p).
-
-The Weierstrass elliptic function can be defined in three closely related ways, each of which possesses certain advantages. One is as a function of a complex variable z and a lattice Λ in the complex plane. Another is in terms of z and two complex numbers ω1 and ω2 defining a pair of generators, or periods, for the lattice. The third is in terms z and of a modulus τ in the upper half-plane. This is related to the previous definition by `τ = ω2 / ω1`, which by the conventional choice on the pair of periods is in the upper half-plane. Using this approach, for fixed z the Weierstrass functions become modular functions of τ.
+The Weierstrass elliptic function can be defined in three closely related ways, each of which possesses certain advantages. One is as a function of a complex variable z and a lattice &#923; in the complex plane. Another is in terms of z and two complex numbers &#969;1 and &#969;2 defining a pair of generators, or periods, for the lattice. The third is in terms z and of a modulus &#964; in the upper half-plane. This is related to the previous definition by `tau = omega2 / omega1`, which by the conventional choice on the pair of periods is in the upper half-plane. Using this approach, for fixed z the Weierstrass functions become modular functions of &#964;.
 
 
 # Elliptic Related Functions
 
-## AGM: Artihmetic Geometric Mean
+## AGM: Arithmetic Geometric Mean
 
-`AGM` calculates the [Artihmetic Geometric Mean](http://en.wikipedia.org/wiki/Arithmetic-geometric_mean) of `A` and `B` (see [1](#references)). 
+`AGM` calculates the [Arithmetic Geometric Mean](http://en.wikipedia.org/wiki/Arithmetic-geometric_mean) of `A` and `B` (see [1](#references)).
 
-`[A,B,C,N]= AGM(A0,B0,C0,TOL)` carry out the process of the arithmetic geometric mean, starting with a given positive numbers triple `(A0, B0, C0)` and returns in 
-`(A, B, C)` the generated sequence. `N` is a number of steps (returns in the value`uint32`).
+`[A,B,C,N]= AGM(A0,B0,C0,TOL)` carry out the process of the arithmetic geometric mean, starting with a given positive numbers triple `(A0, B0, C0)` and returns in
+`(A, B, C)` the generated sequence. `N` is a number of steps (returns in the value `uint32`).
 
 The general scheme of the procedure:
 
@@ -319,7 +329,7 @@ B(i) = sqrt( A(i-1)*B(i-1) );     B(0) = B0;
 C(i) = 1/2*( A(i-1)-B(i-1) );     C(0) = C0;
 ```
 
-Stop at the `N`-th step when `A(N) = B(N)`, i.e., when `C(N) = 0`. 
+Stop at the `N`-th step when `A(N) = B(N)`, i.e., when `C(N) = 0`.
 
 _Used by_  `ELLIPJ` and `ELLIPTIC12`.<br>_See also_ `ELLIPKE`, `ELLIPTIC3`, `THETA`.
 
@@ -339,9 +349,9 @@ Nome `Q = nomeq(M,TOL)`, where `0<=M<=1` is the module and `TOL` is the toleranc
 
 `M = inversenomeq(q)`, where `Q` is the Nome of q-series.
 
-**WARNING**. The function `INVERSENOMEQ` does not return correct values of `M` for `Q > 0.6`, because of computer precision limitation. The function `NomeQ(m)` has an essential singularity at `M = 1`, so it cannot be inverted at this point and actually it is very hard to find and inverse in the neigborhood also.
+**WARNING**. The function `INVERSENOMEQ` does not return correct values of `M` for `Q > 0.6`, because of computer precision limitation. The function `NomeQ(m)` has an essential singularity at `M = 1`, so it cannot be inverted at this point and actually it is very hard to find an inverse in the neighbourhood also.
 
-More preciesly:
+More precisely:
 
 ```
 nomeq(1) = 1
@@ -352,7 +362,7 @@ nomeq(1-eps) = 0.77548641878026
 
 ```
 nomeq(inversenomeq([0.3 0.4 0.5 0.6 0.7 0.8]))
-warning: The function INVERSENOMEQ does not return 
+warning: The function INVERSENOMEQ does not return
 correct values of M for Q < 0.00001 and Q > 0.76, because of computer precision limitation.
 warning: called from
     inversenomeq at line 54 column 5
@@ -366,19 +376,79 @@ ans =
 *Depends on* `ELLIPKE`<br>
 *See also* `ELLIPTIC12I`, `ELLIPTIC3`, `THETA`.
 
+# Project structure
+
+```
+elliptic/
+  src/              % source files (added to path by setup.m)
+    elliptic12.m
+    elliptic12i.m
+    elliptic123.m
+    elliptic3.m
+    ellipj.m
+    ellipji.m
+    jacobiThetaEta.m
+    theta.m
+    theta_prime.m
+    agm.m
+    nomeq.m
+    inversenomeq.m
+    inverselliptic2.m
+    arclength_ellipse.m
+    uniquetol_compat.m
+  tests/            % test files
+    testElliptic12.m
+    testElliptic3.m
+    testEllipj.m
+    testThetaPrime.m
+    testAgm.m
+    testJacobiThetaEta.m
+  docs/             % documentation and benchmarks
+  setup.m           % run this to add src/ to path
+  bench.m           % performance benchmarks
+```
+
 # Running tests
 
-From root folder run `runtests` or check the CI build status [![CircleCI](https://dl.circleci.com/status-badge/img/gh/moiseevigor/elliptic/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/moiseevigor/elliptic/tree/master)
+From root folder run `setup` first, then `runtests`, or check the CI build status [![CircleCI](https://dl.circleci.com/status-badge/img/gh/moiseevigor/elliptic/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/moiseevigor/elliptic/tree/master)
 
-```
+### MATLAB
+
+```matlab
+setup
 runtests("tests")
-Processing files in /home/igor/Work/elliptic/tests:
-
-  testEllipj.m ................................................ PASS      5/5   
-  testElliptic12.m ............................................ PASS      5/5   
-  testElliptic3.m ............................................. PASS      5/5
-  testThetaPrime.m ............................................ PASS     15/15
 ```
+
+### Octave
+
+```matlab
+setup
+cd tests
+test testElliptic12
+test testElliptic3
+test testEllipj
+test testThetaPrime
+test testAgm
+test testJacobiThetaEta
+```
+
+### Expected output (Octave)
+
+```
+PASSES 6 out of 6 tests    % testElliptic3
+PASSES 5 out of 5 tests    % testEllipj
+PASSES 4 out of 4 tests    % testAgm
+PASSES 7 out of 7 tests    % testJacobiThetaEta
+PASSES 19 out of 19 tests  % testThetaPrime
+```
+
+**Note:** The `testElliptic12` benchmark test may fail on Octave because the timing threshold (0.15s) was calibrated for MATLAB. All correctness tests pass on both platforms.
+
+# Compatibility
+
+The library is tested on both **MATLAB** and **GNU Octave** via CircleCI:
+- **MATLAB**: Full support via the MathWorks MATLAB orb
+- **Octave**: Full support via `uniquetol_compat.m` compatibility wrapper (Octave lacks the built-in `uniquetol` function)
 
 # Contributors
 

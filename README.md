@@ -462,10 +462,10 @@ Contributors
 # References
 
   1. [NIST Digital Library of Mathematical Functions](http://dlmf.nist.gov/)
-  1. M. Abramowitz and I.A. Stegun, "[Handbook of Mathematical Functions](http://www.nrbook.com/abramowitz_and_stegun/)" Dover Publications", 1965, Ch. 17.1 - 17.6.
-  1. D. F. Lawden, "[Elliptic Functions and Applications](http://www.amazon.com/Elliptic-Functions-Applications-Mathematical-Sciences/dp/0387969659)" Springer-Verlag, vol. 80, 1989
-  1. S. Zhang, J. Jin, "[Computation of Special Functions](http://jin.ece.uiuc.edu/specfunc.html)" (Wiley, 1996).
-  1. B. Carlson, "[Three Improvements in Reduction and Computation of Elliptic Integrals](http://nvl.nist.gov/pub/nistpubs/jres/107/5/j75car.pdf)", J. Res. Natl. Inst. Stand. Technol. 107 (2002) 413-418.
-  1. N. H. Abel, "[Studies on Elliptic Functions](http://mathdl.maa.org/mathDL/46/?pa=content&sa=viewDocument&nodeId=1557)", english translation from french by Marcus Emmanuel Barnes. Original "Recherches sur les fonctions elliptiques", Journal fr die reine und angewandte Mathematik, Vol. 2, 1827. pp. 101-181.
-  1. B. C. Berndt, H. H. Chan, S.-S. Huang, "[Incomplete Elliptic Integrals in Ramanujan's Lost Notebook](http://www.math.uiuc.edu/~berndt/articles/ellipticintegral.pdf)" in q-series from a Contemporary Perspective, M. E. H. Ismail and D. Stanton, eds., Amer. Math. Soc., 2000, pp. 79-126.
+  1. M. Abramowitz and I.A. Stegun, "[Handbook of Mathematical Functions](https://personal.math.ubc.ca/~cbm/aands/)" Dover Publications", 1965, Ch. 17.1 - 17.6.
+  1. D. F. Lawden, "[Elliptic Functions and Applications](https://www.amazon.com/Elliptic-Functions-Applications-Mathematical-Sciences/dp/0387969659)" Springer-Verlag, vol. 80, 1989
+  1. S. Zhang, J. Jin, "[Computation of Special Functions](https://www.amazon.com/Computation-Special-Functions-Shanjie-Zhang/dp/0471119636)" (Wiley, 1996).
+  1. B. Carlson, "[Three Improvements in Reduction and Computation of Elliptic Integrals](https://pmc.ncbi.nlm.nih.gov/articles/PMC4861378/)", J. Res. Natl. Inst. Stand. Technol. 107 (2002) 413-418.
+  1. N. H. Abel, "[Studies on Elliptic Functions](https://old.maa.org/sites/default/files/images/upload_library/1/abeltranslation.pdf)", english translation from french by Marcus Emmanuel Barnes. Original "Recherches sur les fonctions elliptiques", Journal fr die reine und angewandte Mathematik, Vol. 2, 1827. pp. 101-181.
+  1. B. C. Berndt, H. H. Chan, S.-S. Huang, "Incomplete Elliptic Integrals in Ramanujan's Lost Notebook" in q-series from a Contemporary Perspective, M. E. H. Ismail and D. Stanton, eds., Amer. Math. Soc., 2000, pp. 79-126.
   1. J. P. Boyd, "Numerical, Perturbative and Chebyshev Inversion of the Incomplete Elliptic Integral of the Second Kind", Applied Mathematics and Computation (January 2012)

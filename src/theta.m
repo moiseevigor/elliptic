@@ -1,27 +1,27 @@
 function Th = theta(type,v,m,tol)
 %THETA evaluates theta functions of four types.
 %   Th = THETA(TYPE,V,M) returns values of theta functions
-%   evaluated for corresponding values of argument V and parameter M.  
+%   evaluated for corresponding values of argument V and parameter M.
 %   TYPE is a type of the theta function, there are four numbered types.
-%   The arrays V and M must be the same size (or either can be scalar).  
-%   As currently implemented, M is limited to 0 <= M <= 1. 
+%   The arrays V and M must be the same size (or either can be scalar).
+%   As currently implemented, M is limited to 0 <= M <= 1.
 %
-%   Th = THETA(TYPE,V,M,TOL) computes the theta and eta 
-%   elliptic functions to the accuracy TOL instead of the default TOL = EPS.  
+%   Th = THETA(TYPE,V,M,TOL) computes the theta and eta
+%   elliptic functions to the accuracy TOL instead of the default TOL = EPS.
 %
 %   The parameter M is related to the nome Q as Q = exp(-pi*K(1-M)/K(M)).
 %   Some definitions of the Jacobi elliptic functions use the modulus
 %   k instead of the parameter m.  They are related by m = k^2.
 %
 %   Example:
-%       [phi,alpha] = meshgrid(0:5:90, 0:2:90);                  
-%       Th1 = theta(1, pi/180*phi, sin(pi/180*alpha).^2);  
-%       Th2 = theta(2, pi/180*phi, sin(pi/180*alpha).^2);  
-%       Th3 = theta(3, pi/180*phi, sin(pi/180*alpha).^2);  
-%       Th4 = theta(4, pi/180*phi, sin(pi/180*alpha).^2);  
+%       [phi,alpha] = meshgrid(0:5:90, 0:2:90);
+%       Th1 = theta(1, pi/180*phi, sin(pi/180*alpha).^2);
+%       Th2 = theta(2, pi/180*phi, sin(pi/180*alpha).^2);
+%       Th3 = theta(3, pi/180*phi, sin(pi/180*alpha).^2);
+%       Th4 = theta(4, pi/180*phi, sin(pi/180*alpha).^2);
 %
-%   See also 
-%       Standard: ELLIPKE, ELLIPJ, 
+%   See also
+%       Standard: ELLIPKE, ELLIPJ,
 %       Moiseev's package: ELLIPTIC12, ELLIPTIC12I, JACOBITHETAETA.
 %
 %   References:
@@ -29,15 +29,15 @@ function Th = theta(type,v,m,tol)
 %       Functions" Dover Publications", 1965, Ch. 16-17.6.
 
 % GNU GENERAL PUBLIC LICENSE Version 2, June 1991
-% http://www.gnu.org/licenses/gpl.html 
-% Everyone is permitted to copy and distribute verbatim copies of this 
-% script under terms and conditions of GNU GENERAL PUBLIC LICENSE. 
-%  
+% http://www.gnu.org/licenses/gpl.html
+% Everyone is permitted to copy and distribute verbatim copies of this
+% script under terms and conditions of GNU GENERAL PUBLIC LICENSE.
+%
 % Copyright (C) 2007 by Moiseev Igor. All rights reserved.
 % 34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
-% For support, please reply to 
-%     moiseev.igor[at]gmail.com, moiseev[at]sissa.it
-%     Moiseev Igor, 
+% For support, please reply to
+%     moiseev.igor[at]gmail.com
+%     Moiseev Igor,
 %     34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
 
 if nargin<4, tol = eps; end

@@ -35,7 +35,7 @@ function [Th,H] = jacobiThetaEta(u,m,tol)
 % Copyright (C) 2007 by Moiseev Igor. All rights reserved.
 % 34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
 % For support, please reply to
-%     moiseev.igor[at]gmail.com, moiseev[at]sissa.it
+%     moiseev.igor[at]gmail.com
 %     Moiseev Igor,
 %     34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
 
@@ -52,12 +52,22 @@ if ~isequal(size(m),size(u)), error('U and M must be the same size.'); end
 
 Th = zeros(size(u));
 H = Th;
-m = m(:).';    % make a row vector
-u = u(:).';
 
-if any(m < 0) || any(m > 1),
+if any(m(:) < 0) || any(m(:) > 1),
   error('M must be in the range 0 <= M <= 1.');
 end
+
+% Parallel dispatch: split across workers for large inputs
+N_el = numel(u);
+nWorkers = get_nworkers();
+minChunk = elliptic_config('chunk_size');
+if nWorkers > 1 && N_el >= minChunk
+    [Th,H] = parallel_jacobiThetaEta(u, m, tol, nWorkers, minChunk);
+    return;
+end
+
+m = m(:).';    % make a row vector
+u = u(:).';
 
 KK = ellipke(m);
 period_condition = u./KK/2-floor(u./KK/2);
@@ -157,3 +167,38 @@ if ( ~isempty(m1) )
     Th(m1) = NaN;
     H(m1)  = NaN;
 end
+
+
+function [Th,H] = parallel_jacobiThetaEta(u, m, tol, nWorkers, minChunk)
+%PARALLEL_JACOBITHETAETA  Internal helper: split work across parfor workers.
+    origSize = size(u);
+    N = numel(u);
+    u_flat = u(:).'; m_flat = m(:).';
+    nChunks = min(nWorkers, ceil(N / minChunk));
+    chunkSize = ceil(N / nChunks);
+    Th_c = cell(1, nChunks); H_c = cell(1, nChunks);
+    if exist('OCTAVE_VERSION', 'builtin')
+        u_chunks = cell(1, nChunks); m_chunks = cell(1, nChunks);
+        for w = 1:nChunks
+            i1 = (w-1)*chunkSize + 1;
+            i2 = min(w*chunkSize, N);
+            u_chunks{w} = u_flat(i1:i2);
+            m_chunks{w} = m_flat(i1:i2);
+        end
+        tol_c = repmat({tol}, 1, nChunks);
+        tol_c = repmat({tol}, 1, nChunks);
+        results = parcellfun(nWorkers, @par_worker, ...
+            repmat({'jacobiThetaEta'}, 1, nChunks), u_chunks, m_chunks, tol_c, ...
+            'UniformOutput', false);
+        for w = 1:nChunks
+            Th_c{w} = results{w}{1}; H_c{w} = results{w}{2};
+        end
+    else
+        parfor w = 1:nChunks
+            i1 = (w-1)*chunkSize + 1;
+            i2 = min(w*chunkSize, N);
+            [Th_c{w}, H_c{w}] = jacobiThetaEta(u_flat(i1:i2), m_flat(i1:i2), tol);
+        end
+    end
+    Th = reshape([Th_c{:}], origSize);
+    H = reshape([H_c{:}], origSize);

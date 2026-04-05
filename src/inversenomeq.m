@@ -1,9 +1,9 @@
 function m = inversenomeq(q)
 %INVERSENOMEQ gives the value of Nome m = m(q).
-%   
+%
 %   M = inversenomeq(q), where Q is the Nome of q-series.
-%   
-%   WARNING. The function INVERSENOMEQ does not return correct 
+%
+%   WARNING. The function INVERSENOMEQ does not return correct
 %   values of M for Q > 0.6, because of computer precision limitation.
 %   The function NomeQ(m) has an essential singularity at M = 1, so
 %   it cannot be inverted at this point and actually is very hard to
@@ -15,8 +15,8 @@ function m = inversenomeq(q)
 %   Example:
 %       nomeq(inversenomeq([0.001 0.3 0.4 0.5 0.6 0.7 0.8]))
 %
-%   See also 
-%        Standard: ELLIPKE, ELLIPJ 
+%   See also
+%        Standard: ELLIPKE, ELLIPJ
 %        Moiseev's package: ELLIPTIC12I, ELLIPTIC3, THETA, AGM.
 %
 %   References:
@@ -24,15 +24,15 @@ function m = inversenomeq(q)
 %       Functions" Dover Publications", 1965, Ch. 16-17.6.
 
 % GNU GENERAL PUBLIC LICENSE Version 2, June 1991
-% http://www.gnu.org/licenses/gpl.html 
-% Everyone is permitted to copy and distribute verbatim copies of this 
-% script under terms and conditions of GNU GENERAL PUBLIC LICENSE. 
-% 
+% http://www.gnu.org/licenses/gpl.html
+% Everyone is permitted to copy and distribute verbatim copies of this
+% script under terms and conditions of GNU GENERAL PUBLIC LICENSE.
+%
 % Copyright (C) 2007 by Moiseev Igor. All rights reserved.
 % 34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
-% For support, please reply to 
-%     moiseev[at]sissa.it, moiseev.igor[at]gmail.com
-%     Moiseev Igor, 
+% For support, please reply to
+%     moiseev.igor[at]gmail.com
+%     Moiseev Igor,
 %     34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
 
 

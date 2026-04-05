@@ -19,7 +19,7 @@ function [sn,cn,dn,am] = ellipj(u,m,tol)
 %   $Revision: 5.14 $  $Date: 2001/04/15 12:01:40 $
 %
 %   Modified by Moiseev Igor,
-%   moiseev[at]sissa.it
+%   moiseev.igor[at]gmail.com
 %   34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
 %   Date: 2005/10/04
 %
@@ -45,6 +45,15 @@ end
 if length(m)==1, m = m(ones(size(u))); end
 if length(u)==1, u = u(ones(size(m))); end
 if ~isequal(size(m),size(u)), error('U and M must be the same size.'); end
+
+% Parallel dispatch: split across workers for large inputs
+N_el = numel(u);
+nWorkers = get_nworkers();
+minChunk = elliptic_config('chunk_size');
+if nWorkers > 1 && N_el >= minChunk
+    [sn,cn,dn,am] = parallel_ellipj(u, m, tol, nWorkers, minChunk);
+    return;
+end
 
 am = zeros(size(u));
 cn = zeros(size(u));
@@ -121,3 +130,42 @@ am(m1) = asin(tanh(u(m1)));
 sn(m1) = tanh(u(m1));
 cn(m1) = sech(u(m1));
 dn(m1) = sech(u(m1));
+
+
+function [sn,cn,dn,am] = parallel_ellipj(u, m, tol, nWorkers, minChunk)
+%PARALLEL_ELLIPJ  Internal helper: split work across parfor workers.
+    origSize = size(u);
+    N = numel(u);
+    u_flat = u(:).'; m_flat = m(:).';
+    nChunks = min(nWorkers, ceil(N / minChunk));
+    chunkSize = ceil(N / nChunks);
+    sn_c = cell(1, nChunks); cn_c = cell(1, nChunks);
+    dn_c = cell(1, nChunks); am_c = cell(1, nChunks);
+    if exist('OCTAVE_VERSION', 'builtin')
+        u_chunks = cell(1, nChunks); m_chunks = cell(1, nChunks);
+        for w = 1:nChunks
+            i1 = (w-1)*chunkSize + 1;
+            i2 = min(w*chunkSize, N);
+            u_chunks{w} = u_flat(i1:i2);
+            m_chunks{w} = m_flat(i1:i2);
+        end
+        tol_c = repmat({tol}, 1, nChunks);
+        tol_c = repmat({tol}, 1, nChunks);
+        results = parcellfun(nWorkers, @par_worker, ...
+            repmat({'ellipj'}, 1, nChunks), u_chunks, m_chunks, tol_c, ...
+            'UniformOutput', false);
+        for w = 1:nChunks
+            sn_c{w} = results{w}{1}; cn_c{w} = results{w}{2};
+            dn_c{w} = results{w}{3}; am_c{w} = results{w}{4};
+        end
+    else
+        parfor w = 1:nChunks
+            i1 = (w-1)*chunkSize + 1;
+            i2 = min(w*chunkSize, N);
+            [sn_c{w}, cn_c{w}, dn_c{w}, am_c{w}] = ellipj(u_flat(i1:i2), m_flat(i1:i2), tol);
+        end
+    end
+    sn = reshape([sn_c{:}], origSize);
+    cn = reshape([cn_c{:}], origSize);
+    dn = reshape([dn_c{:}], origSize);
+    am = reshape([am_c{:}], origSize);

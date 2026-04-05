@@ -64,6 +64,7 @@ Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository,
     - [AGM: Arithmetic Geometric Mean](#agm-arithmetic-geometric-mean)
     - [NOMEQ: The Value of Nome q = q(m)](#nomeq-the-value-of-nome-q--qm)
     - [INVERSENOMEQ: The Value of Nome m = m(q)](#inversenomeq-the-value-of-nome-m--mq)
+  - [Parallel and GPU Acceleration](#parallel-and-gpu-acceleration)
   - [Contributors](#contributors)
   - [References](#references)
 
@@ -404,8 +405,11 @@ elliptic/
     testAgm.m
     testJacobiThetaEta.m
   docs/             % documentation and benchmarks
+    elliptic_config.m   % parallel configuration
+    get_nworkers.m      % detect parallel workers
+    par_worker.m        % generic parallel worker (Octave)
   setup.m           % run this to add src/ to path
-  bench.m           % performance benchmarks
+  bench.m           % performance benchmarks (serial, parallel, GPU)
 ```
 
 # Running tests
@@ -443,6 +447,99 @@ PASSES 19 out of 19 tests  % testThetaPrime
 ```
 
 **Note:** The `testElliptic12` benchmark test may fail on Octave because the timing threshold (0.15s) was calibrated for MATLAB. All correctness tests pass on both platforms.
+
+# Parallel Multi-Core Execution
+
+Parallelism is built into the main functions — no separate API needed. When enabled, inputs larger than the chunk size threshold are automatically split across CPU cores. The API stays the same; only two setup steps are required.
+
+### MATLAB
+
+Requires [Parallel Computing Toolbox](https://www.mathworks.com/products/parallel-computing.html).
+
+```matlab
+setup;
+parpool(8);                          % 1. start a parallel pool (once per session)
+elliptic_config('parallel', true);   % 2. enable parallel mode
+
+% All calls now run in parallel automatically
+[F,E,Z] = elliptic12(u, m);
+[Sn,Cn,Dn,Am] = ellipj(u, m);
+[Th,H] = jacobiThetaEta(u, m);
+Pi = elliptic3(u, m, c);
+```
+
+### Octave
+
+Requires the `parallel` package. Install once:
+
+```bash
+# Install build dependencies (Debian/Ubuntu)
+sudo apt-get install -y liboctave-dev
+
+# Install Octave packages
+octave --eval "pkg install -forge struct"
+octave --eval "pkg install -forge parallel"
+```
+
+Then in Octave:
+
+```matlab
+pkg load parallel;                   % 1. load the parallel package
+setup;                               %    add src/ to path
+elliptic_config('parallel', true);   % 2. enable parallel mode
+
+% All calls now run in parallel automatically
+[F,E,Z] = elliptic12(u, m);
+[Sn,Cn,Dn,Am] = ellipj(u, m);
+[Th,H] = jacobiThetaEta(u, m);
+Pi = elliptic3(u, m, c);
+```
+
+### How it works
+
+1. `elliptic_config('parallel', true)` enables parallel mode
+2. Each function checks `get_nworkers()` — returns available cores (Octave) or pool size (MATLAB)
+3. If workers > 1 and input size >= `chunk_size`, the input is split into chunks
+4. Chunks are computed in parallel via `parfor` (MATLAB) or `parcellfun` (Octave)
+5. Results are reassembled — bit-exact same output as serial
+
+When parallel is disabled (default), overhead is zero — just one `if` branch skipped.
+
+### Configuration
+
+```matlab
+elliptic_config('parallel', true);     % enable parallel (default: false)
+elliptic_config('chunk_size', 20000);  % min elements per chunk (default: 10000)
+elliptic_config('parallel', false);    % disable and return to serial
+```
+
+### Benchmark results (8-core CPU, Octave)
+
+```
+--- elliptic12 ---
+        Size      Serial    Parallel   Speedup
+  500x500       2.549s     0.728s     3.50x
+ 1000x1000     10.556s     2.764s     3.82x
+ 1500x1500     23.478s     6.173s     3.80x
+
+--- ellipj ---
+  500x500       2.487s     0.740s     3.36x
+ 1000x1000     10.198s     2.719s     3.75x
+ 1500x1500     22.810s     6.088s     3.75x
+
+--- jacobiThetaEta ---
+  500x500       2.571s     0.757s     3.39x
+ 1000x1000     10.481s     2.839s     3.69x
+ 1500x1500     23.798s     6.374s     3.73x
+```
+
+Run the benchmark yourself:
+```matlab
+pkg load parallel;                   % Octave only
+setup;
+elliptic_config('parallel', true);
+bench;
+```
 
 # Compatibility
 

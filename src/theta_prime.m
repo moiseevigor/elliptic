@@ -5,7 +5,7 @@ function [th, thp] = theta_prime(j, z, m, tol)
 %   J is the type of theta function (1, 2, 3, or 4), Z is the argument,
 %   and M is the parameter (0 <= M <= 1).
 %
-%   [TH, THP] = THETA_PRIME(J, Z, M, TOL) computes the theta function 
+%   [TH, THP] = THETA_PRIME(J, Z, M, TOL) computes the theta function
 %   and its derivative to the accuracy TOL instead of the default TOL = EPS.
 %
 %   The arrays Z and M must be the same size (or either can be scalar).
@@ -13,7 +13,7 @@ function [th, thp] = theta_prime(j, z, m, tol)
 %
 %   The theta functions are defined as:
 %       θ₁(z|τ) = 2∑[n=0,∞] (-1)ⁿ q^((n+1/2)²) sin((2n+1)z)
-%       θ₂(z|τ) = 2∑[n=0,∞] q^((n+1/2)²) cos((2n+1)z)  
+%       θ₂(z|τ) = 2∑[n=0,∞] q^((n+1/2)²) cos((2n+1)z)
 %       θ₃(z|τ) = 1 + 2∑[n=1,∞] q^(n²) cos(2nz)
 %       θ₄(z|τ) = 1 + 2∑[n=1,∞] (-1)ⁿ q^(n²) cos(2nz)
 %
@@ -21,7 +21,7 @@ function [th, thp] = theta_prime(j, z, m, tol)
 %
 %   The derivatives are computed using the relation:
 %       θ'ⱼ(z,m) = θⱼ(z,m) * (2K/π) * (Z + δⱼ)
-%   where K is the complete elliptic integral, Z is the Jacobi zeta 
+%   where K is the complete elliptic integral, Z is the Jacobi zeta
 %   function, and δⱼ depends on the theta function type.
 %
 %   The parameter M is related to the nome Q as Q = exp(-π*K(1-M)/K(M)).
@@ -52,15 +52,15 @@ function [th, thp] = theta_prime(j, z, m, tol)
 %       Cambridge University Press, 4th ed., 1996, Ch. 21.
 
 % GNU GENERAL PUBLIC LICENSE Version 2, June 1991
-% http://www.gnu.org/licenses/gpl.html 
-% Everyone is permitted to copy and distribute verbatim copies of this 
-% script under terms and conditions of GNU GENERAL PUBLIC LICENSE. 
-%  
+% http://www.gnu.org/licenses/gpl.html
+% Everyone is permitted to copy and distribute verbatim copies of this
+% script under terms and conditions of GNU GENERAL PUBLIC LICENSE.
+%
 % Copyright (C) 2007 by Moiseev Igor. All rights reserved.
 % 34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
-% For support, please reply to 
-%     moiseev.igor[at]gmail.com, moiseev[at]sissa.it
-%     Moiseev Igor, 
+% For support, please reply to
+%     moiseev.igor[at]gmail.com
+%     Moiseev Igor,
 %     34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
 
 if nargin < 4, tol = eps; end

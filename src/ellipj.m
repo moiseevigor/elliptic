@@ -46,8 +46,14 @@ if length(m)==1, m = m(ones(size(u))); end
 if length(u)==1, u = u(ones(size(m))); end
 if ~isequal(size(m),size(u)), error('U and M must be the same size.'); end
 
-% Parallel dispatch: split across workers for large inputs
+% GPU dispatch: move computation to GPU if enabled and available
 N_el = numel(u);
+if has_gpu()
+    [sn,cn,dn,am] = gpu_ellipj(u, m, tol);
+    return;
+end
+
+% Parallel dispatch: split across workers for large inputs
 nWorkers = get_nworkers();
 minChunk = elliptic_config('chunk_size');
 if nWorkers > 1 && N_el >= minChunk
@@ -66,7 +72,7 @@ if any(m < 0) || any(m > 1),
   error('M must be in the range 0 <= M <= 1.');
 end
 
-I = uint32( find(m ~= 1 & m ~= 0) );
+I = find(m ~= 1 & m ~= 0);
 if ~isempty(I)
     % Use standard uniquetol for numerical precision issues
     % This is the recommended MATLAB approach since R2015a
@@ -74,7 +80,7 @@ if ~isempty(I)
     tol_unique = 1e-11;
 
     [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
-    K = uint32(K(:).');  % Ensure K is a row vector
+    K = K(:).';
 
     mumax = length(mu);
 
@@ -86,7 +92,7 @@ if ~isempty(I)
 	a(1,:) = ones(1,mumax);
 	c(1,:) = sqrt(mu);
 	b(1,:) = sqrt(1-mu);
-	n = uint32( zeros(1,mumax) );
+	n = zeros(1,mumax);
 	i = 1;
 	while any(abs(c(i,:)) > tol)                                    % Arithmetic-Geometric Mean of A, B and C
         i = i + 1;
@@ -104,7 +110,7 @@ if ~isempty(I)
 
     mmax = length(I);
 	phin = zeros(1,mmax);
-	phin(:) = (2 .^ double(n(K))).*a(i,K).*u(I);
+	phin(:) = (2 .^ n(K)).*a(i,K).*u(I);
 	while i > 1
         i = i - 1;
         mask = n(K) >= i;
@@ -169,3 +175,64 @@ function [sn,cn,dn,am] = parallel_ellipj(u, m, tol, nWorkers, minChunk)
     cn = reshape([cn_c{:}], origSize);
     dn = reshape([dn_c{:}], origSize);
     am = reshape([am_c{:}], origSize);
+
+
+function [sn,cn,dn,am] = gpu_ellipj(u, m, tol)
+%GPU_ELLIPJ  Internal helper: compute ellipj using gpuArray.
+%   Compatible with both MATLAB gpuArray and Octave ocl package.
+    origSize = size(u);
+    am = zeros(origSize);
+    cn = zeros(origSize);
+    sn = zeros(origSize);
+    dn = zeros(origSize);
+
+    m = m(:);
+    u = u(:);
+
+    if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
+
+    I = find(m ~= 1 & m ~= 0);
+    if ~isempty(I)
+        mmax = length(I);
+        mu   = m(I);
+
+        % Transposed layout: rows=elements, cols=iterations (OCL-friendly)
+        MAX_ITER = 12;
+        a = gpuArray(zeros(mmax, MAX_ITER));
+        b = gpuArray(zeros(mmax, MAX_ITER));
+        c = gpuArray(zeros(mmax, MAX_ITER));
+        a(:,1) = gpuArray(ones(mmax,1));
+        c(:,1) = gpuArray(sqrt(mu));
+        b(:,1) = gpuArray(sqrt(1 - mu));
+        n = zeros(mmax, 1);
+        ii = 1;
+        while any(gather(abs(c(:,ii))) > tol)
+            ii = ii + 1;
+            a(:,ii) = 0.5 * (a(:,ii-1) + b(:,ii-1));
+            b(:,ii) = sqrt(a(:,ii-1) .* b(:,ii-1));
+            c(:,ii) = 0.5 * (a(:,ii-1) - b(:,ii-1));
+            mask = logical(gather((abs(c(:,ii)) <= tol) & (abs(c(:,ii-1)) > tol)));
+            n(mask) = ii - 1;
+        end
+
+        % Ascending Landen back-substitution with multiplicative masking
+        phin = gpuArray((2 .^ n) .* gather(a(:,ii)) .* u(I));
+        for jj = ii-1:-1:1
+            active = gpuArray(double(n >= jj));
+            phin_new = 0.5*(asin(c(:,jj+1).*sin(phin)./a(:,jj+1)) + phin);
+            phin = phin + active .* (phin_new - phin);
+        end
+
+        am(I) = gather(phin);
+        sn(I) = gather(sin(phin));
+        cn(I) = gather(cos(phin));
+        dn(I) = sqrt(1 - m(I) .* gather(sin(phin)).^2);
+    end
+
+    % Special cases: m = {0, 1}
+    m0 = find(m == 0);
+    am(m0) = u(m0);  sn(m0) = sin(u(m0));  cn(m0) = cos(u(m0));  dn(m0) = 1;
+
+    m1 = find(m == 1);
+    am(m1) = asin(tanh(u(m1)));  sn(m1) = tanh(u(m1));
+    cn(m1) = sech(u(m1));        dn(m1) = sech(u(m1));

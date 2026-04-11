@@ -1,12 +1,20 @@
 
 # Elliptic functions for Matlab and Octave
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/moiseevigor/elliptic/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/moiseevigor/elliptic/tree/master) [![DOI](https://zenodo.org/badge/5762/moiseevigor/elliptic.svg)](https://zenodo.org/badge/latestdoi/5762/moiseevigor/elliptic)
-
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/moiseevigor/elliptic/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/moiseevigor/elliptic/tree/master) [![DOI](https://zenodo.org/badge/5762/moiseevigor/elliptic.svg)](https://zenodo.org/badge/latestdoi/5762/moiseevigor/elliptic) ![MATLAB](https://img.shields.io/badge/MATLAB-R2019b%2B-blue?logo=mathworks) ![Octave](https://img.shields.io/badge/Octave-6.0%2B-blue?logo=octave) ![GPU](https://img.shields.io/badge/GPU-OpenCL%20%7C%20CUDA-brightgreen) ![Parallel](https://img.shields.io/badge/CPU-multi--core-brightgreen)
 
 The Matlab/Octave implementation of [Elliptic integrals of three types](http://en.wikipedia.org/wiki/Elliptic_integral), [Jacobi's elliptic functions](http://en.wikipedia.org/wiki/Jacobi%27s_elliptic_functions) and [Jacobi theta functions](http://en.wikipedia.org/wiki/Theta_function) of four types with their derivatives.
 
-The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT* external library calls like Maple and others. All scripts are developed to accept tensors as arguments and almost all of them have their complex versions. Performance and complete control on the execution are the main features.
+> **Goal:** Pure MATLAB/Octave scripts for elliptic integrals and functions — **no external libraries** (no Maple, no Mathematica toolboxes). Every function accepts tensors of any shape, nearly all have complex-argument variants, and the library scales from a single core to multi-core CPU or GPU with a one-line config call.
+
+| Feature | Detail |
+|---|---|
+| **Functions** | `elliptic12`, `elliptic3`, `ellipj`, `jacobiThetaEta`, `theta`, `theta_prime`, inverses |
+| **Input shapes** | Scalars, vectors, matrices — tensors of any shape |
+| **Complex support** | `ellipj` → `ellipji` · `elliptic12` → `elliptic12i` |
+| **Multi-core CPU** | `elliptic_config('parallel', true)` — **2.3–2.5×** speedup on 8 cores |
+| **GPU** | `elliptic_config('gpu', true)` — up to **13×** (`elliptic3` via OpenCL / CUDA) |
+| **Platforms** | MATLAB R2019b+ · GNU Octave 6.0+ |
 
 # Installation
 
@@ -64,7 +72,8 @@ Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository,
     - [AGM: Arithmetic Geometric Mean](#agm-arithmetic-geometric-mean)
     - [NOMEQ: The Value of Nome q = q(m)](#nomeq-the-value-of-nome-q--qm)
     - [INVERSENOMEQ: The Value of Nome m = m(q)](#inversenomeq-the-value-of-nome-m--mq)
-  - [Parallel and GPU Acceleration](#parallel-and-gpu-acceleration)
+  - [Multi-Core Parallel Execution](#multi-core-parallel-execution)
+  - [GPU Acceleration](#gpu-acceleration)
   - [Contributors](#contributors)
   - [References](#references)
 
@@ -310,7 +319,7 @@ phi - invE * 180/pi
 
 Weierstrass's elliptic functions are elliptic functions that take a particularly simple form (cf Jacobi's elliptic functions); they are named for Karl Weierstrass. This class of functions are also referred to as p-functions and generally written using the symbol &#8472; (a stylised letter p called Weierstrass p).
 
-The Weierstrass elliptic function can be defined in three closely related ways, each of which possesses certain advantages. One is as a function of a complex variable z and a lattice &#923; in the complex plane. Another is in terms of z and two complex numbers &#969;1 and &#969;2 defining a pair of generators, or periods, for the lattice. The third is in terms z and of a modulus &#964; in the upper half-plane. This is related to the previous definition by `tau = omega2 / omega1`, which by the conventional choice on the pair of periods is in the upper half-plane. Using this approach, for fixed z the Weierstrass functions become modular functions of &#964;.
+The Weierstrass elliptic function can be defined in three closely related ways, each of which possesses certain advantages. One is as a function of a complex variable z and a lattice &#923; in the complex plane. Another is in terms of z and two complex numbers &#969;1 and &#969;2 defining a pair of generators, or periods, for the lattice. The third is in terms of z and a modulus &#964; in the upper half-plane. This is related to the previous definition by `tau = omega2 / omega1`, which by the conventional choice on the pair of periods is in the upper half-plane. Using this approach, for fixed z the Weierstrass functions become modular functions of &#964;.
 
 
 # Elliptic Related Functions
@@ -350,7 +359,7 @@ Nome `Q = nomeq(M,TOL)`, where `0<=M<=1` is the module and `TOL` is the toleranc
 
 `M = inversenomeq(q)`, where `Q` is the Nome of q-series.
 
-**WARNING**. The function `INVERSENOMEQ` does not return correct values of `M` for `Q > 0.6`, because of computer precision limitation. The function `NomeQ(m)` has an essential singularity at `M = 1`, so it cannot be inverted at this point and actually it is very hard to find an inverse in the neighbourhood also.
+**WARNING**. The function `INVERSENOMEQ` does not return correct values of `M` for `Q < 0.00001` or `Q > 0.76`, because of computer precision limitation. The function `NomeQ(m)` has an essential singularity at `M = 1`, so it cannot be inverted at this point and is very hard to invert in its neighbourhood.
 
 More precisely:
 
@@ -381,7 +390,7 @@ ans =
 
 ```
 elliptic/
-  src/              % source files (added to path by setup.m)
+  src/                      % source files (added to path by setup.m)
     elliptic12.m
     elliptic12i.m
     elliptic123.m
@@ -397,19 +406,25 @@ elliptic/
     inverselliptic2.m
     arclength_ellipse.m
     uniquetol_compat.m
-  tests/            % test files
+    elliptic_config.m       % get/set library config (parallel, gpu, chunk_size)
+    get_nworkers.m          % detect available parallel workers
+    has_gpu.m               % detect GPU availability (MATLAB PCT or Octave ocl)
+    par_worker.m            % generic parallel worker (Octave parcellfun)
+  tests/                    % test files
     testElliptic12.m
     testElliptic3.m
     testEllipj.m
     testThetaPrime.m
     testAgm.m
     testJacobiThetaEta.m
-  docs/             % documentation and benchmarks
-    elliptic_config.m   % parallel configuration
-    get_nworkers.m      % detect parallel workers
-    par_worker.m        % generic parallel worker (Octave)
-  setup.m           % run this to add src/ to path
-  bench.m           % performance benchmarks (serial, parallel, GPU)
+    testGpu.m               % GPU correctness tests (skipped when no GPU)
+  docs/                     % documentation
+    GPU.md                  % GPU setup guide (MATLAB + Octave/OpenCL)
+    benchmark_gpu.md        % three-way benchmark results with hardware utilisation
+    benchmark_comparison.md % before/after vectorization comparison
+  setup.m                   % run this to add src/ to path
+  bench_gpu.m               % three-way benchmark: serial / parallel / GPU
+  bench_gpu_results.csv     % raw benchmark data
 ```
 
 # Running tests
@@ -434,11 +449,13 @@ test testEllipj
 test testThetaPrime
 test testAgm
 test testJacobiThetaEta
+test testGpu          % skipped automatically when no GPU present
 ```
 
 ### Expected output (Octave)
 
 ```
+PASSES 5 out of 5 tests    % testElliptic12
 PASSES 6 out of 6 tests    % testElliptic3
 PASSES 5 out of 5 tests    % testEllipj
 PASSES 4 out of 4 tests    % testAgm
@@ -446,9 +463,9 @@ PASSES 7 out of 7 tests    % testJacobiThetaEta
 PASSES 19 out of 19 tests  % testThetaPrime
 ```
 
-**Note:** The `testElliptic12` benchmark test may fail on Octave because the timing threshold (0.15s) was calibrated for MATLAB. All correctness tests pass on both platforms.
+**Note:** Timing thresholds in the benchmark tests are set conservatively to accommodate CI machines. All correctness tests pass on both MATLAB and Octave.
 
-# Parallel Multi-Core Execution
+# Multi-Core Parallel Execution
 
 Parallelism is built into the main functions — no separate API needed. When enabled, inputs larger than the chunk size threshold are automatically split across CPU cores. The API stays the same; only two setup steps are required.
 
@@ -513,33 +530,74 @@ elliptic_config('chunk_size', 20000);  % min elements per chunk (default: 10000)
 elliptic_config('parallel', false);    % disable and return to serial
 ```
 
-### Benchmark results (8-core CPU, Octave)
+### Benchmark results (8-core i7-7700K @ 4.2 GHz, Octave 6.4)
 
-```
---- elliptic12 ---
-        Size      Serial    Parallel   Speedup
-  500x500       2.549s     0.728s     3.50x
- 1000x1000     10.556s     2.764s     3.82x
- 1500x1500     23.478s     6.173s     3.80x
+Measured with `bench_gpu.m`, 3 repetitions, minimum wall-clock time. Parallel uses 8 workers with chunk size `ceil(N / nWorkers)`.
 
---- ellipj ---
-  500x500       2.487s     0.740s     3.36x
- 1000x1000     10.198s     2.719s     3.75x
- 1500x1500     22.810s     6.088s     3.75x
+| Function | N | Serial (s) | Parallel (s) | Speedup |
+|---|---|---|---|---|
+| `elliptic12` | 1 M | 1.296 | 0.529 | **2.4×** |
+| `ellipj` | 1 M | 1.089 | 0.465 | **2.3×** |
+| `elliptic3` | 4 M | 2.668 | 1.167 | **2.3×** |
+| `jacobiThetaEta` | 1 M | 1.460 | 0.583 | **2.5×** |
 
---- jacobiThetaEta ---
-  500x500       2.571s     0.757s     3.39x
- 1000x1000     10.481s     2.839s     3.69x
- 1500x1500     23.798s     6.374s     3.73x
-```
+The parallel path incurs ~35 ms dispatch overhead (`parcellfun` spawn cost in Octave). It pays off for N > 50 000–100 000 elements; below that use serial (the default). Full results across seven input sizes: [`docs/benchmark_gpu.md`](docs/benchmark_gpu.md).
 
 Run the benchmark yourself:
 ```matlab
-pkg load parallel;                   % Octave only
+pkg load parallel ocl;               % Octave only
 setup;
-elliptic_config('parallel', true);
-bench;
+bench_gpu;
 ```
+
+# GPU Acceleration
+
+All four core functions support GPU-accelerated evaluation via an opt-in configuration flag. The same code paths work in both **MATLAB** (Parallel Computing Toolbox / CUDA) and **Octave** (ocl Forge package / OpenCL).
+
+### Enable GPU mode
+
+```matlab
+% Octave: load the package first
+pkg load ocl          % Octave only
+
+setup;
+elliptic_config('gpu', true);   % enable GPU for all functions
+
+% All calls now run on the GPU automatically
+[F, E, Z] = elliptic12(u, m);
+Pi        = elliptic3(u, m, c);
+[sn, cn]  = ellipj(u, m);
+[Th, H]   = jacobiThetaEta(u, m);
+
+elliptic_config('gpu', false);  % disable and return to CPU
+```
+
+GPU and parallel modes are mutually exclusive — GPU takes precedence when both are enabled.
+
+### Benchmark results (GTX 1080 Ti, Octave 6.4 / OpenCL 3.0)
+
+GPU time includes host↔device memory transfer.
+
+| Function | Serial (s) | Parallel 8-core (s) | GPU (s) | GPU speedup | GPU Mpts/s |
+|---|---|---|---|---|---|
+| `elliptic12` | 1.296 | 0.529 | 0.280 | **4.6×** | 3.6 |
+| `ellipj` | 1.089 | 0.465 | 0.285 | **3.8×** | 3.5 |
+| `elliptic3` | 2.668 | 1.167 | 0.199 | **13.4×** | 20.1 |
+| `jacobiThetaEta` | 1.460 | 0.583 | 0.494 | **3.1×** | 2.0 |
+
+`elliptic3` benefits most from the GPU (13×) because it uses pure Gauss-Legendre quadrature with no sequential AGM convergence loop — all 10 iterations execute fully on the GPU. AGM-based functions require a `gather()` call each iteration to check convergence on the CPU, limiting GPU occupancy to 27–41%.
+
+### When to use GPU
+
+| Scenario | Recommendation |
+|---|---|
+| N < 50 000 | Serial CPU — transfer overhead dominates |
+| 50 000 ≤ N < 200 000 | GPU starts to break even (2–4×) |
+| N ≥ 500 000 | GPU recommended (3–13×) |
+| `elliptic3`, any large N | GPU strongly recommended (10–13×) |
+
+Full installation guide, troubleshooting, and memory budget: [`docs/GPU.md`](docs/GPU.md)  
+Full benchmark tables with hardware utilisation: [`docs/benchmark_gpu.md`](docs/benchmark_gpu.md)
 
 # Compatibility
 

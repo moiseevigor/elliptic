@@ -17,6 +17,14 @@ function result = par_worker(func_name, varargin)
         case 'jacobiThetaEta'
             [Th, H] = jacobiThetaEta(varargin{:});
             result = {Th, H};
+        case 'weierstrassP'
+            result = weierstrassP(varargin{:});
+        case 'weierstrassPPrime'
+            result = weierstrassPPrime(varargin{:});
+        case 'weierstrassZeta'
+            result = weierstrassZeta(varargin{:});
+        case 'weierstrassSigma'
+            result = weierstrassSigma(varargin{:});
         otherwise
             error('par_worker: unknown function %s', func_name);
     end

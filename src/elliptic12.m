@@ -55,8 +55,14 @@ if length(m)==1, m = m(ones(size(u))); end
 if length(u)==1, u = u(ones(size(m))); end
 if ~isequal(size(m),size(u)), error('U and M must be the same size.'); end
 
-% Parallel dispatch: split across workers for large inputs
+% GPU dispatch: move computation to GPU if enabled and available
 N = numel(u);
+if has_gpu()
+    [F,E,Z] = gpu_elliptic12(u, m, tol);
+    return;
+end
+
+% Parallel dispatch: split across workers for large inputs
 nWorkers = get_nworkers();
 minChunk = elliptic_config('chunk_size');
 if nWorkers > 1 && N >= minChunk
@@ -76,7 +82,7 @@ if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 % smaller than eps = 2.220446049250313e-16, if so we suppose it equal zero
 m(m<eps) = 0;
 
-I = uint32( find(m ~= 1 & m ~= 0) );
+I = find(m ~= 1 & m ~= 0);
 if ~isempty(I)
     % Use standard uniquetol for numerical precision issues
     % This is the recommended MATLAB approach since R2015a
@@ -84,7 +90,7 @@ if ~isempty(I)
     tol_unique = 1e-11;
 
     [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
-    K = uint32(K(:).');  % Ensure K is a row vector
+    K = K(:).';
     mumax = length(mu);
     signU = sign(u(I));
 
@@ -96,7 +102,7 @@ if ~isempty(I)
 	a(1,:) = ones(1,mumax);
 	c(1,:) = sqrt(mu);
 	b(1,:) = sqrt(1-mu);
-	n = uint32( zeros(1,mumax) );
+	n = zeros(1,mumax);
 	i = 1;
 	while any(abs(c(i,:)) > tol)                                    % Arithmetic-Geometric Mean of A, B and C
         i = i + 1;
@@ -113,7 +119,7 @@ if ~isempty(I)
 	end
 
     mmax = length(I);
-	mn = double(max(n));
+	mn = max(n);
 	phin = zeros(1,mmax);     C  = zeros(1,mmax);
 	Cp = C;  e  = zeros(1,mmax);  phin(:) = signU.*u(I);
 	c2 = c.^2;
@@ -124,12 +130,12 @@ if ~isempty(I)
             phin(mask) = atan(b(i,K(mask))./a(i,K(mask)).*tan(phin(mask))) + ...
                 pi.*ceil(phin(mask)/pi - 0.5) + phin(mask);
             e(mask) = e_vals(i);
-            C(mask) = C(mask)  + double(e_vals(i))*c2(i,K(mask));
+            C(mask) = C(mask)  + e_vals(i)*c2(i,K(mask));
             Cp(mask)= Cp(mask) + c(i+1,K(mask)).*sin(phin(mask));
         end
 	end
 
-    Ff = phin ./ (a(mn,K).*double(e)*2);
+    Ff = phin ./ (a(mn,K).*e*2);
     F(I) = Ff.*signU;                                               % Incomplete Ell. Int. of the First Kind
     Z(I) = Cp.*signU;                                               % Jacobi Zeta Function
     E(I) = (Cp + (1 - 1/2*C) .* Ff).*signU;                         % Incomplete Ell. Int. of the Second Kind
@@ -192,3 +198,89 @@ function [F,E,Z] = parallel_elliptic12(u, m, tol, nWorkers, minChunk)
     F = reshape([F_cells{:}], origSize);
     E = reshape([E_cells{:}], origSize);
     Z = reshape([Z_cells{:}], origSize);
+
+
+function [F,E,Z] = gpu_elliptic12(u, m, tol)
+%GPU_ELLIPTIC12  Internal helper: compute elliptic12 using gpuArray.
+%   Compatible with both MATLAB gpuArray and Octave ocl package.
+%   Uses transposed layout (N x MAX_ITER) and multiplicative masking
+%   to avoid OCL limitations (no logical indexing, no dynamic concatenation).
+    origSize = size(u);
+    F = zeros(origSize);
+    E = F;
+    Z = E;
+
+    m = m(:);
+    u = u(:);
+
+    if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
+    m(m < eps) = 0;
+
+    I = find(m ~= 1 & m ~= 0);
+    if ~isempty(I)
+        mmax  = length(I);
+        mu    = m(I);
+        signU = sign(u(I));
+
+        % Transposed layout: rows=elements, cols=iterations (OCL-friendly)
+        MAX_ITER = 12;
+        a = gpuArray(zeros(mmax, MAX_ITER));
+        b = gpuArray(zeros(mmax, MAX_ITER));
+        c = gpuArray(zeros(mmax, MAX_ITER));
+        a(:,1) = gpuArray(ones(mmax,1));
+        c(:,1) = gpuArray(sqrt(mu));
+        b(:,1) = gpuArray(sqrt(1 - mu));
+        n = zeros(mmax, 1);
+        ii = 1;
+        while any(gather(abs(c(:,ii))) > tol)
+            ii = ii + 1;
+            a(:,ii) = 0.5 * (a(:,ii-1) + b(:,ii-1));
+            b(:,ii) = sqrt(a(:,ii-1) .* b(:,ii-1));
+            c(:,ii) = 0.5 * (a(:,ii-1) - b(:,ii-1));
+            mask = logical(gather((abs(c(:,ii)) <= tol) & (abs(c(:,ii-1)) > tol)));
+            n(mask) = ii - 1;
+        end
+
+        mn = max(n);
+        % Precompute e from n (avoids GPU assignment in Landen loop)
+        e_vals = 2 .^ (0:mn-1);
+        e = gpuArray(e_vals(max(n-1, 1))(:));  % column, e(j)=e_vals(n(j)-1)
+
+        phin = gpuArray(signU .* u(I));
+        C    = gpuArray(zeros(mmax, 1));
+        Cp   = gpuArray(zeros(mmax, 1));
+        c2   = c .^ 2;
+        for jj = 1:mn
+            % Multiplicative masking replaces logical indexing (OCL compatible)
+            active = gpuArray(double(n > jj));
+            phin_new = atan(b(:,jj)./a(:,jj).*tan(phin)) + ...
+                pi.*ceil(phin/pi - 0.5) + phin;
+            phin = phin + active .* (phin_new - phin);
+            C  = C  + active .* e_vals(jj) .* c2(:,jj);
+            Cp = Cp + active .* c(:,jj+1) .* sin(phin);
+        end
+
+        Ff = phin ./ (a(:,mn) .* e * 2);
+        F(I) = gather(Ff)                    .* signU;
+        Z(I) = gather(Cp)                    .* signU;
+        E(I) = gather(Cp + (1 - 0.5*C) .* Ff) .* signU;
+    end
+
+    % Special cases: m == {0, 1}
+    m0 = find(m == 0);
+    if ~isempty(m0), F(m0) = u(m0); E(m0) = u(m0); Z(m0) = 0; end
+
+    m1  = find(m == 1);
+    um1 = abs(u(m1));
+    if ~isempty(m1)
+        Nf = floor((um1 + pi/2) / pi);
+        M  = find(um1 < pi/2);
+        F(m1(M))           = log(tan(pi/4 + u(m1(M))/2));
+        F(m1(um1 >= pi/2)) = Inf .* sign(u(m1(um1 >= pi/2)));
+        E(m1) = ((-1).^Nf .* sin(um1) + 2*Nf) .* sign(u(m1));
+        Z(m1) = (-1).^Nf .* sin(u(m1));
+    end
+
+    F = reshape(F, origSize);
+    E = reshape(E, origSize);
+    Z = reshape(Z, origSize);

@@ -47,8 +47,14 @@ end
 
 Pi = zeros(size(u));
 
-% Parallel dispatch: split across workers for large inputs
+% GPU dispatch: move computation to GPU if enabled and available
 N_el = numel(u);
+if has_gpu()
+    Pi = gpu_elliptic3(u, m, c);
+    return;
+end
+
+% Parallel dispatch: split across workers for large inputs
 nWorkers = get_nworkers();
 minChunk = elliptic_config('chunk_size');
 if nWorkers > 1 && N_el >= minChunk
@@ -125,3 +131,41 @@ function Pi = parallel_elliptic3(u, m, c, nWorkers, minChunk)
         end
     end
     Pi = reshape([Pi_cells{:}], origSize);
+
+
+function Pi = gpu_elliptic3(u, m, c)
+%GPU_ELLIPTIC3  Internal helper: compute elliptic3 using gpuArray (MATLAB only).
+%   The Gauss-Legendre integrand is elementwise — trivially GPU-compatible.
+    origSize = size(u);
+    I_inf = find(u(:).' == pi/2 & m(:).' == 1 | u(:).' == pi/2 & c(:).' == 1);
+
+    u_g = gpuArray(u(:).');
+    m_g = gpuArray(m(:).');
+    c_g = gpuArray(c(:).');
+
+    t = [ 0.9931285991850949,  0.9639719272779138, ...
+          0.9122344282513259,  0.8391169718222188, ...
+          0.7463319064601508,  0.6360536807265150, ...
+          0.5108670019508271,  0.3737060887154195, ...
+          0.2277858511416451,  0.07652652113349734 ];
+    w = [ 0.01761400713915212, 0.04060142980038694, ...
+          0.06267204833410907, 0.08327674157670475, ...
+          0.1019301198172404,  0.1181945319615184,  ...
+          0.1316886384491766,  0.1420961093183820,  ...
+          0.1491729864726037,  0.1527533871307258   ];
+
+    P = gpuArray(zeros(size(u_g)));
+    for ii = 1:10
+        c0 = u_g .* t(ii) / 2;
+        P  = P + w(ii) .* (g_gpu(u_g/2 + c0, m_g, c_g) + g_gpu(u_g/2 - c0, m_g, c_g));
+    end
+    P = u_g/2 .* P;
+
+    Pi = zeros(origSize);
+    Pi(:) = gather(P);
+    Pi(I_inf) = inf;
+
+
+function gv = g_gpu(u, m, c)
+    sn2 = sin(u).^2;
+    gv  = 1 ./ ((1 - c.*sn2) .* sqrt(1 - m.*sn2));

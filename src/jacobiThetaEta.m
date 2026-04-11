@@ -57,8 +57,14 @@ if any(m(:) < 0) || any(m(:) > 1),
   error('M must be in the range 0 <= M <= 1.');
 end
 
-% Parallel dispatch: split across workers for large inputs
+% GPU dispatch: move computation to GPU if enabled and available
 N_el = numel(u);
+if has_gpu()
+    [Th,H] = gpu_jacobiThetaEta(u, m, tol);
+    return;
+end
+
+% Parallel dispatch: split across workers for large inputs
 nWorkers = get_nworkers();
 minChunk = elliptic_config('chunk_size');
 if nWorkers > 1 && N_el >= minChunk
@@ -72,7 +78,7 @@ u = u(:).';
 KK = ellipke(m);
 period_condition = u./KK/2-floor(u./KK/2);
 
-I_odd = uint32( find( abs(m-1) > 10*eps & abs(m) > 10*eps & abs(period_condition - 0.5) < 10*eps ) );
+I_odd = find( abs(m-1) > 10*eps & abs(m) > 10*eps & abs(period_condition - 0.5) < 10*eps );
 % here we cheat, add some disturbance to avoid the AGM algorithm divergence
 % when the inputs are the ratios of complete elliptic integrals
 if ( ~isempty(I_odd) )
@@ -80,12 +86,11 @@ if ( ~isempty(I_odd) )
     m(I_odd) = m(I_odd) + 10000*eps;
 end
 
-I = uint32( find( abs(m-1) > 10*eps & ...
-                  abs(m) > 10*eps ...
-                 ) ...
-           );
-%                   abs(period_condition - 0.5) > 10*eps ...                % odd period
-%                   abs(period_condition) > 10*eps ...                      % even period
+I = find( abs(m-1) > 10*eps & ...
+          abs(m) > 10*eps ...
+        );
+%         abs(period_condition - 0.5) > 10*eps ...                % odd period
+%         abs(period_condition) > 10*eps ...                      % even period
 
 if ~isempty(I)
     % Use standard uniquetol for numerical precision issues
@@ -94,7 +99,7 @@ if ~isempty(I)
     tol_unique = 1e-11;
 
     [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
-    K = uint32(K(:).');  % Ensure K is a row vector
+    K = K(:).';
 
     % pre-allocate space and augment if needed
 	chunk = 7;
@@ -104,7 +109,7 @@ if ~isempty(I)
 	a(1,:) = ones(1,length(mu));
 	c(1,:) = sqrt(mu);
 	b(1,:) = sqrt(1-mu);
-	n = uint32( zeros(1,length(mu)) );
+	n = zeros(1,length(mu));
 	i = 1;
 
     % Arithmetic-Geometric Mean of A, B and C
@@ -127,7 +132,7 @@ if ~isempty(I)
     prodth = ones(i,mmax);
 
     % Calculate phin
-    phin(:) = (2 .^ double(n(K))).*a(i,K).*u(I);
+    phin(:) = (2 .^ n(K)).*a(i,K).*u(I);
     phin_pred = phin;
 	while i > 1
         i = i - 1;
@@ -147,7 +152,7 @@ if ~isempty(I)
 end
 
 % special values of u = (2n+1)*KK, odd periods
-% I_odd = uint32( find( abs(m-1) > 10*eps & abs(m) > 10*eps & abs(period_condition - 0.5) < 10*eps ) );
+% I_odd = find( abs(m-1) > 10*eps & abs(m) > 10*eps & abs(period_condition - 0.5) < 10*eps );
 % if ( ~isempty(I_odd) )
 %     Th(I_odd) = 1+2*(1./(1-exp(-pi*ellipke(1-m(I_odd))./KK(I_odd)))-1);
 %     Th(I_odd) = sqrt(KK(I_odd)./ellipke(1-m(I_odd)));
@@ -202,3 +207,75 @@ function [Th,H] = parallel_jacobiThetaEta(u, m, tol, nWorkers, minChunk)
     end
     Th = reshape([Th_c{:}], origSize);
     H = reshape([H_c{:}], origSize);
+
+
+function [Th,H] = gpu_jacobiThetaEta(u, m, tol)
+%GPU_JACOBITHETAETA  Internal helper: compute jacobiThetaEta using gpuArray.
+%   Compatible with both MATLAB gpuArray and Octave ocl package.
+    origSize = size(u);
+    Th = zeros(origSize);
+    H  = zeros(origSize);
+
+    m = m(:);
+    u = u(:);
+
+    if any(m(:) < 0) || any(m(:) > 1), error('M must be in the range 0 <= M <= 1.'); end
+
+    KK = ellipke(m);
+    period_condition = u./KK/2 - floor(u./KK/2);
+
+    I_odd = find(abs(m-1) > 10*eps & abs(m) > 10*eps & abs(period_condition - 0.5) < 10*eps);
+    if ~isempty(I_odd)
+        u(I_odd) = u(I_odd) + 100000*eps;
+        m(I_odd) = m(I_odd) + 10000*eps;
+    end
+
+    I = find(abs(m-1) > 10*eps & abs(m) > 10*eps);
+    if ~isempty(I)
+        mmax = length(I);
+        mu   = m(I);
+
+        % Transposed layout: rows=elements, cols=iterations (OCL-friendly)
+        MAX_ITER = 12;
+        a = gpuArray(zeros(mmax, MAX_ITER));
+        b = gpuArray(zeros(mmax, MAX_ITER));
+        c = gpuArray(zeros(mmax, MAX_ITER));
+        a(:,1) = gpuArray(ones(mmax,1));
+        c(:,1) = gpuArray(sqrt(mu));
+        b(:,1) = gpuArray(sqrt(1 - mu));
+        n = zeros(mmax, 1);
+        ii = 1;
+        while any(gather(abs(c(:,ii))) > tol)
+            ii = ii + 1;
+            a(:,ii) = 0.5 * (a(:,ii-1) + b(:,ii-1));
+            b(:,ii) = sqrt(a(:,ii-1) .* b(:,ii-1));
+            c(:,ii) = 0.5 * (a(:,ii-1) - b(:,ii-1));
+            mask = logical(gather((abs(c(:,ii)) <= tol) & (abs(c(:,ii-1)) > tol)));
+            n(mask) = ii - 1;
+        end
+
+        % Ascending Landen back-substitution with multiplicative masking
+        phin      = gpuArray((2 .^ n) .* gather(a(:,ii)) .* u(I));
+        phin_pred = phin;
+        prodth    = gpuArray(ones(mmax, MAX_ITER));
+        for jj = ii-1:-1:1
+            active = gpuArray(double(n >= jj));
+            phin_new = 0.5*(asin(c(:,jj+1).*sin(phin)./a(:,jj+1)) + phin);
+            phin_upd = phin + active .* (phin_new - phin);
+            prodth(:,jj) = 1 + active .* ((sec(2*phin_upd - phin_pred)).^(1/2^(jj+1)) - 1);
+            if jj > 1, phin_pred = phin_upd; end
+            phin = phin_upd;
+        end
+
+        th_save = sqrt(2*sqrt(1 - m(I)) .* KK(I)/pi .* ...
+            gather(cos(phin_pred - phin) ./ cos(phin))) .* gather(prod(prodth, 2));
+        Th(I) = th_save;
+        H(I)  = sqrt(sqrt(m(I))) .* gather(sin(phin)) .* th_save;
+    end
+
+    % Special cases: m = {0, 1}
+    m0 = find(abs(m) < 10*eps);
+    if ~isempty(m0), Th(m0) = 1; H(m0) = sqrt(sqrt(m(m0))) .* sin(u(m0)); end
+
+    m1 = find(abs(m-1) < 10*eps);
+    if ~isempty(m1), Th(m1) = NaN; H(m1) = NaN; end

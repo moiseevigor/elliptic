@@ -167,3 +167,82 @@
 %! Pi_carlson = s * RF_val + (n_vec .* s^3 / 3) .* RJ_vec;
 %! Pi_leg = elliptic3(phi .* ones(size(n_vec)), m .* ones(size(n_vec)), n_vec);
 %! assert(max(abs(Pi_carlson - Pi_leg)) < 1e-9, 'RJ array vs elliptic3 mismatch');
+
+% ------------------------------------------------------------------
+%  Group 5: Hardcoded reference values (verified numerically)
+%
+%  RC special values: exact analytical expressions
+%    RC(0,1)       = pi/2            (DLMF 19.2.17, y>x branch)
+%    RC(0,1/4)     = pi              (DLMF Table 19.36.1)
+%    RC(1/4,1/4)   = 2               (= 1/sqrt(1/4))
+%    RC(1/2,1)     = pi/(2*sqrt(2))  (arctan branch: atan(1)/sqrt(1/2))
+%    RC(1,1)       = 1               (= 1/sqrt(1))
+%    RC(9/4,2)     = ln(2)           (arctanh branch: atanh(sqrt(1/9))/(1/2)=2*ln(2)/2)
+%
+%  RF, RD, RJ: computed via Carlson duplication algorithm; cross-checked
+%    against connection formulae RF(0,1-m,1)=K(m), RD(0,1-m,1)/3=D(m),
+%    RJ(x,y,z,z)=RD(x,y,z).  Agreement with ellipke to machine epsilon.
+% ------------------------------------------------------------------
+
+%!test
+%! % RC exact analytical reference table
+%! x_v = [0,    0,     0.25, 0.5,            1.0,  2.25];
+%! y_v = [1.0,  0.25,  0.25, 1.0,            1.0,  2.0 ];
+%! expected = [pi/2, pi, 2.0, pi/(2*sqrt(2)), 1.0, log(2)];
+%! RC = carlsonRC(x_v, y_v);
+%! assert(max(abs(RC - expected)) < 1e-14, 'RC exact analytical table failed');
+
+%!test
+%! % RC generic reference table
+%! x_v    = [0.1,                  1.5,                 3.0                ];
+%! y_v    = [0.5,                  0.3,                 0.5                ];
+%! expected = [1.750555828382159, 1.317852857616873, 0.9768180523022534];
+%! RC = carlsonRC(x_v, y_v);
+%! assert(max(abs(RC - expected)) < 1e-13, 'RC generic table failed');
+
+%!test
+%! % RF hardcoded reference table
+%! x_v = [1,    0.5,  0,    2,    0.25];
+%! y_v = [2,    1,    0.5,  3,    0.5 ];
+%! z_v = [3,    1.5,  1,    4,    1   ];
+%! expected = [0.7269459354689083, 1.028056801052127, 1.854074677301372, ...
+%!             0.5840828416771517, 1.370171633266872];
+%! RF = carlsonRF(x_v, y_v, z_v);
+%! assert(max(abs(RF - expected)) < 1e-13, 'RF hardcoded table failed');
+
+%!test
+%! % RF grid: RF(0, 1-m, 1) = K(m) for m = 0.1..0.9
+%! m_v = [0.1,              0.3,              0.5,              0.7,              0.9             ];
+%! expectedK = [1.612441348720219, 1.713889448178791, 1.854074677301372, ...
+%!              2.075363135292469, 2.578092113348173];
+%! RF_v = carlsonRF(zeros(1,5), 1-m_v, ones(1,5));
+%! assert(max(abs(RF_v - expectedK)) < 1e-13, 'RF(0,1-m,1)=K(m) table failed');
+
+%!test
+%! % RD hardcoded reference table
+%! x_v = [0,    0,    0,    1,    0.5];
+%! y_v = [2,    1,    0.5,  2,    1  ];
+%! z_v = [1,    2,    1,    3,    1.5];
+%! expected = [1.797210352103389, 1.067937989667396, 3.020584777522179, ...
+%!             0.2904602810289907, 0.8215457375237986];
+%! RD = carlsonRD(x_v, y_v, z_v);
+%! assert(max(abs(RD - expected)) < 1e-13, 'RD hardcoded table failed');
+
+%!test
+%! % RD grid: RD(0, 1-m, 1)/3 = D(m) = (K-E)/m for m = 0.1..0.9
+%! m_v = [0.1,              0.3,              0.5,              0.7,              0.9             ];
+%! expectedD = [0.8168371182245618, 0.8950879458870861, 1.006861592507393, ...
+%!              1.190989381923780,  1.637019311826777];
+%! RD_v = carlsonRD(zeros(1,5), 1-m_v, ones(1,5));
+%! assert(max(abs(RD_v./3 - expectedD)) < 1e-13, 'RD(0,1-m,1)/3=D(m) table failed');
+
+%!test
+%! % RJ hardcoded reference table
+%! x_v = [0,    0,    1,    0.5];
+%! y_v = [1,    1,    2,    1  ];
+%! z_v = [2,    2,    3,    1.5];
+%! p_v = [3,    0.5,  4,    2  ];
+%! expected = [0.7768862377858351, 2.936671269238118, ...
+%!             0.2398480997495678, 0.6783928711505076];
+%! RJ = carlsonRJ(x_v, y_v, z_v, p_v);
+%! assert(max(abs(RJ - expected)) < 1e-13, 'RJ hardcoded table failed');

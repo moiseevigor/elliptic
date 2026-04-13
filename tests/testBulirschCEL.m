@@ -101,3 +101,53 @@
 %! C = cel1(kc);
 %! assert(isfinite(C), 'cel1 near kc=0 should be finite (large)');
 %! assert(C > 0, 'cel1 should be positive');
+
+% ------------------------------------------------------------------
+%  Group 4: Hardcoded reference table for cel(kc, p, a, b)
+%
+%  Values computed via Carlson RJ decomposition:
+%    p=1 case:  cel = a*B(m) + b*D(m)
+%    p≠1 case:  cel = a*K + (b-a*p)*(Pi(1-p|m)-K)/(1-p)
+%  Cross-checked against numerical integration (trapz over [0,pi/2])
+%  with agreement to < 1e-10.
+%
+%  cel1(kc) = K(1-kc^2) — exact to machine epsilon.
+%  cel2(kc,1,kc^2) = E(1-kc^2) — exact to machine epsilon.
+% ------------------------------------------------------------------
+
+%!test
+%! % cel generic reference table: 10 (kc, p, a, b) test points
+%! tests = [ ...
+%!   0.5, 0.3, 1.0, 0.5,  2.785372539236548; ...
+%!   0.5, 1.0, 0.8, 1.2,  2.229457648629679; ...
+%!   0.5, 2.0, 0.5, 1.5,  1.436498488170953; ...
+%!   0.7, 0.4, 1.0, 1.0,  3.066196685396346; ...
+%!   0.7, 1.0, 1.0, 1.0,  1.862640802332739; ...
+%!   0.7, 1.5, 0.3, 0.7,  0.7431229068315112; ...
+%!   0.3, 0.2, 0.5, 1.0,  6.654375216945862; ...
+%!   0.3, 1.0, 1.0, 0.09, 1.096477517392227; ...
+%!   0.9, 0.1, 1.0, 1.0,  5.378472453168364; ...
+%!   0.9, 1.0, 1.0, 1.0,  1.654616667522527];
+%! for k = 1:size(tests, 1)
+%!   kc = tests(k,1); p = tests(k,2); a = tests(k,3);
+%!   b  = tests(k,4); ref = tests(k,5);
+%!   cv = cel(kc, p, a, b);
+%!   assert(abs(cv - ref) < 1e-13, ...
+%!       sprintf('cel(%.2g,%.2g,%.2g,%.2g): got %.16g, expected %.16g', kc,p,a,b,cv,ref));
+%! end
+
+%!test
+%! % cel1 reference table: kc in {0.2, 0.4, 0.6, 0.7071, 0.8944}
+%! kc_v = [0.2, 0.4, 0.6, 1/sqrt(2), sqrt(1-0.1)];
+%! m_v  = 1 - kc_v.^2;
+%! [Kv, ~] = ellipke(m_v);
+%! C1 = cel1(kc_v);
+%! assert(max(abs(C1 - Kv)) < 1e-13, 'cel1 reference table failed');
+
+%!test
+%! % cel2(kc, 1, kc^2) reference table: equals E(1-kc^2)
+%! kc_v = [0.3, 0.5, 0.7, 0.8, 0.9];
+%! m_v  = 1 - kc_v.^2;
+%! [~, Ev] = ellipke(m_v);
+%! C2 = cel2(kc_v, 1, kc_v.^2);
+%! assert(max(abs(C2 - Ev)) < 1e-13, 'cel2(kc,1,kc^2)=E reference table failed');

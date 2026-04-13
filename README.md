@@ -73,6 +73,17 @@ Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository,
     - [WEIERSTRASSPPRIME: Derivative of the P-function](#weierstrasspprime-derivative-of-the-p-function)
     - [WEIERSTRASSZETA: Weierstrass Zeta Function](#weierstrasszeta-weierstrass-zeta-function)
     - [WEIERSTRASSSIGMA: Weierstrass Sigma Function](#weierstrasssigma-weierstrass-sigma-function)
+  - [Associate Elliptic Integrals (B, D, J)](#associate-elliptic-integrals-b-d-j)
+    - [ELLIPTICBDJ: Incomplete Associate Integrals](#ellipticbdj-incomplete-associate-integrals)
+    - [ELLIPTICBD: Complete Associate Integrals](#ellipticbd-complete-associate-integrals)
+    - [JACOBIEDJ: Jacobi-Argument Associate Integrals](#jacobiedj-jacobi-argument-associate-integrals)
+  - [Carlson Symmetric Elliptic Integrals](#carlson-symmetric-elliptic-integrals)
+    - [CARLSONRF: Symmetric First Kind](#carlsonrf-symmetric-first-kind)
+    - [CARLSONRD: Symmetric Second Kind](#carlsonrd-symmetric-second-kind)
+    - [CARLSONRJ: Symmetric Third Kind](#carlsonrj-symmetric-third-kind)
+    - [CARLSONRC: Degenerate](#carlsonrc-degenerate)
+  - [Bulirsch Complete Elliptic Integral](#bulirsch-complete-elliptic-integral)
+    - [CEL: Bulirsch Generalised Complete Integral](#cel-bulirsch-generalised-complete-integral)
   - [Elliptic Related Functions](#elliptic-related-functions)
     - [AGM: Arithmetic Geometric Mean](#agm-arithmetic-geometric-mean)
     - [NOMEQ: The Value of Nome q = q(m)](#nomeq-the-value-of-nome-q--qm)
@@ -444,6 +455,140 @@ S  = weierstrassSigma(z, e1, e2, e3);
 *Depends on* `WEIERSTRASSZETA`, `ELLIPKE`.<br>
 *See also* `WEIERSTRASSZETA`, `WEIERSTRASSP`.
 
+
+# Associate Elliptic Integrals (B, D, J)
+
+The associate integrals B(φ|m), D(φ|m), J(φ,n|m) are more fundamental than F, E, Π: the standard integrals decompose as F = B+D, E = B+(1−m)D, Π = B+D+n·J. Computing via B/D/J avoids precision loss when F−E or Π−F are small.
+
+## ELLIPTICBDJ: Incomplete Associate Integrals
+
+`ELLIPTICBDJ` evaluates the incomplete associate elliptic integrals simultaneously.
+
+`[B, D, J] = ELLIPTICBDJ(PHI, M, N)` returns:
+
+```
+B(φ|m) = ∫₀^φ cos²θ / √(1−m·sin²θ) dθ
+D(φ|m) = ∫₀^φ sin²θ / √(1−m·sin²θ) dθ
+J(φ,n|m) = ∫₀^φ sin²θ / ((1−n·sin²θ)·√(1−m·sin²θ)) dθ
+```
+
+Connection to standard integrals: `F = B+D`, `E = B+(1−m)·D`, `Π = B+D+n·J`.
+
+Algorithm: Carlson symmetric forms RF, RD, RJ (DLMF §19.25).
+
+```matlab
+phi = 0.8;  m = 0.5;  n = 0.3;
+[B, D, J] = ellipticBDJ(phi, m, n);
+[F, E]    = elliptic12(phi, m);
+assert(abs(B+D-F) < 1e-12)         % F = B+D
+assert(abs(B+(1-m)*D-E) < 1e-12)   % E = B+(1-m)*D
+Pi = elliptic3(phi, m, n);
+assert(abs(B+D+n*J-Pi) < 1e-11)    % Pi = B+D+n*J
+```
+
+`[B, D] = ELLIPTICBDJ(PHI, M)` computes only B and D.
+
+*Depends on* `CARLSONRF`, `CARLSONRD`, `CARLSONRJ`.
+
+## ELLIPTICBD: Complete Associate Integrals
+
+`ELLIPTICBD` evaluates the complete associate elliptic integrals B(m), D(m), S(m).
+
+`[B, D, S] = ELLIPTICBD(M)` returns:
+
+```
+B(m) = ∫₀^{π/2} cos²θ / √(1−m·sin²θ) dθ  =  (K+E/(1−m)) / 2  ... more precisely:
+D(m) = (K(m) − E(m)) / m
+B(m) = K(m) − D(m)
+S(m) = (D(m) − B(m)) / m
+```
+
+Identities: `K = B+D`, `E = B+(1−m)·D`.
+
+```matlab
+m = 0.7;
+[B, D, S] = ellipticBD(m);
+[K, E] = ellipke(m);
+% K = B + D:  err ≈ 0
+% E = B + (1-m)*D:  err ≈ 0
+```
+
+*Depends on* `ELLIPKE`.
+
+## JACOBIEDJ: Jacobi-Argument Associate Integrals
+
+`JACOBIEDJ` evaluates E_u, D_u, J_u in terms of the Jacobi argument u = F(φ|m).
+
+`[Eu, Du, Ju] = JACOBIEDJ(U, M, N)` returns:
+
+```
+E_u(u|m)   = E(am(u|m)|m) = u − m·D_u(u|m)
+D_u(u|m)   = D(am(u|m)|m) = ∫₀^u sn²(v|m) dv
+J_u(u,n|m) = J(am(u|m), n, m)
+```
+
+```matlab
+m = 0.5;  n = 0.3;
+[K, ~] = ellipke(m);  u = 0.6*K;
+[Eu, Du, Ju] = jacobiEDJ(u, m, n);
+assert(abs(Eu - (u - m*Du)) < 1e-14)   % E_u = u - m*D_u
+```
+
+*Depends on* `ELLIPJ`, `ELLIPTICBDJ`.
+
+# Carlson Symmetric Elliptic Integrals
+
+The Carlson symmetric forms are the DLMF §19 reference forms. They connect directly to the Legendre forms and are the basis for the B/D/J implementation.
+
+## CARLSONRF: Symmetric First Kind
+
+`RF = CARLSONRF(X, Y, Z)` evaluates R_F(x,y,z) = ½∫₀^∞ [(t+x)(t+y)(t+z)]^{-1/2} dt.
+
+Connection: `F(φ|m) = sin(φ) · R_F(cos²φ, 1−m·sin²φ, 1)`
+
+## CARLSONRD: Symmetric Second Kind
+
+`RD = CARLSONRD(X, Y, Z)` evaluates R_D(x,y,z) = R_J(x,y,z,z).
+
+Connection: `D(φ|m) = (sin³φ/3) · R_D(cos²φ, 1−m·sin²φ, 1)`
+
+## CARLSONRJ: Symmetric Third Kind
+
+`RJ = CARLSONRJ(X, Y, Z, P)` evaluates R_J(x,y,z,p).
+
+Connection: `Π(n,φ|m) = sin(φ)·R_F + (n·sin³φ/3)·R_J(cos²φ, 1−m·sin²φ, 1, 1−n·sin²φ)`
+
+## CARLSONRC: Degenerate
+
+`RC = CARLSONRC(X, Y)` evaluates R_C(x,y) = R_F(x,y,y) via closed-form arctan/arctanh.
+
+All four Carlson functions accept scalar or array inputs (broadcast rules apply).
+
+*Algorithm:* Carlson duplication iteration (DLMF §19.36). Convergence in ~5 iterations for double precision.
+
+# Bulirsch Complete Elliptic Integral
+
+## CEL: Bulirsch Generalised Complete Integral
+
+`C = CEL(KC, P, A, B)` evaluates Bulirsch's generalised complete elliptic integral:
+
+```
+cel(kc,p,a,b) = ∫₀^{π/2} (a·cos²φ + b·sin²φ) / ((cos²φ + p·sin²φ)·√(cos²φ + kc²·sin²φ)) dφ
+```
+
+Special cases (kc = √(1−m)):
+
+| Call | Result |
+|---|---|
+| `cel(kc, 1, 1, 1)` | K(m) |
+| `cel(kc, 1, 1, kc²)` | E(m) |
+| `cel(kc, 1, 1, 0)` | B(m) |
+| `cel(kc, 1, 0, 1)` | D(m) |
+| `cel(kc, 1−n, 1, 1)` | Π(n\|m) |
+
+Thin wrappers: `cel1(kc)` = K, `cel2(kc,a,b)` = `cel(kc,1,a,b)`, `cel3(kc,p)` = `cel(kc,p,1,1)`.
+
+*Depends on* `ELLIPTICBD`, `CARLSONRJ`.
 
 # Elliptic Related Functions
 

@@ -117,6 +117,18 @@ with open('$WORKTREE_DIR/params.json', 'w') as f:
 print("params.json updated")
 PYEOF
 
+# ── copy examples directory ──────────────────────────────────────────────────
+echo "Copying examples/"
+EXAMPLES_SRC="$REPO_ROOT/examples"
+EXAMPLES_DST="$WORKTREE_DIR/examples"
+if [[ -d "$EXAMPLES_SRC" ]]; then
+  rm -rf "$EXAMPLES_DST"
+  cp -r "$EXAMPLES_SRC" "$EXAMPLES_DST"
+  echo "  Copied $(find "$EXAMPLES_DST" -type f | wc -l) files to examples/"
+else
+  echo "  No examples/ directory found — skipping."
+fi
+
 # ── sanity check ─────────────────────────────────────────────────────────────
 echo "Sanity check:"
 python3 -c "
@@ -135,6 +147,7 @@ if missing:
 # ── commit and push (or dry-run) ─────────────────────────────────────────────
 cd "$WORKTREE_DIR"
 git add index.html params.json
+[[ -d "$EXAMPLES_DST" ]] && git add examples/
 
 if [[ $DRY_RUN -eq 1 ]]; then
   echo "DRY RUN — skipping commit/push.  Inspect $WORKTREE_DIR to review changes."

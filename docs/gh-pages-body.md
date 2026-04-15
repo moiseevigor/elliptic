@@ -6,6 +6,14 @@ The [Matlab](http://www.mathworks.com/) script implementations of [Elliptic inte
 
 The main *GOAL* of the project is to provide the natural Matlab scripts *WITHOUT* external library calls like Maple and others. All scripts are developed to accept tensors as arguments and almost all of them have their complex versions. Performance and complete control on the execution are the main features.
 
+# Interactive Examples
+
+Explore the mathematics behind the functions with live, browser-based visualisations — all computations run client-side using the Carlson duplication algorithm ported to JavaScript.
+
+| Example | Topics |
+|---------|--------|
+| [**Arc Length & Celestial Mechanics**](examples/arclength-celestial-mechanics/) | Ellipse arc length · Keplerian orbits · Kepler's equation · Associate integrals B, D, J · Carlson convergence |
+
 # Citations and references
 
 If you've used any of the routines in this package please cite and support the effort. Here is the example of the BibTeX entry
@@ -65,6 +73,7 @@ Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository,
     - [AGM: Arithmetic Geometric Mean](#agm-arithmetic-geometric-mean)
     - [NOMEQ: The Value of Nome q = q(m)](#nomeq-the-value-of-nome-q--qm)
     - [INVERSENOMEQ: The Value of Nome m = m(q)](#inversenomeq-the-value-of-nome-m--mq)
+  - [Interactive Examples](#interactive-examples)
   - [Contributors](#contributors)
   - [References](#references)
 

@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arc Length & Celestial Mechanics — Elliptic Integrals in Action</title>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left:'$$',right:'$$',display:true},
+        {left:'$',right:'$',display:false}
+      ]
+    })"></script>
+
+  <!-- D3 v7 -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text:      #1a1a1a;
+      --muted:     #555;
+      --border:    #ddd;
+      --accent:    #1b6ca8;
+      --accent2:   #c0392b;
+      --accent3:   #27ae60;
+      --bg:        #fff;
+      --fig-bg:    #f8f9fa;
+      --max-w:     740px;
+      --wide-w:    1060px;
+    }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    /* ─── Nav ──────────────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(4px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 0;
+    }
+    nav ul {
+      max-width: var(--wide-w);
+      margin: 0 auto;
+      padding: 0 24px;
+      list-style: none;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      font-family: sans-serif;
+    }
+    nav a { color: var(--accent); text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
+    nav .back { color: var(--muted); margin-right: auto; }
+
+    /* ─── Layout ───────────────────────────────────────────────────────── */
+    .content {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .wide {
+      max-width: var(--wide-w);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ─── Hero ─────────────────────────────────────────────────────────── */
+    .hero {
+      padding: 56px 0 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
+    }
+    .hero h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 16px;
+    }
+    .hero .subtitle {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin-bottom: 20px;
+    }
+    .hero .byline {
+      font-size: 13px;
+      font-family: sans-serif;
+      color: var(--muted);
+    }
+    .hero .byline a { color: var(--accent); text-decoration: none; }
+
+    /* ─── Typography ───────────────────────────────────────────────────── */
+    h2 {
+      font-size: 1.55rem;
+      margin: 52px 0 16px;
+      padding-top: 8px;
+      border-top: 2px solid var(--border);
+    }
+    h3 { font-size: 1.15rem; margin: 32px 0 12px; color: #222; }
+    p  { margin-bottom: 16px; }
+    a  { color: var(--accent); }
+    code {
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 0.85em;
+      background: #f0f0f0;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    pre {
+      background: #f4f4f4;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      font-size: 13.5px;
+      line-height: 1.5;
+      margin: 20px 0;
+      font-family: 'Menlo', 'Consolas', monospace;
+    }
+    blockquote {
+      border-left: 3px solid var(--accent);
+      margin: 20px 0;
+      padding: 8px 20px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* ─── Figures ──────────────────────────────────────────────────────── */
+    .figure {
+      background: var(--fig-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px 16px;
+      margin: 32px 0;
+    }
+    .figure svg { display: block; width: 100%; }
+    .figure-caption {
+      font-size: 13.5px;
+      color: var(--muted);
+      font-family: sans-serif;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+    .figure-caption strong { color: var(--text); }
+
+    /* ─── Controls ─────────────────────────────────────────────────────── */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 16px;
+      font-family: sans-serif;
+      font-size: 13.5px;
+    }
+    .controls label { color: var(--muted); }
+    .controls input[type=range] { width: 140px; accent-color: var(--accent); }
+    .controls select {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 13px;
+      background: white;
+    }
+    .val-badge {
+      display: inline-block;
+      min-width: 42px;
+      text-align: right;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* ─── Table ────────────────────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      font-family: sans-serif;
+      margin: 20px 0;
+    }
+    th {
+      border-bottom: 2px solid var(--border);
+      padding: 6px 12px;
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    td {
+      padding: 5px 12px;
+      border-bottom: 1px solid #eee;
+      font-family: 'Menlo', monospace;
+      font-size: 13px;
+    }
+    tr.match td { background: #eafaea; }
+    tr.fail  td { background: #ffeaea; }
+
+    /* ─── Tooltip ──────────────────────────────────────────────────────── */
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(30,30,30,0.88);
+      color: #fff;
+      font-family: sans-serif;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 5px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    /* ─── Orbit planet animation ───────────────────────────────────────── */
+    @keyframes orbit-spin { to { stroke-dashoffset: 0; } }
+
+    /* ─── Footer ───────────────────────────────────────────────────────── */
+    footer {
+      margin-top: 80px;
+      padding: 32px 0;
+      border-top: 1px solid var(--border);
+      font-family: sans-serif;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    footer a { color: var(--muted); }
+    footer .wide { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- ─── Navigation ──────────────────────────────────────────────────────── -->
+<nav>
+  <ul>
+    <li><a class="back" href="https://moiseevigor.github.io/elliptic/">&larr; elliptic library</a></li>
+    <li><a href="#arclength">Arc Length</a></li>
+    <li><a href="#kepler">Kepler Orbits</a></li>
+    <li><a href="#kepler-eq">Kepler's Equation</a></li>
+    <li><a href="#bdj">B, D, J Integrals</a></li>
+    <li><a href="#carlson">Carlson Forms</a></li>
+    <li><a href="#validation">Validation</a></li>
+  </ul>
+</nav>
+
+<!-- ─── Hero ────────────────────────────────────────────────────────────── -->
+<div class="content">
+  <div class="hero">
+    <h1>Arc Length &amp; Celestial Mechanics<br><span style="font-weight:400; font-size:1.4rem">via Elliptic Integrals</span></h1>
+    <p class="subtitle">
+      Elliptic integrals appear throughout orbital mechanics — from the arc length of an
+      ellipse to Kepler's equation and the period of a two-body orbit.
+      This page shows the mathematics and lets you explore each formula interactively.
+    </p>
+    <p class="byline">
+      Part of the <a href="https://moiseevigor.github.io/elliptic/">moiseevigor/elliptic</a> library &middot;
+      All computations run in your browser using the Carlson duplication algorithm.
+    </p>
+  </div>
+</div>
+
+<!-- ─── §1  Arc Length of an Ellipse ────────────────────────────────────── -->
+<div class="content">
+  <h2 id="arclength">1. Arc Length of an Ellipse</h2>
+
+  <p>
+    The arc length from one end of the major axis to a point at eccentric angle $\varphi$ on
+    an ellipse with semi-axes $a \ge b$ (eccentricity $e = \sqrt{1-b^2/a^2}$, parameter
+    $m = e^2$) is
+  </p>
+  $$s(\varphi) = a\,E(\varphi \mid m) = a\!\int_0^{\varphi}\!\sqrt{1 - m\sin^2\theta}\,d\theta.$$
+  <p>
+    Drag the angle slider to trace the arc. The full perimeter is $4a\,E(\pi/2 \mid m) = 4a\,E(m)$.
+  </p>
+
+  <div class="figure wide">
+    <div class="controls">
+      <label>$m = $ <span class="val-badge" id="arc-m-val">0.60</span></label>
+      <input type="range" id="arc-m" min="0" max="0.99" step="0.01" value="0.60">
+      <label>$\varphi = $ <span class="val-badge" id="arc-phi-val">1.20</span></label>
+      <input type="range" id="arc-phi" min="0" max="1.5708" step="0.01" value="1.20">
+    </div>
+    <svg id="fig-arc" height="300"></svg>
+    <p class="figure-caption">
+      <strong>Figure 1.</strong> Ellipse arc $E(\varphi \mid m)$ (highlighted) and the integrand
+      $\sqrt{1-m\sin^2\theta}$ (right). All values computed via Carlson $R_F$ and $R_D$.
+    </p>
+  </div>
+
+  <p>
+    Using Carlson symmetric forms the computation is exact and numerically stable for all
+    $m \in [0,1)$:
+  </p>
+  <pre>E(φ|m) = sin(φ) · R_F(cos²φ, 1−m·sin²φ, 1)
+         − (m/3)·sin³(φ) · R_D(cos²φ, 1−m·sin²φ, 1)</pre>
+
+  <!-- §2 Kepler Orbits -->
+  <h2 id="kepler">2. Keplerian Orbits</h2>
+
+  <p>
+    A planet moves on an ellipse with the Sun at one focus.  In polar coordinates centred on
+    the Sun, the orbit is
+  </p>
+  $$r(\theta) = \frac{a(1-e^2)}{1 + e\cos\theta},$$
+  <p>
+    where $e$ is the orbital eccentricity ($e=0$ is a circle, $e\to 1$ is a parabola).
+    The arc length measured from perihelion (closest approach) is
+  </p>
+  $$L(\theta) = a\!\int_0^{E(\theta)}\!\sqrt{1 - e^2\sin^2 u}\;du = a\,E(E_{\mathrm{anom}}(\theta)\mid e^2),$$
+  <p>
+    where $E_{\mathrm{anom}}$ is the eccentric anomaly,
+    $E_{\mathrm{anom}} = 2\arctan\!\bigl(\sqrt{(1-e)/(1+e)}\,\tan(\theta/2)\bigr)$.
+  </p>
+
+  <div class="figure wide">
+    <div class="controls">
+      <label>Eccentricity $e = $ <span class="val-badge" id="kep-e-val">0.50</span></label>
+      <input type="range" id="kep-e" min="0" max="0.97" step="0.01" value="0.50">
+      <label>True anomaly $\theta = $ <span class="val-badge" id="kep-th-val">0.00</span> rad</label>
+      <input type="range" id="kep-th" min="0" max="6.28" step="0.02" value="0.00">
+    </div>
+    <svg id="fig-orbit" height="340"></svg>
+    <p class="figure-caption">
+      <strong>Figure 2.</strong> Keplerian orbit (blue) with planet position (orange dot) and
+      arc length from perihelion (thick arc). Right panel: arc length $L(\theta)$ vs $\theta$.
+    </p>
+  </div>
+
+  <!-- §3 Kepler's Equation -->
+  <h2 id="kepler-eq">3. Kepler's Equation</h2>
+
+  <p>
+    Time enters through Kepler's equation: the mean anomaly $M = n(t - t_0)$ (linear in time)
+    is related to the eccentric anomaly $E$ by
+  </p>
+  $$M = E - e\sin E.$$
+  <p>
+    There is no closed-form inverse; we solve numerically via Newton–Raphson.
+    The cumulative arc length as a function of time is then
+    $L(t) = a\,E\!\left(E(t) \mid e^2\right)$, making the elliptic integral essential
+    for orbit propagation.
+  </p>
+
+  <div class="figure">
+    <div class="controls">
+      <label>$e = $ <span class="val-badge" id="kepeq-e-val">0.60</span></label>
+      <input type="range" id="kepeq-e" min="0" max="0.97" step="0.01" value="0.60">
+    </div>
+    <svg id="fig-kepeq" height="280"></svg>
+    <p class="figure-caption">
+      <strong>Figure 3.</strong> Mean anomaly $M$ vs eccentric anomaly $E$ for selected $e$.
+      The deviation from the diagonal reveals time spent near aphelion.
+    </p>
+  </div>
+
+  <!-- §4 Associate Integrals B, D, J -->
+  <h2 id="bdj">4. Associate Integrals $B$, $D$, $J$ and Cancellation Avoidance</h2>
+
+  <p>
+    The standard integrals $F$, $E$, $\Pi$ are linear combinations of the associate integrals:
+  </p>
+  $$F(\varphi|m) = B(\varphi|m) + D(\varphi|m),$$
+  $$E(\varphi|m) = B(\varphi|m) + (1-m)\,D(\varphi|m),$$
+  $$\Pi(\varphi,n|m) = B(\varphi|m) + D(\varphi|m) + n\,J(\varphi,n|m),$$
+  <p>where</p>
+  $$B(\varphi|m)=\int_0^\varphi\frac{\cos^2\theta}{\Delta}\,d\theta,\quad
+    D(\varphi|m)=\int_0^\varphi\frac{\sin^2\theta}{\Delta}\,d\theta,\quad
+    \Delta=\sqrt{1-m\sin^2\theta}.$$
+
+  <p>
+    Computing $E$ as $F - m \cdot D$ loses digits when $m \approx 1$ (large cancellation).
+    Using $B + (1-m)D$ keeps all significant digits because $B$ and $D$ are individually smooth.
+  </p>
+
+  <div class="figure wide">
+    <div class="controls">
+      <label>$m = $ <span class="val-badge" id="bdj-m-val">0.70</span></label>
+      <input type="range" id="bdj-m" min="0.01" max="0.99" step="0.01" value="0.70">
+    </div>
+    <svg id="fig-bdj" height="280"></svg>
+    <p class="figure-caption">
+      <strong>Figure 4.</strong> $B(\varphi|m)$, $D(\varphi|m)$, and their sum $F = B+D$ as
+      functions of $\varphi \in [0, \pi/2]$.  Near $m=1$, $B\approx D$ and computing
+      $E = F - mD$ would lose half the digits; $E = B + (1-m)D$ does not.
+    </p>
+  </div>
+
+  <!-- §5 Carlson Convergence -->
+  <h2 id="carlson">5. Carlson Duplication: Quadratic Convergence</h2>
+
+  <p>
+    The Carlson $R_F(x,y,z)$ algorithm uses a <em>duplication theorem</em>: replace
+    $(x,y,z)$ by their mean after a Landen step.  After $n$ steps the error is
+    $O(4^{-n})$ — each iteration approximately doubles the number of correct digits.
+  </p>
+  $$R_F^{(n+1)}(x,y,z) \approx \frac{1}{\sqrt{A_n}}\left(1 - \frac{E_2}{10} + \frac{E_3}{14} + \cdots\right),$$
+  <p>
+    where $A_n = (x_n+y_n+z_n)/3$ and $E_2, E_3$ are elementary symmetric polynomials of
+    the scaled deviations $X=(A-x)/A$, etc.
+  </p>
+
+  <div class="figure">
+    <div class="controls">
+      <label>$x$</label>
+      <input type="range" id="carl-x" min="0.01" max="3" step="0.01" value="0.50">
+      <span class="val-badge" id="carl-x-val">0.50</span>
+      <label style="margin-left:12px">$y$</label>
+      <input type="range" id="carl-y" min="0.01" max="3" step="0.01" value="1.00">
+      <span class="val-badge" id="carl-y-val">1.00</span>
+      <label style="margin-left:12px">$z$</label>
+      <input type="range" id="carl-z" min="0.01" max="3" step="0.01" value="2.00">
+      <span class="val-badge" id="carl-z-val">2.00</span>
+    </div>
+    <svg id="fig-carlson" height="240"></svg>
+    <p class="figure-caption">
+      <strong>Figure 5.</strong> Relative error of $R_F$ vs iteration count.
+      Convergence is quadratic (note log scale). The algorithm stops when
+      $\max(|X|,|Y|,|Z|) < 3.2\times 10^{-3}$ (double precision threshold).
+    </p>
+  </div>
+
+  <!-- §6 Validation -->
+  <h2 id="validation">6. Browser Validation Against Octave Reference</h2>
+
+  <p>
+    The following table compares the JavaScript Carlson implementation running in this
+    browser against reference values computed in Octave using this library.
+    All differences should be at or below machine epsilon ($\approx 2.2\times 10^{-16}$).
+  </p>
+
+  <table id="val-table">
+    <thead>
+      <tr>
+        <th>$\varphi$</th><th>$m$</th>
+        <th>$F$ (Octave)</th><th>$F$ (JS)</th><th>$|$diff$|$</th>
+        <th>$E$ (Octave)</th><th>$E$ (JS)</th><th>$|$diff$|$</th>
+      </tr>
+    </thead>
+    <tbody id="val-tbody"></tbody>
+  </table>
+  <p class="figure-caption" style="margin-top:-8px">
+    <strong>Table 1.</strong> Green rows: $|\Delta| < 10^{-12}$. Red rows: larger discrepancy (should not appear).
+  </p>
+
+</div><!-- /content -->
+
+<footer>
+  <div class="wide">
+    <span>
+      Part of <a href="https://github.com/moiseevigor/elliptic">moiseevigor/elliptic</a> &mdash;
+      Elliptic functions for Matlab &amp; Octave.
+    </span>
+    <span>
+      Math rendered by <a href="https://katex.org/">KaTeX</a> &middot;
+      Figures by <a href="https://d3js.org/">D3.js</a> v7
+    </span>
+  </div>
+</footer>
+
+<!-- ─── Tooltip div ──────────────────────────────────────────────────────── -->
+<div class="tooltip" id="tip"></div>
+
+<!-- ─── JavaScript: Carlson math + figures ──────────────────────────────── -->
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  Carlson symmetric forms — JavaScript port of the MATLAB src/ implementations
+// ═══════════════════════════════════════════════════════════════════════════
+
+function carlsonRC(x, y) {
+  // R_C(x,y) = R_F(x,y,y), closed form (DLMF 19.2.17)
+  if (Math.abs(y - x) < 1e-15 * Math.abs(x)) return 1.0 / Math.sqrt(x);
+  if (y > x) {
+    const d = Math.sqrt(y - x);
+    return Math.atan(d / Math.sqrt(x)) / d;
+  } else {
+    const d = Math.sqrt(x - y);
+    return Math.atanh(d / Math.sqrt(x)) / d;
+  }
+}
+
+function carlsonRF(x, y, z) {
+  // Carlson R_F via duplication (DLMF 19.36.1)
+  const cr = 0.0027;
+  let [xn, yn, zn] = [x, y, z];
+  let An, lam;
+  for (let i = 0; i < 30; i++) {
+    const sx = Math.sqrt(xn), sy = Math.sqrt(yn), sz = Math.sqrt(zn);
+    lam = sx*sy + sy*sz + sz*sx;
+    xn = (xn + lam) / 4;
+    yn = (yn + lam) / 4;
+    zn = (zn + lam) / 4;
+    An = (xn + yn + zn) / 3;
+    const dx = (An - xn) / An, dy = (An - yn) / An, dz = -(dx + dy);
+    if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) < cr) break;
+  }
+  An = (xn + yn + zn) / 3;
+  const X = (An - xn) / An, Y = (An - yn) / An, Z = -(X + Y);
+  const E2 = X*Y - Z*Z;
+  const E3 = X*Y*Z;
+  return (1.0 / Math.sqrt(An)) * (
+    1 - E2/10 + E3/14 + E2*E2/24 - 3*E2*E3/44
+  );
+}
+
+function carlsonRD(x, y, z) {
+  // Carlson R_D via duplication (DLMF 19.36.2)
+  const cr = 0.0015;
+  let [xn, yn, zn] = [x, y, z];
+  let S = 0, fac = 1;
+  let An;
+  for (let i = 0; i < 30; i++) {
+    const sx = Math.sqrt(xn), sy = Math.sqrt(yn), sz = Math.sqrt(zn);
+    const lam = sx*sy + sy*sz + sz*sx;
+    S += fac / (sz * (zn + lam));
+    fac /= 4;
+    xn = (xn + lam) / 4;
+    yn = (yn + lam) / 4;
+    zn = (zn + lam) / 4;
+    An = (xn + yn + 3*zn) / 5;
+    const dx = (An - xn) / An, dy = (An - yn) / An, dz = (An - zn) / An;
+    if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) < cr) break;
+  }
+  An = (xn + yn + 3*zn) / 5;
+  const X = (An - xn) / An, Y = (An - yn) / An, Z = (An - zn) / An;
+  const XY = X*Y, Z2 = Z*Z, XYZ = XY*Z;
+  const E2 = XY - 6*Z2;
+  const E3 = 3*XY*Z - 8*Z2*Z;
+  const E4 = 3*(XY - Z2)*Z2;
+  const E5 = XY*Z2*Z;
+  const poly = 1 - 3*E2/14 + E3/6 + 9*E2*E2/88
+             - 3*E4/22 - 9*E2*E3/52 + 3*E5/26;
+  return 3*S + fac * poly / (An * Math.sqrt(An));
+}
+
+// Elliptic integrals via Carlson
+function ellipticF(phi, m) {
+  if (phi === 0) return 0;
+  const s = Math.sin(phi), c = Math.cos(phi);
+  const d2 = 1 - m * s * s;
+  return s * carlsonRF(c*c, d2, 1);
+}
+
+function ellipticE(phi, m) {
+  if (phi === 0) return 0;
+  const s = Math.sin(phi), c = Math.cos(phi);
+  const d2 = 1 - m * s * s;
+  const s2 = s * s;
+  return s * carlsonRF(c*c, d2, 1) - (m * s2 * s / 3) * carlsonRD(c*c, d2, 1);
+}
+
+// Complete integrals K(m) and E(m)
+function ellipticK(m) { return ellipticF(Math.PI/2, m); }
+function ellipticEc(m) { return ellipticE(Math.PI/2, m); }
+
+// Associate integrals B and D via Carlson
+function ellipticB(phi, m) {
+  if (phi === 0) return 0;
+  const s = Math.sin(phi), c = Math.cos(phi);
+  const d2 = 1 - m * s * s;
+  const s3 = s * s * s;
+  return (s3 / 3) * carlsonRD(d2, 1, c*c);
+}
+function ellipticD(phi, m) {
+  if (phi === 0) return 0;
+  // D = F - B, but computed stably: D = s^3/3 * RD(c^2, d^2, 1)  [DLMF note]
+  // Actually: B(phi|m) = s^3/3 * RD(1-ms^2, 1, c^2)   -- check signs
+  // D(phi|m) = s^3/3 * RD(c^2, 1-ms^2, 1)
+  const s = Math.sin(phi), c = Math.cos(phi);
+  const d2 = 1 - m * s * s;
+  const s3 = s * s * s;
+  return (s3 / 3) * carlsonRD(c*c, d2, 1);
+}
+
+// Solve Kepler's equation M = E - e*sin(E) via Newton-Raphson
+function solveKepler(M, e) {
+  let E = M + e * Math.sin(M);
+  for (let i = 0; i < 30; i++) {
+    const f  = E - e * Math.sin(E) - M;
+    const fp = 1 - e * Math.cos(E);
+    const dE = -f / fp;
+    E += dE;
+    if (Math.abs(dE) < 1e-14) break;
+  }
+  return E;
+}
+
+// True anomaly → eccentric anomaly (returns value in [0, 2π])
+function trueToEcc(theta, e) {
+  let E = 2 * Math.atan(Math.sqrt((1-e)/(1+e)) * Math.tan(theta/2));
+  if (E < 0) E += 2 * Math.PI;
+  return E;
+}
+
+// Arc length from perihelion to true anomaly theta on orbit with semi-major a, ecc e
+// Using E(Eanom | e^2)
+function orbitArc(theta, e) {
+  const E_anom = trueToEcc(theta, e);
+  return ellipticE(E_anom, e * e);  // a=1 normalised
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Validation reference data (computed with Octave elliptic12 / ellipticBDJ)
+// ═══════════════════════════════════════════════════════════════════════════
+const REF = [
+  {phi: Math.PI/6, m: 0.3, F: 0.530636899539867,  E: 0.516724940894427},
+  {phi: Math.PI/4, m: 0.3, F: 0.808459030448462,  E: 0.763462718580619},
+  {phi: Math.PI/3, m: 0.3, F: 1.09913522309204,   E: 0.999296364678264},
+  {phi: Math.PI/2, m: 0.3, F: 1.71388944817879,   E: 1.44536306441267},
+  {phi: Math.PI/6, m: 0.7, F: 0.540872222535946,  E: 0.507293961064916},
+  {phi: Math.PI/4, m: 0.7, F: 0.845841916197257,  E: 0.732301503864883},
+  {phi: Math.PI/3, m: 0.7, F: 1.19663065156446,   E: 0.928090534177157},
+  {phi: Math.PI/2, m: 0.7, F: 2.07536313529247,   E: 1.24167056794582},
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Utility: responsive SVG width
+// ═══════════════════════════════════════════════════════════════════════════
+function svgWidth(el) {
+  const parent = el.parentElement;
+  return parent.clientWidth - 48;  // minus padding
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Figure 1: Ellipse Arc Length
+// ═══════════════════════════════════════════════════════════════════════════
+function drawArc() {
+  const m   = +document.getElementById('arc-m').value;
+  const phi = +document.getElementById('arc-phi').value;
+  document.getElementById('arc-m-val').textContent   = m.toFixed(2);
+  document.getElementById('arc-phi-val').textContent = phi.toFixed(2);
+
+  const svgEl = document.getElementById('fig-arc');
+  const W = svgWidth(svgEl), H = 300;
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const d3svg = d3.select(svgEl);
+  d3svg.selectAll('*').remove();
+
+  const mg = {t:20, r:20, b:40, l:50};
+  const PW = W/2 - mg.l - mg.r - 10;
+  const PH = H - mg.t - mg.b;
+
+  // Left panel: ellipse
+  const a = 1, b_ax = Math.sqrt(1 - m);  // semi-axes (a=1, b=sqrt(1-m))
+  const cx = mg.l + PW/2, cy = mg.t + PH/2;
+  const rx = Math.min(PW/2 - 5, PH/2 - 5) * 0.9;
+  const ry = rx * b_ax;
+
+  const g1 = d3svg.append('g');
+
+  // Full ellipse
+  g1.append('ellipse').attr('cx',cx).attr('cy',cy).attr('rx',rx).attr('ry',ry)
+    .attr('fill','none').attr('stroke','#ccc').attr('stroke-width',1.5);
+
+  // Highlighted arc (from 0 to phi, eccentric angle)
+  const N = 120;
+  const arcPts = d3.range(N+1).map(i => {
+    const t = (i/N) * phi;
+    return [cx + rx*Math.cos(t - Math.PI/2), cy + ry*Math.sin(t - Math.PI/2) + ry];
+  });
+  // Actually use standard ellipse: x=a cos(t), y=b sin(t)  (t = eccentric angle)
+  const arcPts2 = d3.range(N+1).map(i => {
+    const t = (i/N) * phi;
+    return [cx + rx*Math.cos(t), cy - ry*Math.sin(t)];
+  });
+  const lineGen = d3.line().x(d=>d[0]).y(d=>d[1]);
+
+  g1.append('path').attr('d', lineGen(arcPts2))
+    .attr('fill','none').attr('stroke','#e74c3c').attr('stroke-width',3);
+
+  // Remaining arc
+  const remPts = d3.range(N+1).map(i => {
+    const t = phi + (i/N) * (2*Math.PI - phi);
+    return [cx + rx*Math.cos(t), cy - ry*Math.sin(t)];
+  });
+  g1.append('path').attr('d', lineGen(remPts))
+    .attr('fill','none').attr('stroke','#ccc').attr('stroke-width',1.5);
+
+  // Radii
+  g1.append('line').attr('x1',cx).attr('y1',cy)
+    .attr('x2', cx + rx*Math.cos(phi)).attr('y2', cy - ry*Math.sin(phi))
+    .attr('stroke','#555').attr('stroke-width',1).attr('stroke-dasharray','3,3');
+  g1.append('line').attr('x1',cx).attr('y1',cy)
+    .attr('x2', cx + rx).attr('y2', cy)
+    .attr('stroke','#555').attr('stroke-width',1).attr('stroke-dasharray','3,3');
+
+  // Point on ellipse
+  g1.append('circle')
+    .attr('cx', cx + rx*Math.cos(phi)).attr('cy', cy - ry*Math.sin(phi))
+    .attr('r', 5).attr('fill','#e74c3c');
+
+  // Label
+  const E_val = ellipticE(phi, m);
+  g1.append('text').attr('x', cx).attr('y', cy + ry + 18)
+    .attr('text-anchor','middle').attr('font-size',12).attr('font-family','sans-serif')
+    .attr('fill','#333')
+    .text(`s = a·E(φ|m) = ${E_val.toFixed(6)}`);
+
+  // Right panel: integrand curve
+  const x2 = W/2 + 10;
+  const xScale = d3.scaleLinear([0, Math.PI/2], [x2 + mg.l, W - mg.r]);
+  const yScale = d3.scaleLinear([0, 1.05], [H - mg.b, mg.t]);
+
+  const integrand = d3.range(200).map(i => {
+    const t = (i/199) * Math.PI/2;
+    return {t, v: Math.sqrt(1 - m * Math.sin(t)**2)};
+  });
+
+  const g2 = d3svg.append('g');
+  // Axes
+  g2.append('g').attr('transform',`translate(0,${H-mg.b})`)
+    .call(d3.axisBottom(xScale).ticks(4).tickFormat(v => {
+      const fracs = [[0,'0'],[Math.PI/6,'π/6'],[Math.PI/3,'π/3'],[Math.PI/2,'π/2']];
+      for (const [fv,fl] of fracs) if (Math.abs(v-fv)<0.01) return fl;
+      return v.toFixed(1);
+    }))
+    .selectAll('text').attr('font-size', 11).attr('font-family', 'sans-serif');
+  g2.append('g').attr('transform',`translate(${x2+mg.l},0)`)
+    .call(d3.axisLeft(yScale).ticks(4))
+    .selectAll('text').attr('font-size', 11).attr('font-family', 'sans-serif');
+
+  // Area under curve up to phi
+  const areaGen = d3.area()
+    .x(d => xScale(d.t)).y0(H-mg.b).y1(d => yScale(d.v));
+  const fillData = integrand.filter(d => d.t <= phi);
+  if (fillData.length > 0) {
+    fillData.push({t: phi, v: Math.sqrt(1-m*Math.sin(phi)**2)});
+    g2.append('path').attr('d', areaGen(fillData))
+      .attr('fill','rgba(231,76,60,0.15)');
+  }
+
+  // Full integrand line
+  const lineGen2 = d3.line().x(d=>xScale(d.t)).y(d=>yScale(d.v));
+  g2.append('path').attr('d', lineGen2(integrand))
+    .attr('fill','none').attr('stroke','#1b6ca8').attr('stroke-width',2);
+
+  // Vertical line at phi
+  g2.append('line')
+    .attr('x1', xScale(phi)).attr('x2', xScale(phi))
+    .attr('y1', yScale(0)).attr('y2', yScale(Math.sqrt(1-m*Math.sin(phi)**2)))
+    .attr('stroke','#e74c3c').attr('stroke-width',1.5).attr('stroke-dasharray','4,3');
+
+  // Label axis
+  g2.append('text').attr('x', (xScale(0)+xScale(Math.PI/2))/2)
+    .attr('y', H - 6).attr('text-anchor','middle')
+    .attr('font-size',11).attr('font-family','sans-serif').attr('fill','#555')
+    .text('θ');
+}
+
+document.getElementById('arc-m').addEventListener('input', drawArc);
+document.getElementById('arc-phi').addEventListener('input', drawArc);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Figure 2: Kepler Orbit
+// ═══════════════════════════════════════════════════════════════════════════
+function drawOrbit() {
+  const e  = +document.getElementById('kep-e').value;
+  const th = +document.getElementById('kep-th').value;
+  document.getElementById('kep-e-val').textContent  = e.toFixed(2);
+  document.getElementById('kep-th-val').textContent = th.toFixed(2);
+
+  const svgEl = document.getElementById('fig-orbit');
+  const W = svgWidth(svgEl), H = 340;
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const d3svg = d3.select(svgEl);
+  d3svg.selectAll('*').remove();
+
+  const mg = {t:20, r:20, b:40, l:50};
+  const PW = W/2 - mg.l - mg.r - 10;
+  const PH = H - mg.t - mg.b;
+
+  // ── Left: orbit shape
+  const N = 360;
+  const thArr = d3.range(N+1).map(i => (i/N) * 2 * Math.PI);
+  const a = 1;
+  const rArr = thArr.map(t => a*(1-e*e)/(1+e*Math.cos(t)));
+
+  // Convert to Cartesian (focus at origin)
+  const pts = thArr.map((t, i) => ({
+    x: rArr[i] * Math.cos(t),
+    y: rArr[i] * Math.sin(t)
+  }));
+
+  const xmin = d3.min(pts, d => d.x), xmax = d3.max(pts, d => d.x);
+  const ymin = d3.min(pts, d => d.y), ymax = d3.max(pts, d => d.y);
+  const pad = 0.1;
+  const xSc = d3.scaleLinear([xmin*(1+pad), xmax*(1+pad)], [mg.l, mg.l+PW]);
+  const ySc = d3.scaleLinear([ymin*(1+pad), ymax*(1+pad)], [mg.t+PH, mg.t]);
+
+  const g1 = d3svg.append('g');
+
+  // Full orbit
+  const lineGen = d3.line().x(d => xSc(d.x)).y(d => ySc(d.y));
+  g1.append('path').attr('d', lineGen(pts) + 'Z')
+    .attr('fill','none').attr('stroke','#1b6ca8').attr('stroke-width',2);
+
+  // Arc up to theta
+  const arcPts = thArr.filter(t => t <= th).map(t => {
+    const r = a*(1-e*e)/(1+e*Math.cos(t));
+    return {x: r*Math.cos(t), y: r*Math.sin(t)};
+  });
+  if (arcPts.length > 1) {
+    g1.append('path').attr('d', lineGen(arcPts))
+      .attr('fill','none').attr('stroke','#e74c3c').attr('stroke-width',3);
+  }
+
+  // Sun (focus)
+  g1.append('circle').attr('cx', xSc(0)).attr('cy', ySc(0))
+    .attr('r', 6).attr('fill','#f39c12');
+
+  // Planet
+  const r_now = a*(1-e*e)/(1+e*Math.cos(th));
+  const px = r_now * Math.cos(th), py = r_now * Math.sin(th);
+  g1.append('circle').attr('cx', xSc(px)).attr('cy', ySc(py))
+    .attr('r', 7).attr('fill','#e74c3c');
+
+  // Arc value label
+  const L_now = orbitArc(th, e);
+  g1.append('text').attr('x', mg.l + PW/2).attr('y', mg.t + PH + 30)
+    .attr('text-anchor','middle').attr('font-size',12)
+    .attr('font-family','sans-serif').attr('fill','#333')
+    .text(`L(θ) = E(${th.toFixed(2)}|e²) = ${L_now.toFixed(5)}`);
+
+  // ── Right: arc length vs theta
+  const x2 = W/2 + 10;
+  const thFull = d3.range(361).map(i => (i/360)*2*Math.PI);
+  const Larr   = thFull.map(t => orbitArc(t, e));
+
+  const xSc2 = d3.scaleLinear([0, 2*Math.PI], [x2+mg.l, W-mg.r]);
+  const ySc2 = d3.scaleLinear([0, d3.max(Larr)*1.05], [H-mg.b, mg.t]);
+
+  const g2 = d3svg.append('g');
+  g2.append('g').attr('transform',`translate(0,${H-mg.b})`)
+    .call(d3.axisBottom(xSc2).ticks(5).tickFormat(v => {
+      const map = [[0,'0'],[Math.PI,'π'],[2*Math.PI,'2π']];
+      for (const [fv,fl] of map) if (Math.abs(v-fv)<0.05) return fl;
+      return '';
+    }))
+    .selectAll('text').attr('font-size',11).attr('font-family','sans-serif');
+  g2.append('g').attr('transform',`translate(${x2+mg.l},0)`)
+    .call(d3.axisLeft(ySc2).ticks(4))
+    .selectAll('text').attr('font-size',11).attr('font-family','sans-serif');
+
+  const lineGen2 = d3.line().x((_,i)=>xSc2(thFull[i])).y(d=>ySc2(d));
+  g2.append('path').attr('d', lineGen2(Larr))
+    .attr('fill','none').attr('stroke','#1b6ca8').attr('stroke-width',2);
+
+  // Current theta vertical line
+  g2.append('line')
+    .attr('x1',xSc2(th)).attr('x2',xSc2(th))
+    .attr('y1',ySc2(0)).attr('y2',ySc2(L_now))
+    .attr('stroke','#e74c3c').attr('stroke-width',1.5).attr('stroke-dasharray','4,3');
+  g2.append('circle')
+    .attr('cx',xSc2(th)).attr('cy',ySc2(L_now))
+    .attr('r',4).attr('fill','#e74c3c');
+
+  // Axis labels
+  g2.append('text').attr('x',(xSc2(0)+xSc2(2*Math.PI))/2).attr('y',H-6)
+    .attr('text-anchor','middle').attr('font-size',11)
+    .attr('font-family','sans-serif').attr('fill','#555').text('θ');
+  g2.append('text').attr('transform',`translate(${x2+mg.l-34},${(H-mg.b+mg.t)/2}) rotate(-90)`)
+    .attr('text-anchor','middle').attr('font-size',11)
+    .attr('font-family','sans-serif').attr('fill','#555').text('L(θ)');
+}
+
+document.getElementById('kep-e').addEventListener('input', drawOrbit);
+document.getElementById('kep-th').addEventListener('input', drawOrbit);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Figure 3: Kepler's Equation
+// ═══════════════════════════════════════════════════════════════════════════
+function drawKeplerEq() {
+  const e = +document.getElementById('kepeq-e').value;
+  document.getElementById('kepeq-e-val').textContent = e.toFixed(2);
+
+  const svgEl = document.getElementById('fig-kepeq');
+  const W = svgWidth(svgEl), H = 280;
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const d3svg = d3.select(svgEl);
+  d3svg.selectAll('*').remove();
+
+  const mg = {t:20, r:20, b:40, l:50};
+  const xSc = d3.scaleLinear([0, 2*Math.PI], [mg.l, W-mg.r]);
+  const ySc = d3.scaleLinear([0, 2*Math.PI], [H-mg.b, mg.t]);
+
+  d3svg.append('g').attr('transform',`translate(0,${H-mg.b})`)
+    .call(d3.axisBottom(xSc).ticks(5).tickFormat(v => {
+      const map = [[0,'0'],[Math.PI/2,'π/2'],[Math.PI,'π'],[3*Math.PI/2,'3π/2'],[2*Math.PI,'2π']];
+      for (const [fv,fl] of map) if (Math.abs(v-fv)<0.05) return fl;
+      return '';
+    })).selectAll('text').attr('font-size',11).attr('font-family','sans-serif');
+  d3svg.append('g').attr('transform',`translate(${mg.l},0)`)
+    .call(d3.axisLeft(ySc).ticks(5).tickFormat(v => {
+      const map = [[0,'0'],[Math.PI/2,'π/2'],[Math.PI,'π'],[3*Math.PI/2,'3π/2'],[2*Math.PI,'2π']];
+      for (const [fv,fl] of map) if (Math.abs(v-fv)<0.05) return fl;
+      return '';
+    })).selectAll('text').attr('font-size',11).attr('font-family','sans-serif');
+
+  // Diagonal M=E
+  d3svg.append('line')
+    .attr('x1',xSc(0)).attr('y1',ySc(0))
+    .attr('x2',xSc(2*Math.PI)).attr('y2',ySc(2*Math.PI))
+    .attr('stroke','#ccc').attr('stroke-width',1).attr('stroke-dasharray','4,3');
+
+  // M(E) curve
+  const EArr = d3.range(200).map(i => (i/199)*2*Math.PI);
+  const MArr = EArr.map(E => E - e*Math.sin(E));
+  const lineGen = d3.line().x((_,i)=>xSc(MArr[i])).y((_,i)=>ySc(EArr[i]));
+  d3svg.append('path').attr('d', lineGen(EArr))
+    .attr('fill','none').attr('stroke','#1b6ca8').attr('stroke-width',2.5);
+
+  // Axis labels
+  d3svg.append('text').attr('x',(xSc(0)+xSc(2*Math.PI))/2).attr('y',H-6)
+    .attr('text-anchor','middle').attr('font-size',12)
+    .attr('font-family','sans-serif').attr('fill','#555').text('Mean anomaly M');
+  d3svg.append('text')
+    .attr('transform',`translate(14,${(H-mg.b+mg.t)/2}) rotate(-90)`)
+    .attr('text-anchor','middle').attr('font-size',12)
+    .attr('font-family','sans-serif').attr('fill','#555').text('Eccentric anomaly E');
+}
+
+document.getElementById('kepeq-e').addEventListener('input', drawKeplerEq);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Figure 4: B, D, J associate integrals
+// ═══════════════════════════════════════════════════════════════════════════
+function drawBDJ() {
+  const m = +document.getElementById('bdj-m').value;
+  document.getElementById('bdj-m-val').textContent = m.toFixed(2);
+
+  const svgEl = document.getElementById('fig-bdj');
+  const W = svgWidth(svgEl), H = 280;
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const d3svg = d3.select(svgEl);
+  d3svg.selectAll('*').remove();
+
+  const mg = {t:20, r:120, b:40, l:50};
+
+  const phiArr = d3.range(200).map(i => (i/199)*Math.PI/2);
+  const Barr = phiArr.map(p => ellipticB(p, m));
+  const Darr = phiArr.map(p => ellipticD(p, m));
+  const Farr = phiArr.map((p,i) => Barr[i] + Darr[i]);
+  const Earr = phiArr.map((p,i) => Barr[i] + (1-m)*Darr[i]);
+
+  const ymax = d3.max(Farr) * 1.1;
+  const xSc = d3.scaleLinear([0, Math.PI/2], [mg.l, W-mg.r]);
+  const ySc = d3.scaleLinear([0, ymax], [H-mg.b, mg.t]);
+
+  d3svg.append('g').attr('transform',`translate(0,${H-mg.b})`)
+    .call(d3.axisBottom(xSc).ticks(4).tickFormat(v => {
+      const map = [[0,'0'],[Math.PI/6,'π/6'],[Math.PI/3,'π/3'],[Math.PI/2,'π/2']];
+      for (const [fv,fl] of map) if (Math.abs(v-fv)<0.02) return fl;
+      return '';
+    })).selectAll('text').attr('font-size',11).attr('font-family','sans-serif');
+  d3svg.append('g').attr('transform',`translate(${mg.l},0)`)
+    .call(d3.axisLeft(ySc).ticks(4))
+    .selectAll('text').attr('font-size',11).attr('font-family','sans-serif');
+
+  const lineGen = d3.line();
+  const colors = ['#27ae60','#9b59b6','#1b6ca8','#e74c3c'];
+  const series = [Barr, Darr, Farr, Earr];
+  const labels = ['B(φ|m)','D(φ|m)','F=B+D','E=B+(1−m)D'];
+
+  series.forEach((arr, ci) => {
+    const pts = arr.map((v,i) => [xSc(phiArr[i]), ySc(v)]);
+    d3svg.append('path').attr('d', lineGen(pts))
+      .attr('fill','none').attr('stroke',colors[ci]).attr('stroke-width',2)
+      .attr('stroke-dasharray', ci >= 2 ? '6,3' : 'none');
+  });
+
+  // Legend
+  labels.forEach((lbl, i) => {
+    const ly = mg.t + 16 + i*22;
+    d3svg.append('line')
+      .attr('x1', W-mg.r+8).attr('x2', W-mg.r+28)
+      .attr('y1', ly).attr('y2', ly)
+      .attr('stroke', colors[i]).attr('stroke-width', 2)
+      .attr('stroke-dasharray', i >= 2 ? '6,3' : 'none');
+    d3svg.append('text').attr('x', W-mg.r+32).attr('y', ly+4)
+      .attr('font-size',11).attr('font-family','sans-serif')
+      .attr('fill', colors[i]).text(lbl);
+  });
+
+  d3svg.append('text').attr('x',(xSc(0)+xSc(Math.PI/2))/2).attr('y',H-6)
+    .attr('text-anchor','middle').attr('font-size',11)
+    .attr('font-family','sans-serif').attr('fill','#555').text('φ');
+}
+
+document.getElementById('bdj-m').addEventListener('input', drawBDJ);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Figure 5: Carlson R_F convergence
+// ═══════════════════════════════════════════════════════════════════════════
+function carlsonRF_steps(x0, y0, z0) {
+  // Return [{iter, relErr}]  where relErr = |RF_partial - RF_exact| / |RF_exact|
+  const cr = 0.0027;
+  let [xn, yn, zn] = [x0, y0, z0];
+  const exact = carlsonRF(x0, y0, z0);
+  const steps = [];
+
+  for (let i = 0; i <= 12; i++) {
+    // Evaluate current approximation
+    const An = (xn + yn + zn) / 3;
+    const X = (An-xn)/An, Y = (An-yn)/An, Z = -(X+Y);
+    const E2 = X*Y - Z*Z, E3 = X*Y*Z;
+    const approx = (1/Math.sqrt(An)) * (1 - E2/10 + E3/14 + E2*E2/24 - 3*E2*E3/44);
+    steps.push({iter: i, relErr: Math.max(Math.abs(approx - exact)/Math.abs(exact), 1e-16)});
+
+    const dx = (An-xn)/An, dy = (An-yn)/An, dz = (An-zn)/An;
+    if (Math.max(Math.abs(dx),Math.abs(dy),Math.abs(dz)) < cr) break;
+
+    const sx = Math.sqrt(xn), sy = Math.sqrt(yn), sz = Math.sqrt(zn);
+    const lam = sx*sy + sy*sz + sz*sx;
+    xn = (xn+lam)/4; yn = (yn+lam)/4; zn = (zn+lam)/4;
+  }
+  return steps;
+}
+
+function drawCarlson() {
+  const x = +document.getElementById('carl-x').value;
+  const y = +document.getElementById('carl-y').value;
+  const z = +document.getElementById('carl-z').value;
+  document.getElementById('carl-x-val').textContent = x.toFixed(2);
+  document.getElementById('carl-y-val').textContent = y.toFixed(2);
+  document.getElementById('carl-z-val').textContent = z.toFixed(2);
+
+  const svgEl = document.getElementById('fig-carlson');
+  const W = svgWidth(svgEl), H = 240;
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const d3svg = d3.select(svgEl);
+  d3svg.selectAll('*').remove();
+
+  const steps = carlsonRF_steps(x, y, z);
+  const mg = {t:20, r:20, b:40, l:65};
+
+  const xSc = d3.scaleLinear([0, steps.length-1], [mg.l, W-mg.r]);
+  const ySc = d3.scaleLog([1e-16, 1], [H-mg.b, mg.t]).clamp(true);
+
+  d3svg.append('g').attr('transform',`translate(0,${H-mg.b})`)
+    .call(d3.axisBottom(xSc).ticks(steps.length-1).tickFormat(d3.format('d')))
+    .selectAll('text').attr('font-size',11).attr('font-family','sans-serif');
+  d3svg.append('g').attr('transform',`translate(${mg.l},0)`)
+    .call(d3.axisLeft(ySc).tickValues([1,1e-4,1e-8,1e-12,1e-16])
+          .tickFormat(d3.format('.0e')))
+    .selectAll('text').attr('font-size',11).attr('font-family','sans-serif');
+
+  const lineGen = d3.line().x((_,i)=>xSc(i)).y(d=>ySc(d.relErr));
+  d3svg.append('path').attr('d', lineGen(steps))
+    .attr('fill','none').attr('stroke','#1b6ca8').attr('stroke-width',2.5);
+
+  steps.forEach(s => {
+    d3svg.append('circle').attr('cx',xSc(s.iter)).attr('cy',ySc(s.relErr))
+      .attr('r',4).attr('fill','#1b6ca8');
+  });
+
+  // eps line
+  d3svg.append('line')
+    .attr('x1',mg.l).attr('x2',W-mg.r)
+    .attr('y1',ySc(2.2e-16)).attr('y2',ySc(2.2e-16))
+    .attr('stroke','#e74c3c').attr('stroke-width',1).attr('stroke-dasharray','4,3');
+  d3svg.append('text').attr('x',W-mg.r-2).attr('y',ySc(2.2e-16)-4)
+    .attr('text-anchor','end').attr('font-size',10).attr('font-family','sans-serif')
+    .attr('fill','#e74c3c').text('machine ε');
+
+  // Axis labels
+  d3svg.append('text').attr('x',(mg.l+W-mg.r)/2).attr('y',H-6)
+    .attr('text-anchor','middle').attr('font-size',11)
+    .attr('font-family','sans-serif').attr('fill','#555').text('Duplication iteration');
+  d3svg.append('text').attr('transform',`translate(12,${(H-mg.b+mg.t)/2}) rotate(-90)`)
+    .attr('text-anchor','middle').attr('font-size',11)
+    .attr('font-family','sans-serif').attr('fill','#555').text('Relative error');
+}
+
+['carl-x','carl-y','carl-z'].forEach(id =>
+  document.getElementById(id).addEventListener('input', drawCarlson));
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Validation table
+// ═══════════════════════════════════════════════════════════════════════════
+function buildValidation() {
+  const tbody = document.getElementById('val-tbody');
+  const fmtPhi = v => {
+    const fracs = [[Math.PI/6,'π/6'],[Math.PI/4,'π/4'],[Math.PI/3,'π/3'],[Math.PI/2,'π/2']];
+    for (const [fv,fl] of fracs) if (Math.abs(v-fv)<1e-6) return fl;
+    return v.toFixed(4);
+  };
+
+  REF.forEach(r => {
+    const jsF = ellipticF(r.phi, r.m);
+    const jsE = ellipticE(r.phi, r.m);
+    const dF  = Math.abs(jsF - r.F);
+    const dE  = Math.abs(jsE - r.E);
+    const ok  = dF < 1e-12 && dE < 1e-12;
+
+    const tr = document.createElement('tr');
+    tr.className = ok ? 'match' : 'fail';
+    const fmt = v => v.toExponential(3);
+    tr.innerHTML = `
+      <td>${fmtPhi(r.phi)}</td><td>${r.m}</td>
+      <td>${r.F.toFixed(12)}</td><td>${jsF.toFixed(12)}</td><td>${fmt(dF)}</td>
+      <td>${r.E.toFixed(12)}</td><td>${jsE.toFixed(12)}</td><td>${fmt(dE)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Init all figures after DOM + KaTeX ready
+// ═══════════════════════════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  drawArc();
+  drawOrbit();
+  drawKeplerEq();
+  drawBDJ();
+  drawCarlson();
+  buildValidation();
+
+  // Redraw on resize
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      drawArc(); drawOrbit(); drawKeplerEq(); drawBDJ(); drawCarlson();
+    }, 120);
+  });
+});
+</script>
+</body>
+</html>

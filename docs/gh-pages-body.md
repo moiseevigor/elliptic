@@ -632,8 +632,6 @@ nomeq(inversenomeq([0.001 0.3 0.4 0.5 0.6 0.7 0.8]))
 
 # Contributors
 
-Contributors
-
 - [@moiseevigor](http://github.com/moiseevigor/) - maintainer (Igor Moiseev)
 - [@drbitboy](https://github.com/drbitboy) (Brian Carcich)
 - [@wspr](https://github.com/wspr) (Will Robertson)

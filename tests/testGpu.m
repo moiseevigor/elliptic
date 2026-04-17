@@ -82,6 +82,58 @@
 %! assert(max(abs(H_g  - H_s )) < 1e-12, 'jacobiThetaEta H:  GPU/serial mismatch');
 
 %!test
+%! % weierstrassP: GPU output must match serial CPU output
+%! clear
+%! elliptic_config('gpu', false);
+%! if ~gpu_available_for_test(), disp('SKIP: no GPU'); return; end
+%! e1=1; e2=0; e3=-1;
+%! z = linspace(0.05, 1.2, 400);
+%! P_s = weierstrassP(z, e1, e2, e3);
+%! elliptic_config('gpu', true);
+%! P_g = weierstrassP(z, e1, e2, e3);
+%! elliptic_config('gpu', false);
+%! assert(max(abs(P_g - P_s)) < 1e-12, 'weierstrassP: GPU/serial mismatch');
+
+%!test
+%! % weierstrassPPrime: GPU output must match serial CPU output
+%! clear
+%! elliptic_config('gpu', false);
+%! if ~gpu_available_for_test(), disp('SKIP: no GPU'); return; end
+%! e1=1; e2=0; e3=-1;
+%! z = linspace(0.05, 1.2, 400);
+%! dP_s = weierstrassPPrime(z, e1, e2, e3);
+%! elliptic_config('gpu', true);
+%! dP_g = weierstrassPPrime(z, e1, e2, e3);
+%! elliptic_config('gpu', false);
+%! assert(max(abs(dP_g - dP_s)) < 1e-12, 'weierstrassPPrime: GPU/serial mismatch');
+
+%!test
+%! % weierstrassZeta: GPU output must match serial CPU output
+%! clear
+%! elliptic_config('gpu', false);
+%! if ~gpu_available_for_test(), disp('SKIP: no GPU'); return; end
+%! e1=1; e2=0; e3=-1;
+%! z = linspace(0.05, 1.1, 200);
+%! Z_s = weierstrassZeta(z, e1, e2, e3);
+%! elliptic_config('gpu', true);
+%! Z_g = weierstrassZeta(z, e1, e2, e3);
+%! elliptic_config('gpu', false);
+%! assert(max(abs(Z_g - Z_s)) < 1e-10, 'weierstrassZeta: GPU/serial mismatch');
+
+%!test
+%! % weierstrassSigma: GPU output must match serial CPU output
+%! clear
+%! elliptic_config('gpu', false);
+%! if ~gpu_available_for_test(), disp('SKIP: no GPU'); return; end
+%! e1=1; e2=0; e3=-1;
+%! z = linspace(0.05, 1.0, 200);
+%! S_s = weierstrassSigma(z, e1, e2, e3);
+%! elliptic_config('gpu', true);
+%! S_g = weierstrassSigma(z, e1, e2, e3);
+%! elliptic_config('gpu', false);
+%! assert(max(abs(S_g - S_s)) < 1e-10, 'weierstrassSigma: GPU/serial mismatch');
+
+%!test
 %! % Verify GPU is disabled by default and has_gpu() returns false
 %! clear
 %! elliptic_config('gpu', false);

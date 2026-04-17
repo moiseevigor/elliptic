@@ -67,7 +67,23 @@ Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository,
     - [ELLIPTIC123: Complete and Incomplete Elliptic Integrals of the First, Second, and Third Kind](#elliptic123-complete-and-incomplete-elliptic-integrals-of-the-first-second-and-third-kind)
     - [INVERSELLIPTIC2: INVERSE Incomplete Elliptic Integrals of the Second Kind](#inverselliptic2-inverse-incomplete-elliptic-integrals-of-the-second-kind)
 
-  - [Weierstrass's elliptic functions (in development)](#weierstrasss-elliptic-functions-in-development)
+  - [Weierstrass's Elliptic Functions](#weierstrasss-elliptic-functions)
+    - [WEIERSTRASSINVARIANTS: Lattice Invariants](#weierstrassinvariants-lattice-invariants)
+    - [WEIERSTRASSP: Weierstrass P-function](#weierstrassp-weierstrass-p-function)
+    - [WEIERSTRASSPPRIME: Derivative of the P-function](#weierstrasspprime-derivative-of-the-p-function)
+    - [WEIERSTRASSZETA: Weierstrass Zeta Function](#weierstrasszeta-weierstrass-zeta-function)
+    - [WEIERSTRASSSIGMA: Weierstrass Sigma Function](#weierstrasssigma-weierstrass-sigma-function)
+  - [Associate Elliptic Integrals (B, D, J)](#associate-elliptic-integrals-b-d-j)
+    - [ELLIPTICBDJ: Incomplete Associate Integrals](#ellipticbdj-incomplete-associate-integrals)
+    - [ELLIPTICBD: Complete Associate Integrals](#ellipticbd-complete-associate-integrals)
+    - [JACOBIEDJ: Jacobi-Argument Associate Integrals](#jacobiedj-jacobi-argument-associate-integrals)
+  - [Carlson Symmetric Elliptic Integrals](#carlson-symmetric-elliptic-integrals)
+    - [CARLSONRF: Symmetric First Kind](#carlsonrf-symmetric-first-kind)
+    - [CARLSONRD: Symmetric Second Kind](#carlsonrd-symmetric-second-kind)
+    - [CARLSONRJ: Symmetric Third Kind](#carlsonrj-symmetric-third-kind)
+    - [CARLSONRC: Degenerate](#carlsonrc-degenerate)
+  - [Bulirsch Complete Elliptic Integral](#bulirsch-complete-elliptic-integral)
+    - [CEL: Bulirsch Generalised Complete Integral](#cel-bulirsch-generalised-complete-integral)
   - [Elliptic Related Functions](#elliptic-related-functions)
     - [AGM: Arithmetic Geometric Mean](#agm-arithmetic-geometric-mean)
     - [NOMEQ: The Value of Nome q = q(m)](#nomeq-the-value-of-nome-q--qm)
@@ -315,12 +331,264 @@ invE = inverselliptic2(E, sin(pi/180*alpha).^2);
 phi - invE * 180/pi
 ```
 
-# Weierstrass's elliptic functions (in development)
+# Weierstrass's Elliptic Functions
 
-Weierstrass's elliptic functions are elliptic functions that take a particularly simple form (cf Jacobi's elliptic functions); they are named for Karl Weierstrass. This class of functions are also referred to as p-functions and generally written using the symbol &#8472; (a stylised letter p called Weierstrass p).
+Weierstrass's elliptic functions are elliptic functions that take a particularly simple form (cf Jacobi's elliptic functions); they are named for Karl Weierstrass. The four functions in this library parametrize elliptic curves in terms of the half-period roots `(e1, e2, e3)` — the real roots of `4t³ − g₂t − g₃ = 0`, ordered `e1 > e2 > e3`. Parallel and GPU dispatch follow the same `elliptic_config` mechanism as the rest of the library.
 
-The Weierstrass elliptic function can be defined in three closely related ways, each of which possesses certain advantages. One is as a function of a complex variable z and a lattice &#923; in the complex plane. Another is in terms of z and two complex numbers &#969;1 and &#969;2 defining a pair of generators, or periods, for the lattice. The third is in terms of z and a modulus &#964; in the upper half-plane. This is related to the previous definition by `tau = omega2 / omega1`, which by the conventional choice on the pair of periods is in the upper half-plane. Using this approach, for fixed z the Weierstrass functions become modular functions of &#964;.
+## WEIERSTRASSINVARIANTS: Lattice Invariants
 
+`WEIERSTRASSINVARIANTS` converts the half-period roots to the Weierstrass lattice invariants.
+
+`[g2, g3, Delta] = WEIERSTRASSINVARIANTS(e1, e2, e3)` returns the invariants `g2`, `g3`, and the discriminant `Delta = g2^3 - 27*g3^2` (A&S 18.1.3).
+
+```
+g2    = -4*(e1*e2 + e1*e3 + e2*e3)
+g3    =  4* e1 * e2 * e3
+Delta = g2^3 - 27*g3^2
+```
+
+### Example:
+
+```matlab
+[g2, g3, D] = weierstrassInvariants(1, 0, -1);
+% g2 = 4,  g3 = 0,  D = 64
+```
+
+*See also* `WEIERSTRASSP`, `WEIERSTRASSPPRIME`.
+
+## WEIERSTRASSP: Weierstrass P-function
+
+`WEIERSTRASSP` evaluates the Weierstrass ℘-function (pe-function).
+
+`P = WEIERSTRASSP(z, e1, e2, e3)` returns the value of `℘(z; e1, e2, e3)` using the connection formula to Jacobi elliptic functions (A&S 18.9.1):
+
+```
+℘(z) = e3 + (e1 − e3) / sn²(z·√(e1−e3), m),   m = (e2−e3)/(e1−e3)
+```
+
+The function has a double pole at `z = 0` and is even and doubly periodic with real half-period `ω1 = K(m)/√(e1−e3)`.
+
+### Example:
+
+```matlab
+e1 = 1; e2 = 0; e3 = -1;
+z  = linspace(0.05, 1.2, 200);
+P  = weierstrassP(z, e1, e2, e3);
+plot(z, P);
+```
+
+*Depends on* `ELLIPJ`.<br>
+*See also* `WEIERSTRASSPPRIME`, `WEIERSTRASSZETA`, `WEIERSTRASSSIGMA`.
+
+## WEIERSTRASSPPRIME: Derivative of the P-function
+
+`WEIERSTRASSPPRIME` evaluates the derivative `℘'(z; e1, e2, e3)`.
+
+`dP = WEIERSTRASSPPRIME(z, e1, e2, e3)` uses the chain-rule formula (A&S 18.9.8):
+
+```
+℘'(z) = −2·(e1−e3)^(3/2) · cn(u,m)·dn(u,m) / sn³(u,m),   u = z·√(e1−e3)
+```
+
+The function is odd and satisfies the ODE identity `(℘')² = 4℘³ − g₂℘ − g₃`.
+
+### Example:
+
+```matlab
+e1 = 1; e2 = 0; e3 = -1;
+z  = linspace(0.05, 1.25, 200);
+dP = weierstrassPPrime(z, e1, e2, e3);
+```
+
+*Depends on* `ELLIPJ`.<br>
+*See also* `WEIERSTRASSP`.
+
+## WEIERSTRASSZETA: Weierstrass Zeta Function
+
+`WEIERSTRASSZETA` evaluates the Weierstrass zeta function `ζ(z; e1, e2, e3)`.
+
+`Z = WEIERSTRASSZETA(z, e1, e2, e3)` computes `ζ` via numerical integration using a regularised Gauss-Legendre quadrature scheme (A&S 18.10.1). The quasi-period `η1 = ζ(ω1)` is computed once; then `ζ(z)` follows from the quasi-periodicity relation.
+
+The zeta function is **not** doubly periodic but satisfies:
+
+```
+ζ'(z) = −℘(z)
+ζ(z + 2ω1) = ζ(z) + 2η1
+ζ(−z) = −ζ(z)   (odd)
+```
+
+Accurate for `|z| < ~4ω1`; returns `Inf` at lattice poles.
+
+### Example:
+
+```matlab
+e1 = 1; e2 = 0; e3 = -1;
+z  = linspace(0.05, 1.1, 200);
+Z  = weierstrassZeta(z, e1, e2, e3);
+```
+
+*Depends on* `WEIERSTRASSP`, `ELLIPKE`.<br>
+*See also* `WEIERSTRASSSIGMA`.
+
+## WEIERSTRASSSIGMA: Weierstrass Sigma Function
+
+`WEIERSTRASSSIGMA` evaluates the Weierstrass sigma function `σ(z; e1, e2, e3)`.
+
+`S = WEIERSTRASSSIGMA(z, e1, e2, e3)` computes `σ` from its logarithmic derivative via:
+
+```
+σ(z) = z · exp( ∫₀ᶻ [ζ(t) − 1/t] dt )
+```
+
+The integrand `ζ(t) − 1/t` is `O(t³)` near `t = 0`. To avoid catastrophic cancellation the integral is split: a Laurent series handles `[0, t_split]` and Gauss-Legendre quadrature handles `[t_split, |z|]`, where `t_split = min(0.25·ω1, 0.99·|z|)`.
+
+The sigma function is entire, odd, and satisfies `σ'(z)/σ(z) = ζ(z)` and `σ(0) = 0`, `σ'(0) = 1`. It grows quasi-exponentially; double precision overflows for `|z| > ~4ω1`.
+
+### Example:
+
+```matlab
+e1 = 1; e2 = 0; e3 = -1;
+z  = linspace(0.05, 1.0, 200);
+S  = weierstrassSigma(z, e1, e2, e3);
+```
+
+*Depends on* `WEIERSTRASSZETA`, `ELLIPKE`.<br>
+*See also* `WEIERSTRASSZETA`, `WEIERSTRASSP`.
+
+
+# Associate Elliptic Integrals (B, D, J)
+
+The associate integrals B(φ|m), D(φ|m), J(φ,n|m) are more fundamental than F, E, Π: the standard integrals decompose as F = B+D, E = B+(1−m)D, Π = B+D+n·J. Computing via B/D/J avoids precision loss when F−E or Π−F are small.
+
+## ELLIPTICBDJ: Incomplete Associate Integrals
+
+`ELLIPTICBDJ` evaluates the incomplete associate elliptic integrals simultaneously.
+
+`[B, D, J] = ELLIPTICBDJ(PHI, M, N)` returns:
+
+```
+B(φ|m) = ∫₀^φ cos²θ / √(1−m·sin²θ) dθ
+D(φ|m) = ∫₀^φ sin²θ / √(1−m·sin²θ) dθ
+J(φ,n|m) = ∫₀^φ sin²θ / ((1−n·sin²θ)·√(1−m·sin²θ)) dθ
+```
+
+Connection to standard integrals: `F = B+D`, `E = B+(1−m)·D`, `Π = B+D+n·J`.
+
+Algorithm: Carlson symmetric forms RF, RD, RJ (DLMF §19.25).
+
+```matlab
+phi = 0.8;  m = 0.5;  n = 0.3;
+[B, D, J] = ellipticBDJ(phi, m, n);
+[F, E]    = elliptic12(phi, m);
+assert(abs(B+D-F) < 1e-12)         % F = B+D
+assert(abs(B+(1-m)*D-E) < 1e-12)   % E = B+(1-m)*D
+Pi = elliptic3(phi, m, n);
+assert(abs(B+D+n*J-Pi) < 1e-11)    % Pi = B+D+n*J
+```
+
+`[B, D] = ELLIPTICBDJ(PHI, M)` computes only B and D.
+
+*Depends on* `CARLSONRF`, `CARLSONRD`, `CARLSONRJ`.
+
+## ELLIPTICBD: Complete Associate Integrals
+
+`ELLIPTICBD` evaluates the complete associate elliptic integrals B(m), D(m), S(m).
+
+`[B, D, S] = ELLIPTICBD(M)` returns:
+
+```
+B(m) = ∫₀^{π/2} cos²θ / √(1−m·sin²θ) dθ  =  (K+E/(1−m)) / 2  ... more precisely:
+D(m) = (K(m) − E(m)) / m
+B(m) = K(m) − D(m)
+S(m) = (D(m) − B(m)) / m
+```
+
+Identities: `K = B+D`, `E = B+(1−m)·D`.
+
+```matlab
+m = 0.7;
+[B, D, S] = ellipticBD(m);
+[K, E] = ellipke(m);
+% K = B + D:  err ≈ 0
+% E = B + (1-m)*D:  err ≈ 0
+```
+
+*Depends on* `ELLIPKE`.
+
+## JACOBIEDJ: Jacobi-Argument Associate Integrals
+
+`JACOBIEDJ` evaluates E_u, D_u, J_u in terms of the Jacobi argument u = F(φ|m).
+
+`[Eu, Du, Ju] = JACOBIEDJ(U, M, N)` returns:
+
+```
+E_u(u|m)   = E(am(u|m)|m) = u − m·D_u(u|m)
+D_u(u|m)   = D(am(u|m)|m) = ∫₀^u sn²(v|m) dv
+J_u(u,n|m) = J(am(u|m), n, m)
+```
+
+```matlab
+m = 0.5;  n = 0.3;
+[K, ~] = ellipke(m);  u = 0.6*K;
+[Eu, Du, Ju] = jacobiEDJ(u, m, n);
+assert(abs(Eu - (u - m*Du)) < 1e-14)   % E_u = u - m*D_u
+```
+
+*Depends on* `ELLIPJ`, `ELLIPTICBDJ`.
+
+# Carlson Symmetric Elliptic Integrals
+
+The Carlson symmetric forms are the DLMF §19 reference forms. They connect directly to the Legendre forms and are the basis for the B/D/J implementation.
+
+## CARLSONRF: Symmetric First Kind
+
+`RF = CARLSONRF(X, Y, Z)` evaluates R_F(x,y,z) = ½∫₀^∞ [(t+x)(t+y)(t+z)]^{-1/2} dt.
+
+Connection: `F(φ|m) = sin(φ) · R_F(cos²φ, 1−m·sin²φ, 1)`
+
+## CARLSONRD: Symmetric Second Kind
+
+`RD = CARLSONRD(X, Y, Z)` evaluates R_D(x,y,z) = R_J(x,y,z,z).
+
+Connection: `D(φ|m) = (sin³φ/3) · R_D(cos²φ, 1−m·sin²φ, 1)`
+
+## CARLSONRJ: Symmetric Third Kind
+
+`RJ = CARLSONRJ(X, Y, Z, P)` evaluates R_J(x,y,z,p).
+
+Connection: `Π(n,φ|m) = sin(φ)·R_F + (n·sin³φ/3)·R_J(cos²φ, 1−m·sin²φ, 1, 1−n·sin²φ)`
+
+## CARLSONRC: Degenerate
+
+`RC = CARLSONRC(X, Y)` evaluates R_C(x,y) = R_F(x,y,y) via closed-form arctan/arctanh.
+
+All four Carlson functions accept scalar or array inputs (broadcast rules apply).
+
+*Algorithm:* Carlson duplication iteration (DLMF §19.36). Convergence in ~5 iterations for double precision.
+
+# Bulirsch Complete Elliptic Integral
+
+## CEL: Bulirsch Generalised Complete Integral
+
+`C = CEL(KC, P, A, B)` evaluates Bulirsch's generalised complete elliptic integral:
+
+```
+cel(kc,p,a,b) = ∫₀^{π/2} (a·cos²φ + b·sin²φ) / ((cos²φ + p·sin²φ)·√(cos²φ + kc²·sin²φ)) dφ
+```
+
+Special cases (kc = √(1−m)):
+
+| Call | Result |
+|---|---|
+| `cel(kc, 1, 1, 1)` | K(m) |
+| `cel(kc, 1, 1, kc²)` | E(m) |
+| `cel(kc, 1, 1, 0)` | B(m) |
+| `cel(kc, 1, 0, 1)` | D(m) |
+| `cel(kc, 1−n, 1, 1)` | Π(n\|m) |
+
+Thin wrappers: `cel1(kc)` = K, `cel2(kc,a,b)` = `cel(kc,1,a,b)`, `cel3(kc,p)` = `cel(kc,p,1,1)`.
+
+*Depends on* `ELLIPTICBD`, `CARLSONRJ`.
 
 # Elliptic Related Functions
 

@@ -1,0 +1,1837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arc Length &amp; Celestial Mechanics — Elliptic Integrals in Action</title>
+
+  <!-- ES module shims for importmap polyfill in older browsers -->
+  <script async src="https://ga.jspm.io/npm:es-module-shims@1.8.3/dist/es-module-shims.js"></script>
+
+  <!-- Three.js importmap -->
+  <script type="importmap">{
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+    }
+  }</script>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+
+  <!-- D3 v7 -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+/* ═══════════════════════════════════════════════════════════════════
+   Reset & Variables — distill.pub-inspired
+═══════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-body:  'Merriweather', Georgia, serif;
+  --font-ui:    'Source Sans 3', system-ui, -apple-system, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --text:       #1a1a1a;
+  --text-light: #555;
+  --text-muted: #888;
+  --border:     #e0e0e0;
+  --bg:         #ffffff;
+  --fig-bg:     #fafafa;
+  --accent:     #1565c0;
+  --accent-r:   #b71c1c;
+  --accent-o:   #e65100;
+  --accent-g:   #1b5e20;
+  --accent-p:   #4a148c;
+  /* layout widths, matching distill.pub */
+  --body-w:     648px;
+  --mid-w:      960px;
+  --page-w:     1200px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.88;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══ Layout containers ══════════════════════════════════════════ */
+.l-body   { max-width: var(--body-w);  margin: 0 auto; padding: 0 24px; }
+.l-middle { max-width: var(--mid-w);   margin: 0 auto; padding: 0 24px; }
+.l-page   { max-width: var(--page-w);  margin: 0 auto; padding: 0 24px; }
+
+/* ═══ Navigation ═════════════════════════════════════════════════ */
+nav {
+  position: sticky; top: 0; z-index: 300;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-row {
+  max-width: var(--page-w);
+  margin: 0 auto;
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+nav a { color: var(--accent); text-decoration: none; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+nav a:hover { background: #e8f0fe; }
+.nav-back { color: var(--text-muted) !important; margin-right: 8px; }
+.nav-sep  { color: #ccc; padding: 0; font-size: 11px; }
+
+/* ═══ Article ════════════════════════════════════════════════════ */
+article { counter-reset: section; padding-bottom: 80px; }
+
+/* ═══ Hero ═══════════════════════════════════════════════════════ */
+.hero {
+  padding: 64px 0 52px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 52px;
+}
+.hero h1 {
+  font-family: var(--font-ui);
+  font-size: clamp(1.9rem, 4vw, 2.7rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #111;
+  margin-bottom: 20px;
+  letter-spacing: -0.025em;
+}
+.hero-lead {
+  font-size: 1.1rem;
+  color: var(--text-light);
+  max-width: 580px;
+  margin-bottom: 24px;
+  line-height: 1.75;
+}
+.hero-meta {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex; gap: 20px; flex-wrap: wrap;
+}
+.hero-meta a { color: var(--text-muted); text-decoration: underline; }
+
+/* ═══ Section headings ═══════════════════════════════════════════ */
+h2 {
+  font-family: var(--font-ui);
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 60px 0 20px;
+  color: #111;
+  letter-spacing: -0.02em;
+  scroll-margin-top: 56px;
+}
+h2::before {
+  counter-increment: section;
+  content: counter(section) '. ';
+  color: var(--text-muted);
+  font-weight: 400;
+}
+h3 {
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #222;
+  margin: 32px 0 12px;
+}
+
+p { margin-bottom: 18px; }
+
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: #f3f3f3;
+  border: 1px solid #e0e0e0;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+pre {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  background: #f6f6f6;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 20px 0;
+}
+
+/* ═══ Figures ════════════════════════════════════════════════════ */
+figure { margin: 36px 0; }
+
+.fig-box {
+  background: var(--fig-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px 16px;
+  overflow: visible; /* prevent label clipping */
+}
+.fig-box svg { display: block; width: 100%; overflow: visible; }
+
+figcaption {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin-top: 12px;
+  padding: 0 2px;
+}
+figcaption strong { color: var(--text-light); }
+
+/* ═══ Interactive controls ═══════════════════════════════════════ */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  margin-bottom: 14px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-light);
+}
+.ctrl { display: flex; align-items: center; gap: 7px; }
+input[type=range] { width: 110px; accent-color: var(--accent); cursor: pointer; }
+.val {
+  display: inline-block;
+  min-width: 52px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  text-align: right;
+}
+select {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  background: #fff;
+}
+
+/* ═══ Legend pills ═══════════════════════════════════════════════ */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 12px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-light);
+}
+.leg { display: flex; align-items: center; gap: 6px; }
+.swatch {
+  display: inline-block;
+  width: 22px; height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.swatch.dashed {
+  background: repeating-linear-gradient(90deg,
+    var(--c,#888) 0 6px, transparent 6px 10px);
+}
+
+/* ═══ 3D canvas ══════════════════════════════════════════════════ */
+.canvas-wrap { position: relative; }
+#solar-canvas {
+  width: 100%;
+  height: 540px;
+  display: block;
+  border-radius: 8px 8px 0 0;
+  cursor: grab;
+}
+#solar-canvas:active { cursor: grabbing; }
+.canvas-ui {
+  position: absolute;
+  top: 12px; right: 14px;
+  display: flex; flex-direction: column; gap: 6px;
+  font-family: var(--font-ui); font-size: 12px;
+}
+.canvas-controls {
+  background: rgba(0,0,10,0.75);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px 8px 0 0;
+  padding: 10px 18px;
+}
+.canvas-controls .controls { color: #aaa; }
+.canvas-controls .ctrl label { color: #aaa; }
+.canvas-controls input[type=range] { accent-color: #8ab4f8; }
+.canvas-controls .val { color: #8ab4f8; }
+.canvas-controls input[type=checkbox] { accent-color: #8ab4f8; cursor: pointer; }
+.planet-label {
+  position: absolute;
+  pointer-events: none;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: rgba(200,220,255,0.85);
+  text-shadow: 0 0 4px rgba(0,0,0,0.9);
+  white-space: nowrap;
+}
+#hover-info {
+  position: absolute;
+  bottom: 68px; left: 14px;
+  background: rgba(0,0,15,0.85);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.9);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  line-height: 1.6;
+}
+
+/* ═══ Data table ═════════════════════════════════════════════════ */
+.data-table { width:100%; border-collapse:collapse; font-family:var(--font-ui); font-size:13px; margin:20px 0; }
+.data-table th { border-bottom:2px solid var(--border); padding:7px 11px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); }
+.data-table td { padding:5px 11px; border-bottom:1px solid #f0f0f0; font-family:var(--font-mono); font-size:12px; }
+.data-table tr.pass td { background:#f0faf2; }
+.data-table tr.fail td { background:#fff0f0; }
+
+/* ═══ Footer ═════════════════════════════════════════════════════ */
+footer { border-top:1px solid var(--border); padding:28px 0; font-family:var(--font-ui); font-size:13px; color:var(--text-muted); }
+.foot-row { max-width:var(--page-w); margin:0 auto; padding:0 24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+footer a { color:var(--text-muted); }
+
+/* ═══ Code snippets ══════════════════════════════════════════════ */
+.code-snippet {
+  margin: 20px 0 28px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  font-size: 13.5px;
+}
+.code-snippet-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0f4f8;
+  border-bottom: 1px solid var(--border);
+  padding: 6px 14px;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.code-snippet-header .lang-badge {
+  background: #dde8f5;
+  color: #1a4a7a;
+  border-radius: 3px;
+  padding: 1px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+.code-snippet pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: #f8fafc;
+  padding: 14px 18px;
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-x: auto;
+}
+/* syntax highlight tokens */
+.kw  { color: #0550ae; font-weight: 600; }   /* keyword / function */
+.cm  { color: #57606a; font-style: italic; }  /* comment */
+.st  { color: #0a3069; }                       /* string */
+.nm  { color: #953800; }                       /* number/constant */
+.op  { color: #24292f; }                       /* operator */
+
+/* ═══ Responsive ═════════════════════════════════════════════════ */
+@media (max-width:680px) {
+  .l-body, .l-middle, .l-page { padding:0 16px; }
+  #solar-canvas { height:380px; }
+  h2 { font-size:1.15rem; }
+}
+  </style>
+</head>
+<body>
+
+<!-- ═══ Nav ════════════════════════════════════════════════════════════════ -->
+<nav aria-label="page navigation">
+  <div class="nav-row">
+    <a class="nav-back" href="https://moiseevigor.github.io/elliptic/">&larr; moiseevigor/elliptic</a>
+    <span class="nav-sep">|</span>
+    <a href="#arclength">Arc Length</a>
+    <a href="#solar3d">Solar System</a>
+    <a href="#precession">Precession</a>
+    <a href="#kepler">Kepler</a>
+    <a href="#bdj">B, D, J</a>
+    <a href="#carlson">Carlson</a>
+    <a href="#validation">Validation</a>
+  </div>
+</nav>
+
+<!-- ═══ Hero ════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+  <div class="hero">
+    <h1>Arc Length &amp; Celestial Mechanics<br>
+        <span style="font-weight:300;font-size:.72em;letter-spacing:-.01em">via Elliptic Integrals</span></h1>
+    <p class="hero-lead">
+      Elliptic integrals are the natural language of Keplerian orbits — they appear in the
+      arc length of an ellipse, Kepler's time-of-flight equation, and the Newtonian prediction
+      of planetary precession. This page explores each connection interactively, using the
+      Carlson symmetric forms to evaluate every integral at full double-precision accuracy
+      directly in your browser.
+    </p>
+    <div class="hero-meta">
+      <span>Part of <a href="https://github.com/moiseevigor/elliptic">moiseevigor/elliptic</a></span>
+      <span>Orbital elements: <a href="https://ssd.jpl.nasa.gov/planets/approx_pos.html">JPL J2000 mean elements</a></span>
+      <span>Rendered with <a href="https://d3js.org/">D3 v7</a> + <a href="https://threejs.org/">Three.js r160</a></span>
+    </div>
+  </div>
+</div>
+
+<article>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+  §1  Arc Length of an Ellipse
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+  <h2 id="arclength">Arc Length of an Ellipse</h2>
+
+  <p>
+    The arc length along an ellipse with semi-major axis $a$ and parameter
+    $m = e^2$ (where $e$ is the eccentricity) from the end of the major axis
+    to eccentric angle $\varphi$ is
+  </p>
+  $$s(\varphi) = a\,E(\varphi \mid m) = a\!\int_0^{\varphi}\!\sqrt{1 - m\sin^2\theta}\,\mathrm{d}\theta.$$
+  <p>
+    The complete perimeter is $4a\,E(m) = 4a\,E(\pi/2\mid m)$.
+    Using Carlson forms the evaluation is exact for all $m\in[0,1)$:
+  </p>
+
+  <div class="code-snippet">
+    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Arc length via elliptic12</div>
+    <pre><span class="cm">% addpath('src')  % if not yet on the path</span>
+a   = <span class="nm">1.5</span>;          <span class="cm">% semi-major axis [AU]</span>
+ecc = <span class="nm">0.6</span>;          <span class="cm">% eccentricity</span>
+m   = ecc.^<span class="nm">2</span>;       <span class="cm">% parameter m = e²</span>
+phi = linspace(<span class="nm">0</span>, pi/<span class="nm">2</span>, <span class="nm">200</span>);
+
+<span class="cm">% E(phi|m) — incomplete elliptic integral of the second kind</span>
+[~, E_phi] = <span class="kw">elliptic12</span>(phi, m .* ones(size(phi)));
+arc_length  = a .* E_phi;   <span class="cm">% s(φ) = a · E(φ|m)</span>
+
+<span class="cm">% Complete perimeter: 4a·E(m)</span>
+[~, E_complete] = <span class="kw">ellipke</span>(m);
+perimeter = <span class="nm">4</span> .* a .* E_complete;</pre>
+  </div>
+</div>
+
+<figure class="l-middle">
+  <div class="fig-box">
+    <div class="controls">
+      <div class="ctrl"><label>$m = $</label><input type="range" id="arc-m" min="0" max="0.99" step="0.01" value="0.60"><span class="val" id="arc-m-v">0.60</span></div>
+      <div class="ctrl"><label>$\varphi = $</label><input type="range" id="arc-phi" min="0" max="1.5708" step="0.01" value="1.20"><span class="val" id="arc-phi-v">1.20</span></div>
+    </div>
+    <svg id="fig-arc" style="height:320px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 1.</strong>
+    Left: ellipse arc from $\varphi=0$ (red) with planet point.
+    Right: integrand $\sqrt{1-m\sin^2\theta}$ with shaded area = $E(\varphi|m)$.
+    All values computed via Carlson $R_F$ and $R_D$.
+  </figcaption>
+</figure>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+  §2  The Solar System in 3D
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+  <h2 id="solar3d">The Solar System — Ellipses as a First Approximation</h2>
+
+  <p>
+    Each planet travels on an ellipse with the Sun at one focus — at least to first
+    approximation.  The orbital elements (semi-major axis $a$, eccentricity $e$, inclination
+    $i$, longitude of ascending node $\Omega$, argument of perihelion $\omega$) are well-known
+    from centuries of observation.  The interactive scene below uses the
+    <a href="https://ssd.jpl.nasa.gov/planets/approx_pos.html">J2000 mean elements</a>
+    from the JPL Planetary Ephemeris (Standish &amp; Williams, 1992) to place each planet
+    on its correct orbit.
+  </p>
+  <p>
+    But this is only an approximation: the mutual gravitational attraction of the planets
+    slowly perturbs the orbital elements over time.  The most famous consequence is the
+    <em>precession of Mercury's perihelion</em>, described in the next section.
+  </p>
+
+  <div class="code-snippet">
+    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Keplerian orbit position from mean elements</div>
+    <pre><span class="cm">% J2000 mean elements for Earth (Standish & Williams 1992)</span>
+a   = <span class="nm">1.00000018</span>;   <span class="cm">% semi-major axis [AU]</span>
+ecc = <span class="nm">0.01673163</span>;   <span class="cm">% eccentricity</span>
+inc = <span class="nm">0</span>;             <span class="cm">% inclination [rad] (≈0 for Earth)</span>
+Om  = -<span class="nm">5.1126</span>*pi/<span class="nm">180</span>; <span class="cm">% longitude of ascending node</span>
+ob  = <span class="nm">102.930</span>*pi/<span class="nm">180</span>; <span class="cm">% longitude of perihelion</span>
+L0  = <span class="nm">100.467</span>*pi/<span class="nm">180</span>; <span class="cm">% mean longitude at J2000</span>
+n   = <span class="nm">35999.373</span>*pi/(<span class="nm">180</span>*<span class="nm">36525</span>); <span class="cm">% mean motion [rad/day]</span>
+
+<span class="cm">% Position at day d from J2000</span>
+d = <span class="nm">0</span>:<span class="nm">365</span>;
+M = mod(L0 + n.*d - ob, <span class="nm">2</span>*pi);   <span class="cm">% mean anomaly</span>
+E = M + ecc.*sin(M);               <span class="cm">% eccentric anomaly (1st-order)</span>
+<span class="cm">% refine with ellipj or Newton-Raphson for better accuracy</span>
+nu = <span class="nm">2</span>.*atan2(sqrt(<span class="nm">1</span>+ecc).*sin(E/<span class="nm">2</span>), sqrt(<span class="nm">1</span>-ecc).*cos(E/<span class="nm">2</span>));
+r  = a .* (<span class="nm">1</span> - ecc.*cos(E));      <span class="cm">% heliocentric distance [AU]</span>
+x  = r .* cos(nu + ob - Om);       <span class="cm">% ecliptic x [AU]</span>
+y  = r .* sin(nu + ob - Om);</pre>
+  </div>
+</div>
+
+<figure class="l-page" id="solar3d-fig">
+  <div style="border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+    <div class="canvas-wrap">
+      <canvas id="solar-canvas" aria-label="Interactive 3D solar system"></canvas>
+      <div id="hover-info"></div>
+    </div>
+    <div class="canvas-controls" style="background:#04040e; border-top:1px solid rgba(255,255,255,0.08); padding:10px 20px;">
+      <div class="controls">
+        <div class="ctrl"><label>Speed</label><input type="range" id="ss-speed" min="0.1" max="30" step="0.1" value="8"><span class="val" id="ss-speed-v">8×</span></div>
+        <div class="ctrl"><input type="checkbox" id="ss-orbits" checked><label for="ss-orbits">Orbits</label></div>
+        <div class="ctrl"><input type="checkbox" id="ss-labels" checked><label for="ss-labels">Labels</label></div>
+        <div class="ctrl"><input type="checkbox" id="ss-incl" checked><label for="ss-incl">Inclination</label></div>
+        <span style="color:#555; font-size:12px; margin-left:8px">Drag to rotate · Scroll to zoom</span>
+      </div>
+    </div>
+  </div>
+  <figcaption>
+    <strong>Figure 2.</strong>
+    Mercury through Saturn on their real J2000 elliptic orbits.  Planet sizes are not to scale.
+    Orbital inclinations are real; toggle <em>Inclination</em> to flatten to the ecliptic plane.
+    Hover a planet to see its orbital elements.
+  </figcaption>
+</figure>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+  §3  Mercury's Perihelion Precession: Model vs Reality
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+  <h2 id="precession">Mercury's Perihelion Precession — Model vs Reality</h2>
+
+  <p>
+    In a purely Keplerian two-body system, Mercury's orbit would be a fixed ellipse,
+    repeating identically every 87.97 days.  In reality, the gravitational pull of the
+    other planets causes the orbital elements to drift slowly — the most visible effect
+    being a steady <em>precession of the perihelion</em> (the point of closest approach
+    to the Sun).
+  </p>
+  <p>
+    By the late 19th century astronomers had measured a total precession of
+    $\approx 5600$ arcseconds per century.  Newtonian mechanics, accounting for all
+    known planetary perturbations, predicted $\approx 5557$&thinsp;"/cy.
+    The residual $\boldsymbol{43}$<strong>"&thinsp;/cy remained unexplained</strong>
+    until Einstein's General Relativity in 1915.  It was one of GR's first quantitative
+    predictions.
+  </p>
+  <p>
+    The figure below shows Mercury's orbit under three models, separated by a time
+    $T$ controlled by the slider:
+  </p>
+  <ul style="margin:0 0 18px 1.4em; line-height:1.9; font-size:0.97em">
+    <li><strong style="color:var(--accent)">Keplerian</strong>: fixed elements, perfect ellipse, perihelion never moves.</li>
+    <li><strong style="color:#7b1fa2">Newtonian perturbations</strong>: 5557&thinsp;"/cy precession from planetary tugs.</li>
+    <li><strong style="color:var(--accent-o)">Observed (= Newtonian + GR)</strong>: full 5600&thinsp;"/cy — matches reality.</li>
+  </ul>
+
+  <div class="code-snippet">
+    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Perihelion precession — Keplerian vs secular model</div>
+    <pre><span class="cm">% Mercury mean elements (J2000) and secular rates [deg/century]</span>
+a   = <span class="nm">0.38710</span>;   ecc = <span class="nm">0.20564</span>;
+ob0 = <span class="nm">77.456</span>;           <span class="cm">% longitude of perihelion at J2000 [deg]</span>
+rate_kep  = <span class="nm">0</span>;           <span class="cm">% Keplerian: no precession</span>
+rate_newt = <span class="nm">531</span>/<span class="nm">3600</span>;   <span class="cm">% Newtonian perturbations [deg/cy]</span>
+rate_obs  = <span class="nm">574</span>/<span class="nm">3600</span>;   <span class="cm">% Observed (Newtonian + GR) [deg/cy]</span>
+
+T_cy = <span class="nm">1000</span>;            <span class="cm">% time elapsed [centuries]</span>
+
+<span class="cm">% Perihelion longitude under each model</span>
+ob_kep  = ob0 + rate_kep  .* T_cy;   <span class="cm">% stays fixed</span>
+ob_newt = ob0 + rate_newt .* T_cy;   <span class="cm">% 1.475° after 100 centuries</span>
+ob_obs  = ob0 + rate_obs  .* T_cy;   <span class="cm">% 1.594° after 100 centuries</span>
+
+<span class="cm">% GR residual after T_cy centuries [arcsec]</span>
+delta_arcsec = (rate_obs - rate_newt) .* T_cy .* <span class="nm">3600</span>;
+fprintf(<span class="st">'GR residual: %.1f arcsec (= %.3f deg)\n'</span>, delta_arcsec, delta_arcsec/<span class="nm">3600</span>);</pre>
+  </div>
+</div>
+
+<figure class="l-middle">
+  <div class="fig-box">
+    <div class="controls">
+      <div class="ctrl">
+        <label>$T = $</label>
+        <input type="range" id="prec-T" min="0" max="200000" step="1000" value="50000">
+        <span class="val" id="prec-T-v">50 000 yr</span>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="leg"><span class="swatch" style="background:var(--accent)"></span>Keplerian (fixed)</span>
+      <span class="leg"><span class="swatch" style="background:#7b1fa2"></span>Newtonian only (5557"/cy)</span>
+      <span class="leg"><span class="swatch" style="background:var(--accent-o)"></span>Observed / GR (5600"/cy)</span>
+    </div>
+    <svg id="fig-prec" style="height:400px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 3.</strong>
+    Mercury's orbit at epoch $t=0$ (solid, all three coincide) and at time $T$ (dashed/translated).
+    The perihelion marker shows the angular displacement.  After 200 000 years the Newtonian
+    and GR orbits diverge by $\approx 24°$, and the Keplerian prediction is off by $\approx 311°$.
+    The 43&thinsp;"/cy GR residual seems tiny per century but compounds dramatically over geological time.
+  </figcaption>
+</figure>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+  §4  Keplerian Orbits and Arc Length
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+  <h2 id="kepler">Keplerian Orbits and Arc Length</h2>
+
+  <p>
+    In polar coordinates centred on the Sun (one focus), the orbit is
+    $r(\theta) = a(1-e^2)/(1+e\cos\theta)$.
+    The arc length from perihelion to true anomaly $\theta$ is
+  </p>
+  $$L(\theta) = a\!\int_0^{E_{\mathrm{anom}}(\theta)}\!\sqrt{1 - e^2\sin^2 u}\,\mathrm{d}u = a\,E\!\left(E_{\mathrm{anom}}(\theta)\,\middle|\,e^2\right),$$
+  <p>
+    where $E_{\mathrm{anom}} = 2\arctan\!\bigl(\sqrt{(1-e)/(1+e)}\,\tan(\theta/2)\bigr)$
+    is the eccentric anomaly.
+  </p>
+
+  <div class="code-snippet">
+    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Orbital arc length as a function of true anomaly</div>
+    <pre>a   = <span class="nm">1.524</span>;    <span class="cm">% Mars semi-major axis [AU]</span>
+ecc = <span class="nm">0.0934</span>;   <span class="cm">% Mars eccentricity</span>
+m   = ecc^<span class="nm">2</span>;
+
+theta = linspace(<span class="nm">0</span>, <span class="nm">2</span>*pi, <span class="nm">361</span>);
+
+<span class="cm">% Eccentric anomaly from true anomaly</span>
+E_anom = <span class="nm">2</span> .* atan2(sqrt(<span class="nm">1</span>-ecc) .* sin(theta/<span class="nm">2</span>), ...
+                    sqrt(<span class="nm">1</span>+ecc) .* cos(theta/<span class="nm">2</span>));
+E_anom(E_anom < <span class="nm">0</span>) = E_anom(E_anom < <span class="nm">0</span>) + <span class="nm">2</span>*pi;
+
+<span class="cm">% Arc length L(θ) = a · E(E_anom | m)</span>
+[~, E_phi] = <span class="kw">elliptic12</span>(E_anom, m .* ones(size(E_anom)));
+L = a .* E_phi;
+
+<span class="cm">% Full orbital perimeter = 4a·E(m)</span>
+[~, Ec] = <span class="kw">ellipke</span>(m);
+perimeter = <span class="nm">4</span> * a * Ec;
+fprintf(<span class="st">'Mars perimeter: %.4f AU\n'</span>, perimeter);</pre>
+  </div>
+</div>
+
+<figure class="l-middle">
+  <div class="fig-box">
+    <div class="controls">
+      <div class="ctrl"><label>$e = $</label><input type="range" id="kep-e" min="0" max="0.97" step="0.01" value="0.50"><span class="val" id="kep-e-v">0.50</span></div>
+      <div class="ctrl"><label>$\theta = $</label><input type="range" id="kep-th" min="0" max="6.28" step="0.02" value="0.00"><span class="val" id="kep-th-v">0.00 rad</span></div>
+    </div>
+    <svg id="fig-orbit" style="height:360px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 4.</strong>
+    Left: Keplerian orbit (blue) with Sun (yellow dot) at one focus, planet position (red), and arc
+    from perihelion (thick red).  Right: cumulative arc length $L(\theta)$ vs true anomaly — the
+    planet spends more time near aphelion.
+  </figcaption>
+</figure>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+  §5  Kepler's Equation
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+  <h2 id="kepler-eq">Kepler's Equation</h2>
+
+  <p>
+    Time is encoded in Kepler's equation $M = E - e\sin E$, where $M = n(t-t_0)$
+    is the mean anomaly (linear in time) and $E$ is the eccentric anomaly.
+    There is no closed-form inverse; we solve numerically via Newton–Raphson:
+  </p>
+  $$E_{k+1} = E_k + \frac{M - E_k + e\sin E_k}{1 - e\cos E_k}.$$
+  <p>
+    The combined pipeline $t \!\to\! M \!\to\! E \!\to\! \theta \!\to\! L$ gives arc length
+    as a function of time, with $E(\,\cdot\mid e^2)$ evaluated at each step.
+  </p>
+
+  <div class="code-snippet">
+    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Arc length as a function of time via Kepler's equation</div>
+    <pre>a = <span class="nm">1.524</span>;  ecc = <span class="nm">0.0934</span>;  m = ecc^<span class="nm">2</span>;
+T = <span class="nm">686.97</span>;            <span class="cm">% orbital period [days]</span>
+t = linspace(<span class="nm">0</span>, T, <span class="nm">500</span>);
+
+<span class="cm">% Step 1: mean anomaly M (linear in time)</span>
+M = <span class="nm">2</span>*pi .* t ./ T;
+
+<span class="cm">% Step 2: solve Kepler's equation M = E − e sin E  (Newton–Raphson)</span>
+E = M;
+<span class="kw">for</span> k = <span class="nm">1</span>:<span class="nm">50</span>
+  E = E + (M - E + ecc.*sin(E)) ./ (<span class="nm">1</span> - ecc.*cos(E));
+<span class="kw">end</span>
+
+<span class="cm">% Step 3: arc length L(t) = a · E(E_anom | m)  using elliptic12</span>
+[~, E_phi] = <span class="kw">elliptic12</span>(E, m .* ones(size(E)));
+L = a .* E_phi;
+
+<span class="cm">% Step 4: true anomaly for position on orbit</span>
+nu = <span class="nm">2</span> .* atan2(sqrt(<span class="nm">1</span>+ecc).*sin(E/<span class="nm">2</span>), sqrt(<span class="nm">1</span>-ecc).*cos(E/<span class="nm">2</span>));
+r  = a .* (<span class="nm">1</span> - ecc.*cos(E));
+
+plot(t, L);  xlabel(<span class="st">'Days from perihelion'</span>);  ylabel(<span class="st">'Arc length [AU]'</span>);</pre>
+  </div>
+</div>
+
+<figure class="l-body">
+  <div class="fig-box">
+    <div class="controls">
+      <div class="ctrl"><label>$e = $</label><input type="range" id="kepeq-e" min="0" max="0.97" step="0.01" value="0.60"><span class="val" id="kepeq-e-v">0.60</span></div>
+    </div>
+    <svg id="fig-kepeq" style="height:300px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 5.</strong>
+    Mean anomaly $M$ vs eccentric anomaly $E$.  The dashed diagonal is $M=E$ (circular orbit, $e=0$).
+    The curvature reflects time spent near aphelion.
+  </figcaption>
+</figure>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+  §6  Associate Integrals B, D, J
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+  <h2 id="bdj">Associate Integrals $B$, $D$, $J$ — Cancellation-Free Arithmetic</h2>
+
+  <p>
+    The standard integrals $F$, $E$, $\Pi$ are linear combinations of three associates:
+  </p>
+  $$B(\varphi|m)=\!\int_0^\varphi\!\frac{\cos^2\!\theta}{\Delta}\mathrm{d}\theta,\quad
+    D(\varphi|m)=\!\int_0^\varphi\!\frac{\sin^2\!\theta}{\Delta}\mathrm{d}\theta,\quad
+    \Delta=\sqrt{1-m\sin^2\!\theta},$$
+  $$F=B+D,\qquad E=B+(1-m)D,\qquad \Pi=B+D+nJ.$$
+  <p>
+    Computing $E$ as $F - mD$ loses significant digits when $m\approx 1$ because $F\approx mD$
+    (large cancellation).  The form $B+(1-m)D$ keeps all digits since both terms are individually
+    smooth and positive.
+  </p>
+
+  <div class="code-snippet">
+    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Associate integrals B, D, J via ellipticBDJ</div>
+    <pre>phi = linspace(<span class="nm">0</span>, pi/<span class="nm">2</span>, <span class="nm">200</span>);
+m   = <span class="nm">0.97</span>;   <span class="cm">% near-singular case where cancellation matters most</span>
+n   = <span class="nm">0.5</span>;   <span class="cm">% characteristic for J</span>
+
+<span class="cm">% Incomplete associate integrals B(φ|m), D(φ|m), J(φ,n|m)</span>
+[B, D, J] = <span class="kw">ellipticBDJ</span>(phi, m, n);
+
+<span class="cm">% Recover F, E, Π without cancellation</span>
+F   = B + D;
+E   = B + (<span class="nm">1</span> - m) .* D;       <span class="cm">% ← stable; avoids F - m·D subtraction</span>
+Pi  = B + D + n .* J;
+
+<span class="cm">% Complete versions at φ = π/2</span>
+[Bc, Dc, ~, Jc] = <span class="kw">ellipticBD</span>(m, n);
+[K, Ek] = <span class="kw">ellipke</span>(m);
+fprintf(<span class="st">'K  = B+D   = %.15g  (ellipke: %.15g)\n'</span>, Bc+Dc, K);
+fprintf(<span class="st">'E  = B+mcD = %.15g  (ellipke: %.15g)\n'</span>, Bc+(<span class="nm">1</span>-m)*Dc, Ek);</pre>
+  </div>
+</div>
+
+<figure class="l-middle">
+  <div class="fig-box">
+    <div class="controls">
+      <div class="ctrl"><label>$m = $</label><input type="range" id="bdj-m" min="0.01" max="0.99" step="0.01" value="0.70"><span class="val" id="bdj-m-v">0.70</span></div>
+    </div>
+    <svg id="fig-bdj" style="height:300px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 6.</strong>
+    $B(\varphi|m)$, $D(\varphi|m)$ and their sum $F=B+D$ over $[0,\pi/2]$.
+    Note $E = B+(1{-}m)D$ (solid orange) — computed stably without subtracting two large numbers.
+  </figcaption>
+</figure>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+  §7  Carlson Duplication Convergence
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+  <h2 id="carlson">Carlson Duplication: Quadratic Convergence</h2>
+
+  <p>
+    The $R_F(x,y,z)$ algorithm replaces $(x,y,z)$ by their Landen-transformed mean at each
+    step.  After $n$ steps the relative error is $O(4^{-n})$ — each iteration roughly doubles
+    the number of correct decimal digits.  Convergence is declared when the scaled deviations
+    $|X|, |Y|, |Z| < 3.2\times10^{-3}$, at which point a 7th-order polynomial in $E_2,E_3$
+    (elementary symmetric functions of $X,Y,Z$) yields the full double-precision answer.
+  </p>
+
+  <div class="code-snippet">
+    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Carlson R_F, R_D and their Legendre connections</div>
+    <pre><span class="cm">% Direct Carlson symmetric forms</span>
+x = <span class="nm">0.5</span>;  y = <span class="nm">1.0</span>;  z = <span class="nm">2.0</span>;
+RF = <span class="kw">carlsonRF</span>(x, y, z);
+RD = <span class="kw">carlsonRD</span>(x, y, z);
+
+<span class="cm">% Recover F(φ|m) and E(φ|m) — DLMF 19.25.5 / 19.25.7</span>
+phi = pi/<span class="nm">3</span>;  m = <span class="nm">0.7</span>;
+s = sin(phi);  c = cos(phi);  d2 = <span class="nm">1</span> - m*s^<span class="nm">2</span>;
+F_carl = s .* <span class="kw">carlsonRF</span>(c^<span class="nm">2</span>, d2, <span class="nm">1</span>);
+E_carl = s .* <span class="kw">carlsonRF</span>(c^<span class="nm">2</span>, d2, <span class="nm">1</span>) - (m/3).*s^<span class="nm">3</span>.* <span class="kw">carlsonRD</span>(c^<span class="nm">2</span>, d2, <span class="nm">1</span>);
+
+<span class="cm">% Cross-check against elliptic12</span>
+[F_ref, E_ref] = <span class="kw">elliptic12</span>(phi, m);
+fprintf(<span class="st">'F: carlson=%.15g  ref=%.15g  diff=%.2e\n'</span>, F_carl, F_ref, abs(F_carl-F_ref));
+fprintf(<span class="st">'E: carlson=%.15g  ref=%.15g  diff=%.2e\n'</span>, E_carl, E_ref, abs(E_carl-E_ref));
+
+<span class="cm">% R_D encodes complete D(m) = (1/3)·R_D(0, 1-m, 1)</span>
+m_v = [<span class="nm">0.3</span>, <span class="nm">0.7</span>, <span class="nm">0.9</span>];
+D_complete = (<span class="nm">1</span>/<span class="nm">3</span>) .* <span class="kw">carlsonRD</span>(<span class="nm">0</span>, <span class="nm">1</span>-m_v, <span class="nm">1</span>);
+[~, D_ref]  = <span class="kw">ellipticBD</span>(m_v);</pre>
+  </div>
+</div>
+
+<figure class="l-body">
+  <div class="fig-box">
+    <div class="controls">
+      <div class="ctrl"><label>$x$</label><input type="range" id="carl-x" min="0.01" max="4" step="0.01" value="0.50"><span class="val" id="carl-x-v">0.50</span></div>
+      <div class="ctrl"><label>$y$</label><input type="range" id="carl-y" min="0.01" max="4" step="0.01" value="1.00"><span class="val" id="carl-y-v">1.00</span></div>
+      <div class="ctrl"><label>$z$</label><input type="range" id="carl-z" min="0.01" max="4" step="0.01" value="2.00"><span class="val" id="carl-z-v">2.00</span></div>
+    </div>
+    <svg id="fig-carlson" style="height:260px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 7.</strong>
+    Relative error of $R_F(x,y,z)$ at each duplication step (log scale).
+    The dashed red line is double-precision machine epsilon $\varepsilon \approx 2.2\times10^{-16}$.
+    Convergence is typically reached in 4–6 iterations.
+  </figcaption>
+</figure>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+  §8  Browser Validation Against Octave
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+  <h2 id="validation">Browser Validation Against Octave</h2>
+
+  <p>
+    The table below compares the JavaScript Carlson implementation running in this
+    browser against reference values computed by Octave using the <code>elliptic12</code>
+    function from this library.  Differences should be at or below machine epsilon.
+  </p>
+
+  <div class="code-snippet">
+    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Generate reference values — reproduce this table</div>
+    <pre>phi_tab = [pi/<span class="nm">6</span>, pi/<span class="nm">4</span>, pi/<span class="nm">3</span>, pi/<span class="nm">2</span>,  pi/<span class="nm">6</span>, pi/<span class="nm">4</span>, pi/<span class="nm">3</span>, pi/<span class="nm">2</span>];
+m_tab   = [<span class="nm">0.3</span>,   <span class="nm">0.3</span>,  <span class="nm">0.3</span>,  <span class="nm">0.3</span>,   <span class="nm">0.7</span>,  <span class="nm">0.7</span>,  <span class="nm">0.7</span>,  <span class="nm">0.7</span>];
+
+<span class="cm">% Legendre incomplete integrals F and E</span>
+[F, E] = <span class="kw">elliptic12</span>(phi_tab, m_tab);
+
+<span class="cm">% Carlson forms give identical results</span>
+s = sin(phi_tab);  c = cos(phi_tab);  d2 = <span class="nm">1</span> - m_tab.*s.^<span class="nm">2</span>;
+F_carl = s .* <span class="kw">carlsonRF</span>(c.^<span class="nm">2</span>, d2, ones(size(d2)));
+E_carl = F_carl - (m_tab/<span class="nm">3</span>).*s.^<span class="nm">3</span>.* <span class="kw">carlsonRD</span>(c.^<span class="nm">2</span>, d2, ones(size(d2)));
+
+fprintf(<span class="st">'max|F diff| = %.2e\n'</span>, max(abs(F - F_carl)));
+fprintf(<span class="st">'max|E diff| = %.2e\n'</span>, max(abs(E - E_carl)));
+
+<span class="cm">% Also check associate integrals</span>
+[B, D] = <span class="kw">ellipticBDJ</span>(phi_tab, m_tab);
+assert(max(abs(B + D - F)) < <span class="nm">1e-13</span>, <span class="st">'F = B+D failed'</span>);
+assert(max(abs(B + (<span class="nm">1</span>-m_tab).*D - E)) < <span class="nm">1e-13</span>, <span class="st">'E = B+(1-m)D failed'</span>);</pre>
+  </div>
+
+  <table class="data-table" id="val-table">
+    <thead>
+      <tr>
+        <th>φ</th><th>m</th>
+        <th>F (Octave ref)</th><th>F (JS)</th><th>|ΔF|</th>
+        <th>E (Octave ref)</th><th>E (JS)</th><th>|ΔE|</th>
+      </tr>
+    </thead>
+    <tbody id="val-tbody"></tbody>
+  </table>
+  <p style="font-family:var(--font-ui);font-size:12px;color:var(--text-muted);margin-top:-10px">
+    Green rows: $|\Delta| &lt; 10^{-12}$.&emsp;Red rows would indicate a bug (should not appear).
+  </p>
+</div>
+
+</article>
+
+<footer>
+  <div class="foot-row">
+    <span>Part of <a href="https://github.com/moiseevigor/elliptic">moiseevigor/elliptic</a> — elliptic functions for Matlab &amp; Octave</span>
+    <span>Math: <a href="https://katex.org/">KaTeX</a> &nbsp;·&nbsp; Plots: <a href="https://d3js.org/">D3 v7</a> &nbsp;·&nbsp; 3D: <a href="https://threejs.org/">Three.js r160</a></span>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+  JAVASCRIPT — Carlson forms + elliptic integrals
+═══════════════════════════════════════════════════════════════════════════ -->
+<script>
+/* ── Carlson RF (DLMF 19.36.1) ─────────────────────────────────────────── */
+function carlsonRF(x, y, z) {
+  const cr = 0.0027;
+  let xn = x, yn = y, zn = z;
+  for (let i = 0; i < 30; i++) {
+    const A = (xn + yn + zn) / 3;
+    const X = 1 - xn/A, Y = 1 - yn/A, Z = -(X+Y);
+    if (Math.max(Math.abs(X), Math.abs(Y), Math.abs(Z)) < cr) break;
+    const sx = Math.sqrt(xn), sy = Math.sqrt(yn), sz = Math.sqrt(zn);
+    const lam = sx*sy + sy*sz + sz*sx;
+    xn = (xn+lam)/4; yn = (yn+lam)/4; zn = (zn+lam)/4;
+  }
+  const A = (xn+yn+zn)/3;
+  const X = 1-xn/A, Y = 1-yn/A, Z = -(X+Y);
+  const E2 = X*Y - Z*Z, E3 = X*Y*Z;
+  return (1/Math.sqrt(A)) * (1 - E2/10 + E3/14 + E2*E2/24 - 3*E2*E3/44);
+}
+
+/* ── Carlson RD (DLMF 19.36.2) — z is the repeated argument ────────────── */
+function carlsonRD(x, y, z) {
+  const cr = 0.0015;
+  let xn = x, yn = y, zn = z, S = 0, pow4 = 1;
+  for (let i = 0; i < 30; i++) {
+    const A = (xn + yn + 3*zn) / 5;
+    const X = 1-xn/A, Y = 1-yn/A, Z = 1-zn/A;
+    if (Math.max(Math.abs(X), Math.abs(Y), Math.abs(Z)) < cr) break;
+    const sx = Math.sqrt(xn), sy = Math.sqrt(yn), sz = Math.sqrt(zn);
+    const lam = sx*sy + sy*sz + sz*sx;
+    S += pow4 / (sz * (zn + lam));
+    pow4 /= 4;
+    xn = (xn+lam)/4; yn = (yn+lam)/4; zn = (zn+lam)/4;
+  }
+  const A = (xn + yn + 3*zn) / 5;
+  const X = 1-xn/A, Y = 1-yn/A, Z = 1-zn/A;
+  const E2 = X*Y - 6*Z*Z;
+  const E3 = 3*X*Y*Z - 8*Z*Z*Z;
+  const E4 = 3*(X*Y - Z*Z)*Z*Z;
+  const E5 = X*Y*Z*Z*Z;
+  const poly = 1 - 3*E2/14 + E3/6 + 9*E2*E2/88 - 3*E4/22 - 9*E2*E3/52 + 3*E5/26;
+  return 3*S + pow4 * poly / (A * Math.sqrt(A));
+}
+
+/* ── Elliptic F, E via Carlson ─────────────────────────────────────────── */
+function ellipticF(phi, m) {
+  if (!phi) return 0;
+  const s = Math.sin(phi), c = Math.cos(phi), d2 = 1 - m*s*s;
+  return s * carlsonRF(c*c, d2, 1);
+}
+function ellipticE(phi, m) {
+  if (!phi) return 0;
+  const s = Math.sin(phi), c = Math.cos(phi), d2 = 1 - m*s*s;
+  return s * carlsonRF(c*c, d2, 1) - (m*s*s*s/3) * carlsonRD(c*c, d2, 1);
+}
+function ellipticK(m)  { return ellipticF(Math.PI/2, m); }
+function ellipticEc(m) { return ellipticE(Math.PI/2, m); }
+
+/* ── Associate integrals B, D ──────────────────────────────────────────── */
+function ellipticD(phi, m) {
+  if (!phi) return 0;
+  const s = Math.sin(phi), c = Math.cos(phi), d2 = 1 - m*s*s;
+  return (s*s*s/3) * carlsonRD(c*c, d2, 1);
+}
+function ellipticB(phi, m) { return ellipticF(phi, m) - ellipticD(phi, m); }
+
+/* ── Kepler utilities ──────────────────────────────────────────────────── */
+function solveKepler(M, e) {
+  let E = M + e*Math.sin(M);
+  for (let k = 0; k < 50; k++) {
+    const dE = (M - E + e*Math.sin(E)) / (1 - e*Math.cos(E));
+    E += dE;
+    if (Math.abs(dE) < 1e-14) break;
+  }
+  return E;
+}
+function trueToEcc(theta, e) {
+  let E = 2*Math.atan2(Math.sqrt(1-e)*Math.sin(theta/2), Math.sqrt(1+e)*Math.cos(theta/2));
+  if (E < 0) E += 2*Math.PI;
+  return E;
+}
+function orbitArc(theta, e) { return ellipticE(trueToEcc(theta, e), e*e); }
+
+/* ── Orbital mechanics (J2000 mean elements, Standish & Williams 1992) ─── */
+// a [AU], e, i [deg], L0 = mean longitude [deg], ob = long of perihelion [deg],
+// Om = long of asc node [deg], plus secular rates per Julian century (suffix d)
+const PLANETS = [
+  { name:'Mercury', color:'#9e9e9e', r3d:0.22,
+    a:0.38709843, ad:0,         e:0.20563661, ed:0.00002123,
+    i:7.00559432, id:-0.00590158, L:252.25166724, Ld:149472.67486623,
+    ob:77.45771895, obd:0.15940013, Om:48.33961819, Omd:-0.12214182 },
+  { name:'Venus', color:'#e8c97a', r3d:0.52,
+    a:0.72332102, ad:-0.00000026, e:0.00676399, ed:-0.00005107,
+    i:3.39777545, id:0.00043494,  L:181.97970850, Ld:58517.81560260,
+    ob:131.76755713, obd:0.05679648, Om:76.67261496, Omd:-0.27274174 },
+  { name:'Earth', color:'#4fa0e8', r3d:0.54,
+    a:1.00000018, ad:-0.00000003, e:0.01673163, ed:-0.00003661,
+    i:-0.00054346, id:-0.01337178, L:100.46691572, Ld:35999.37306329,
+    ob:102.93005885, obd:0.31795260, Om:-5.11260389, Omd:-0.24123856 },
+  { name:'Mars', color:'#c0602a', r3d:0.40,
+    a:1.52371243, ad:0.00000097,  e:0.09336511, ed:0.00009149,
+    i:1.85181869, id:-0.00724757, L:355.43299958, Ld:19140.29934243,
+    ob:336.04084219, obd:0.44016210, Om:49.71320984, Omd:-0.26852431 },
+  { name:'Jupiter', color:'#c4956a', r3d:1.20,
+    a:5.20248019, ad:-0.00002864, e:0.04853590, ed:0.00018026,
+    i:1.29861416, id:-0.00322699, L:34.33479152, Ld:3034.90371757,
+    ob:14.27495244, obd:0.18199196, Om:100.29282654, Omd:0.13024619 },
+  { name:'Saturn', color:'#d4c07a', r3d:1.05,
+    a:9.54149883, ad:-0.00003065, e:0.05550825, ed:-0.00032044,
+    i:2.49424102, id:0.00451969,  L:50.07571329, Ld:1222.11494724,
+    ob:92.86136063, obd:0.54179478, Om:113.63998702, Omd:-0.25015002 },
+];
+
+const DEG = Math.PI/180, RAD = 180/Math.PI;
+
+function planetXYZ(p, T_cy, useInclination) {
+  // T_cy: Julian centuries from J2000
+  const a   = p.a  + p.ad  * T_cy;
+  const e   = p.e  + p.ed  * T_cy;
+  const inc = useInclination ? (p.i + p.id * T_cy) * DEG : 0;
+  const L   = ((p.L  + p.Ld  * T_cy) % 360) * DEG;
+  const ob  = ((p.ob + p.obd * T_cy) % 360) * DEG;
+  const Om  = ((p.Om + p.Omd * T_cy) % 360) * DEG;
+  const omega = ob - Om;
+  let M = L - ob;
+  while (M < 0) M += 2*Math.PI;
+  M = M % (2*Math.PI);
+  const E = solveKepler(M, e);
+  const nu = 2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2));
+  const r = a * (1 - e*Math.cos(E));
+  const u = nu + omega;
+  return {
+    x: r*(Math.cos(Om)*Math.cos(u) - Math.sin(Om)*Math.sin(u)*Math.cos(inc)),
+    y: r*(Math.sin(Om)*Math.cos(u) + Math.cos(Om)*Math.sin(u)*Math.cos(inc)),
+    z: r * Math.sin(inc)*Math.sin(u),
+    r
+  };
+}
+
+function orbitPoints(p, T_cy, useInclination, N=200) {
+  const a = p.a + p.ad*T_cy, e = p.e + p.ed*T_cy;
+  const inc = useInclination ? (p.i + p.id*T_cy)*DEG : 0;
+  const ob  = ((p.ob + p.obd*T_cy) % 360)*DEG;
+  const Om  = ((p.Om + p.Omd*T_cy) % 360)*DEG;
+  const omega = ob - Om;
+  return Array.from({length:N+1}, (_,k) => {
+    const nu = (k/N)*2*Math.PI;
+    const r = a*(1-e*e)/(1+e*Math.cos(nu));
+    const u = nu + omega;
+    return {
+      x: r*(Math.cos(Om)*Math.cos(u) - Math.sin(Om)*Math.sin(u)*Math.cos(inc)),
+      y: r*(Math.sin(Om)*Math.cos(u) + Math.cos(Om)*Math.sin(u)*Math.cos(inc)),
+      z: r*Math.sin(inc)*Math.sin(u)
+    };
+  });
+}
+
+// Expose to Three.js module scope
+window.PLANETS      = PLANETS;
+window.planetXYZ    = planetXYZ;
+window.orbitPoints  = orbitPoints;
+
+/* ── Validation reference data (Octave elliptic12) ─────────────────────── */
+const REFS = [
+  {phi:Math.PI/6, m:0.3, F:0.530636899539867,  E:0.516724940894427},
+  {phi:Math.PI/4, m:0.3, F:0.808459030448462,  E:0.763462718580619},
+  {phi:Math.PI/3, m:0.3, F:1.09913522309204,   E:0.999296364678264},
+  {phi:Math.PI/2, m:0.3, F:1.71388944817879,   E:1.44536306441267},
+  {phi:Math.PI/6, m:0.7, F:0.540872222535946,  E:0.507293961064916},
+  {phi:Math.PI/4, m:0.7, F:0.845841916197257,  E:0.732301503864883},
+  {phi:Math.PI/3, m:0.7, F:1.19663065156446,   E:0.928090534177157},
+  {phi:Math.PI/2, m:0.7, F:2.07536313529247,   E:1.24167056794582},
+];
+
+/* ── Responsive SVG width ───────────────────────────────────────────────── */
+function figW(el) { return el.parentElement.clientWidth - 48; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+  Figure 1 — Ellipse Arc Length
+═══════════════════════════════════════════════════════════════════════════ */
+function drawArc() {
+  const m   = +document.getElementById('arc-m').value;
+  const phi = +document.getElementById('arc-phi').value;
+  document.getElementById('arc-m-v').textContent   = m.toFixed(2);
+  document.getElementById('arc-phi-v').textContent = phi.toFixed(2);
+
+  const svg = document.getElementById('fig-arc');
+  const W = figW(svg), H = 320;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const g = d3.select(svg);
+  g.selectAll('*').remove();
+
+  const mg = {t:24, r:16, b:46, l:52};
+  const half = (W - mg.l - mg.r - 20) / 2;
+
+  // ── Left: ellipse shape ──
+  const b_ax = Math.sqrt(1-m);
+  const cx = mg.l + half/2, cy = mg.t + (H-mg.t-mg.b)/2;
+  const rx = Math.min(half/2 - 6, (H-mg.t-mg.b)/2 - 6) * 0.9;
+  const ry = rx * b_ax;
+  const lg = g.append('g');
+
+  // Full ellipse (faint)
+  const fullPts = d3.range(361).map(t => [cx+rx*Math.cos(t*DEG), cy-ry*Math.sin(t*DEG)]);
+  lg.append('path').datum(fullPts)
+    .attr('d', d3.line().x(d=>d[0]).y(d=>d[1])(fullPts)+'Z')
+    .attr('fill','none').attr('stroke','#ccc').attr('stroke-width',1.5);
+
+  // Arc
+  const arcPts = d3.range(101).map(i => {
+    const t = (i/100)*phi;
+    return [cx+rx*Math.cos(t), cy-ry*Math.sin(t)];
+  });
+  lg.append('path').attr('d', d3.line()(arcPts))
+    .attr('fill','none').attr('stroke','#b71c1c').attr('stroke-width',3);
+
+  // Remaining arc (faint)
+  const remPts = d3.range(101).map(i => {
+    const t = phi + (i/100)*(2*Math.PI - phi);
+    return [cx+rx*Math.cos(t), cy-ry*Math.sin(t)];
+  });
+  lg.append('path').attr('d', d3.line()(remPts))
+    .attr('fill','none').attr('stroke','#bbb').attr('stroke-width',1.5);
+
+  // Radii dashes
+  lg.append('line').attr('x1',cx).attr('y1',cy)
+    .attr('x2',cx+rx*Math.cos(phi)).attr('y2',cy-ry*Math.sin(phi))
+    .attr('stroke','#555').attr('stroke-width',1).attr('stroke-dasharray','3,3');
+  lg.append('line').attr('x1',cx).attr('y1',cy)
+    .attr('x2',cx+rx).attr('y2',cy)
+    .attr('stroke','#555').attr('stroke-width',1).attr('stroke-dasharray','3,3');
+
+  // Planet dot
+  lg.append('circle').attr('cx',cx+rx*Math.cos(phi)).attr('cy',cy-ry*Math.sin(phi))
+    .attr('r',5).attr('fill','#b71c1c');
+  // Perihelion dot
+  lg.append('circle').attr('cx',cx+rx).attr('cy',cy).attr('r',3).attr('fill','#555');
+
+  // Arc length label
+  const Eval = ellipticE(phi,m);
+  lg.append('text').attr('x',cx).attr('y',H-8)
+    .attr('text-anchor','middle').attr('font-size',12.5).attr('font-family','var(--font-ui)')
+    .attr('fill','#333').text(`s = a·E(φ|m) = ${Eval.toFixed(6)}`);
+
+  // ── Right: integrand ──
+  const x2 = mg.l + half + 20;
+  const rW = W - x2 - mg.r;
+  const rH = H - mg.t - mg.b;
+  const xSc = d3.scaleLinear([0, Math.PI/2], [x2, x2+rW]);
+  const ySc = d3.scaleLinear([0, 1.05], [mg.t+rH, mg.t]);
+  const rg = g.append('g');
+
+  const integData = d3.range(201).map(i => ({t:(i/200)*Math.PI/2, v:Math.sqrt(1-m*Math.pow(Math.sin((i/200)*Math.PI/2),2))}));
+
+  rg.append('g').attr('transform',`translate(0,${mg.t+rH})`)
+    .call(d3.axisBottom(xSc).ticks(4).tickFormat(v=>{
+      if(Math.abs(v)<0.01)return'0';
+      if(Math.abs(v-Math.PI/6)<0.01)return'π/6';
+      if(Math.abs(v-Math.PI/3)<0.01)return'π/3';
+      if(Math.abs(v-Math.PI/2)<0.01)return'π/2';
+      return'';
+    }))
+    .selectAll('text').attr('font-size',11).attr('font-family','var(--font-ui)');
+  rg.append('g').attr('transform',`translate(${x2},0)`)
+    .call(d3.axisLeft(ySc).ticks(4))
+    .selectAll('text').attr('font-size',11).attr('font-family','var(--font-ui)');
+
+  // Shaded area
+  const fillD = integData.filter(d=>d.t<=phi);
+  if(fillD.length>1){
+    const aGen = d3.area().x(d=>xSc(d.t)).y0(mg.t+rH).y1(d=>ySc(d.v));
+    rg.append('path').attr('d',aGen(fillD)).attr('fill','rgba(183,28,28,0.12)');
+  }
+  rg.append('path').attr('d',d3.line().x(d=>xSc(d.t)).y(d=>ySc(d.v))(integData))
+    .attr('fill','none').attr('stroke','var(--accent)').attr('stroke-width',2);
+  rg.append('line')
+    .attr('x1',xSc(phi)).attr('x2',xSc(phi))
+    .attr('y1',ySc(0)).attr('y2',ySc(Math.sqrt(1-m*Math.pow(Math.sin(phi),2))))
+    .attr('stroke','#b71c1c').attr('stroke-width',1.5).attr('stroke-dasharray','4,3');
+  rg.append('text').attr('x',(xSc(0)+xSc(Math.PI/2))/2).attr('y',H-8)
+    .attr('text-anchor','middle').attr('font-size',11.5).attr('font-family','var(--font-ui)')
+    .attr('fill','#777').text('θ');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+  Figure 3 — Mercury Perihelion Precession
+═══════════════════════════════════════════════════════════════════════════ */
+function drawPrecession() {
+  const T_yr = +document.getElementById('prec-T').value;
+  const T_cy = T_yr / 100;
+  const dv = T_yr >= 1000 ? `${(T_yr/1000).toFixed(0)} 000 yr`
+           : T_yr > 0     ? `${T_yr} yr` : '0 yr';
+  document.getElementById('prec-T-v').textContent = dv;
+
+  const svg = document.getElementById('fig-prec');
+  const W = figW(svg), H = 400;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const g = d3.select(svg); g.selectAll('*').remove();
+
+  // Mercury base elements
+  const a_merc = 0.38710, e_merc = 0.20563;
+  const ob0 = 77.456 * DEG; // initial longitude of perihelion
+
+  // Rate of perihelion precession [deg/cy], converted to rad/cy
+  const rate_full  = 0.15940013 * DEG; // observed (Newtonian+GR) ≈ 574"/cy
+  const rate_newt  = (574 - 43) / 3600 * DEG; // Newtonian only ≈ 531"/cy
+  const rate_kep   = 0; // Keplerian: no precession
+
+  const rates = [rate_kep, rate_newt, rate_full];
+  const colors = ['var(--accent)', '#7b1fa2', 'var(--accent-o)'];
+  const dashes = ['none','5,3','none'];
+
+  // Build orbit ellipse points for a given ω
+  function orbitEllipse(omega_rad, N=300) {
+    return Array.from({length:N+1}, (_,k)=>{
+      const nu = (k/N)*2*Math.PI;
+      const r = a_merc*(1-e_merc*e_merc)/(1+e_merc*Math.cos(nu));
+      return {x: r*Math.cos(nu+omega_rad), y: r*Math.sin(nu+omega_rad)};
+    });
+  }
+  function perihelionPoint(omega_rad) {
+    const r_peri = a_merc*(1-e_merc);
+    return {x: r_peri*Math.cos(omega_rad), y: r_peri*Math.sin(omega_rad)};
+  }
+
+  const mg = {t:20, r:20, b:40, l:50};
+  const rng = 0.47;
+  const xSc = d3.scaleLinear([-rng,rng],[mg.l, W-mg.r]);
+  const ySc = d3.scaleLinear([-rng,rng],[H-mg.b, mg.t]);
+
+  // Sun
+  g.append('circle').attr('cx',xSc(0)).attr('cy',ySc(0)).attr('r',7)
+    .attr('fill','#ffcc02').attr('filter','url(#sun-glow)');
+  // Sun glow filter
+  const defs = g.append('defs');
+  const filt = defs.append('filter').attr('id','sun-glow').attr('x','-100%').attr('y','-100%').attr('width','300%').attr('height','300%');
+  filt.append('feGaussianBlur').attr('stdDeviation','3').attr('result','blur');
+  const feMerge = filt.append('feMerge');
+  feMerge.append('feMergeNode').attr('in','blur');
+  feMerge.append('feMergeNode').attr('in','SourceGraphic');
+
+  const lineGen = d3.line().x(d=>xSc(d.x)).y(d=>ySc(d.y));
+
+  // Draw reference orbit at t=0 (all three coincide)
+  const orbit0 = orbitEllipse(ob0);
+  g.append('path').attr('d', lineGen(orbit0) + 'Z')
+    .attr('fill','none').attr('stroke','var(--accent)').attr('stroke-width',2);
+
+  // Draw precessed orbits at t=T_yr
+  if (T_yr > 0) {
+    [1, 2].forEach((ri, idx) => {
+      const ob_T = ob0 + rates[ri] * T_cy;
+      const orbitT = orbitEllipse(ob_T);
+      g.append('path').attr('d', lineGen(orbitT) + 'Z')
+        .attr('fill','none').attr('stroke',colors[ri]).attr('stroke-width',2)
+        .attr('stroke-dasharray',dashes[ri]).attr('opacity',0.85);
+    });
+  }
+
+  // Perihelion markers for each model
+  rates.forEach((rate, ri) => {
+    const ob_T = ob0 + rate * T_cy;
+    const peri = perihelionPoint(ob_T);
+    g.append('circle').attr('cx',xSc(peri.x)).attr('cy',ySc(peri.y))
+      .attr('r', ri===0?5:4).attr('fill',colors[ri])
+      .attr('stroke','white').attr('stroke-width',1.2);
+
+    // Arm from sun to perihelion marker
+    g.append('line')
+      .attr('x1',xSc(0)).attr('y1',ySc(0))
+      .attr('x2',xSc(peri.x)).attr('y2',ySc(peri.y))
+      .attr('stroke',colors[ri]).attr('stroke-width',1).attr('stroke-dasharray','3,3').attr('opacity',0.5);
+  });
+
+  // Angle labels
+  const dOmega_newt = (rate_newt * T_cy) * RAD;
+  const dOmega_full = (rate_full * T_cy) * RAD;
+  const dOmega_diff = (dOmega_full - dOmega_newt);
+
+  const info = [
+    {text:`Δω (GR+Newton) = ${dOmega_full.toFixed(2)}°`, col:'var(--accent-o)', y:H-mg.b+20},
+    {text:`Δω (Newton only) = ${dOmega_newt.toFixed(2)}°`, col:'#7b1fa2', y:H-mg.b+32},
+    {text:`GR residual = ${dOmega_diff.toFixed(3)}°`, col:'#555', y:H-mg.b+44},
+  ];
+  info.forEach(d=>{
+    g.append('text').attr('x',W-mg.r).attr('y',d.y)
+      .attr('text-anchor','end').attr('font-size',11.5).attr('font-family','var(--font-ui)')
+      .attr('fill',d.col).text(d.text);
+  });
+
+  // Axes labels
+  g.append('text').attr('x',(mg.l+W-mg.r)/2).attr('y',H-2)
+    .attr('text-anchor','middle').attr('font-size',11).attr('font-family','var(--font-ui)')
+    .attr('fill','#888').text('x [AU]');
+  g.append('text').attr('transform',`translate(14,${(H-mg.b+mg.t)/2}) rotate(-90)`)
+    .attr('text-anchor','middle').attr('font-size',11).attr('font-family','var(--font-ui)')
+    .attr('fill','#888').text('y [AU]');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+  Figure 4 — Kepler orbit
+═══════════════════════════════════════════════════════════════════════════ */
+function drawOrbit() {
+  const e  = +document.getElementById('kep-e').value;
+  const th = +document.getElementById('kep-th').value;
+  document.getElementById('kep-e-v').textContent  = e.toFixed(2);
+  document.getElementById('kep-th-v').textContent = th.toFixed(2)+' rad';
+
+  const svg = document.getElementById('fig-orbit');
+  const W = figW(svg), H = 360;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const g = d3.select(svg); g.selectAll('*').remove();
+
+  const mg = {t:24, r:16, b:50, l:52};
+  const halfW = (W - mg.l - mg.r - 20) / 2;
+  const PH = H - mg.t - mg.b;
+
+  const theta = d3.range(361).map(i=>(i/360)*2*Math.PI);
+  const r_arr = theta.map(t=>1*(1-e*e)/(1+e*Math.cos(t)));
+  const pts   = theta.map((t,i)=>({x:r_arr[i]*Math.cos(t), y:r_arr[i]*Math.sin(t)}));
+
+  const xmin=d3.min(pts,d=>d.x), xmax=d3.max(pts,d=>d.x);
+  const yext=Math.max(Math.abs(d3.min(pts,d=>d.y)), Math.abs(d3.max(pts,d=>d.y)));
+  const pad=0.12;
+  const xSc = d3.scaleLinear([xmin*(1+pad), xmax*(1+pad)],[mg.l, mg.l+halfW]);
+  const ySc = d3.scaleLinear([-yext*(1+pad), yext*(1+pad)],[mg.t+PH, mg.t]);
+
+  const lg = g.append('g');
+  const lGen = d3.line().x(d=>xSc(d.x)).y(d=>ySc(d.y));
+
+  // Arc to theta
+  const arcPts = theta.filter(t=>t<=th).map(t=>{const r=1*(1-e*e)/(1+e*Math.cos(t));return{x:r*Math.cos(t),y:r*Math.sin(t)};});
+  if(arcPts.length>1){
+    lg.append('path').attr('d',lGen(arcPts))
+      .attr('fill','none').attr('stroke','#c62828').attr('stroke-width',3);
+  }
+  // Full orbit
+  lg.append('path').attr('d',lGen(pts)+'Z')
+    .attr('fill','none').attr('stroke','var(--accent)').attr('stroke-width',2);
+
+  // Sun
+  lg.append('circle').attr('cx',xSc(0)).attr('cy',ySc(0)).attr('r',7).attr('fill','#ffcc02');
+  // Planet
+  const r_now=1*(1-e*e)/(1+e*Math.cos(th));
+  lg.append('circle').attr('cx',xSc(r_now*Math.cos(th))).attr('cy',ySc(r_now*Math.sin(th))).attr('r',6).attr('fill','#c62828');
+
+  // Arc value
+  const L_now = orbitArc(th,e);
+  lg.append('text').attr('x',mg.l+halfW/2).attr('y',H-8)
+    .attr('text-anchor','middle').attr('font-size',12).attr('font-family','var(--font-ui)')
+    .attr('fill','#333').text(`L(θ)=${L_now.toFixed(5)} · a`);
+
+  // Right: L vs theta
+  const x2 = mg.l + halfW + 20;
+  const rg = g.append('g');
+  const thFull = d3.range(361).map(i=>(i/360)*2*Math.PI);
+  const Larr   = thFull.map(t=>orbitArc(t,e));
+  const xSc2 = d3.scaleLinear([0,2*Math.PI],[x2, W-mg.r]);
+  const ySc2 = d3.scaleLinear([0,d3.max(Larr)*1.07],[H-mg.b, mg.t]);
+
+  rg.append('g').attr('transform',`translate(0,${H-mg.b})`)
+    .call(d3.axisBottom(xSc2).ticks(4).tickFormat(v=>{
+      if(Math.abs(v)<0.01)return'0';if(Math.abs(v-Math.PI)<0.05)return'π';
+      if(Math.abs(v-2*Math.PI)<0.05)return'2π';return'';
+    })).selectAll('text').attr('font-size',11).attr('font-family','var(--font-ui)');
+  rg.append('g').attr('transform',`translate(${x2},0)`)
+    .call(d3.axisLeft(ySc2).ticks(4))
+    .selectAll('text').attr('font-size',11).attr('font-family','var(--font-ui)');
+
+  rg.append('path').attr('d',d3.line().x((_,i)=>xSc2(thFull[i])).y(d=>ySc2(d))(Larr))
+    .attr('fill','none').attr('stroke','var(--accent)').attr('stroke-width',2);
+  rg.append('line').attr('x1',xSc2(th)).attr('x2',xSc2(th)).attr('y1',ySc2(0)).attr('y2',ySc2(L_now))
+    .attr('stroke','#c62828').attr('stroke-width',1.5).attr('stroke-dasharray','4,3');
+  rg.append('circle').attr('cx',xSc2(th)).attr('cy',ySc2(L_now)).attr('r',4).attr('fill','#c62828');
+
+  rg.append('text').attr('x',(xSc2(0)+xSc2(2*Math.PI))/2).attr('y',H-8)
+    .attr('text-anchor','middle').attr('font-size',11).attr('font-family','var(--font-ui)')
+    .attr('fill','#888').text('θ [rad]');
+  rg.append('text').attr('transform',`translate(${x2-32},${(H-mg.b+mg.t)/2}) rotate(-90)`)
+    .attr('text-anchor','middle').attr('font-size',11).attr('font-family','var(--font-ui)')
+    .attr('fill','#888').text('L/a');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+  Figure 5 — Kepler's Equation
+═══════════════════════════════════════════════════════════════════════════ */
+function drawKeplerEq() {
+  const e = +document.getElementById('kepeq-e').value;
+  document.getElementById('kepeq-e-v').textContent = e.toFixed(2);
+
+  const svg = document.getElementById('fig-kepeq');
+  const W = figW(svg), H = 300;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const g = d3.select(svg); g.selectAll('*').remove();
+
+  const mg = {t:20,r:20,b:46,l:56};
+  const xSc = d3.scaleLinear([0,2*Math.PI],[mg.l,W-mg.r]);
+  const ySc = d3.scaleLinear([0,2*Math.PI],[H-mg.b,mg.t]);
+
+  const fmtPi = v=>{
+    const m=[[0,'0'],[Math.PI/2,'π/2'],[Math.PI,'π'],[3*Math.PI/2,'3π/2'],[2*Math.PI,'2π']];
+    for(const[fv,fl]of m)if(Math.abs(v-fv)<0.05)return fl;
+    return'';
+  };
+  g.append('g').attr('transform',`translate(0,${H-mg.b})`).call(d3.axisBottom(xSc).ticks(5).tickFormat(fmtPi)).selectAll('text').attr('font-size',11).attr('font-family','var(--font-ui)');
+  g.append('g').attr('transform',`translate(${mg.l},0)`).call(d3.axisLeft(ySc).ticks(5).tickFormat(fmtPi)).selectAll('text').attr('font-size',11).attr('font-family','var(--font-ui)');
+
+  // Diagonal M=E (e=0)
+  g.append('line').attr('x1',xSc(0)).attr('y1',ySc(0)).attr('x2',xSc(2*Math.PI)).attr('y2',ySc(2*Math.PI))
+    .attr('stroke','#ddd').attr('stroke-width',1).attr('stroke-dasharray','5,3');
+
+  const EArr = d3.range(200).map(i=>(i/199)*2*Math.PI);
+  const MArr = EArr.map(E=>E-e*Math.sin(E));
+  g.append('path').attr('d',d3.line().x((_,i)=>xSc(MArr[i])).y((_,i)=>ySc(EArr[i]))(EArr))
+    .attr('fill','none').attr('stroke','var(--accent)').attr('stroke-width',2.5);
+
+  g.append('text').attr('x',(xSc(0)+xSc(2*Math.PI))/2).attr('y',H-8)
+    .attr('text-anchor','middle').attr('font-size',11.5).attr('font-family','var(--font-ui)').attr('fill','#888').text('Mean anomaly M');
+  g.append('text').attr('transform',`translate(16,${(H-mg.b+mg.t)/2}) rotate(-90)`)
+    .attr('text-anchor','middle').attr('font-size',11.5).attr('font-family','var(--font-ui)').attr('fill','#888').text('Eccentric anomaly E');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+  Figure 6 — B, D, J
+═══════════════════════════════════════════════════════════════════════════ */
+function drawBDJ() {
+  const m = +document.getElementById('bdj-m').value;
+  document.getElementById('bdj-m-v').textContent = m.toFixed(2);
+
+  const svg = document.getElementById('fig-bdj');
+  const W = figW(svg), H = 300;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const g = d3.select(svg); g.selectAll('*').remove();
+
+  const mg = {t:20,r:130,b:46,l:52};
+  const phiA = d3.range(200).map(i=>(i/199)*Math.PI/2);
+  const Barr = phiA.map(p=>ellipticB(p,m));
+  const Darr = phiA.map(p=>ellipticD(p,m));
+  const Farr = phiA.map((_,i)=>Barr[i]+Darr[i]);
+  const Earr = phiA.map((_,i)=>Barr[i]+(1-m)*Darr[i]);
+
+  const ymax = d3.max(Farr)*1.1;
+  const xSc = d3.scaleLinear([0,Math.PI/2],[mg.l,W-mg.r]);
+  const ySc = d3.scaleLinear([0,ymax],[H-mg.b,mg.t]);
+
+  const fmtPi = v=>{
+    const map=[[0,'0'],[Math.PI/6,'π/6'],[Math.PI/3,'π/3'],[Math.PI/2,'π/2']];
+    for(const[fv,fl]of map)if(Math.abs(v-fv)<0.02)return fl;
+    return'';
+  };
+  g.append('g').attr('transform',`translate(0,${H-mg.b})`).call(d3.axisBottom(xSc).ticks(4).tickFormat(fmtPi)).selectAll('text').attr('font-size',11).attr('font-family','var(--font-ui)');
+  g.append('g').attr('transform',`translate(${mg.l},0)`).call(d3.axisLeft(ySc).ticks(4)).selectAll('text').attr('font-size',11).attr('font-family','var(--font-ui)');
+
+  const colors=['#2e7d32','#4a148c','var(--accent)','var(--accent-o)'];
+  const labs=['B(φ|m)','D(φ|m)','F = B+D','E = B+(1−m)D'];
+  const dash=['none','none','6,3','none'];
+  [Barr,Darr,Farr,Earr].forEach((arr,ci)=>{
+    g.append('path').attr('d',d3.line().x((_,i)=>xSc(phiA[i])).y(d=>ySc(d))(arr))
+      .attr('fill','none').attr('stroke',colors[ci]).attr('stroke-width',2)
+      .attr('stroke-dasharray',dash[ci]);
+  });
+
+  // Legend
+  labs.forEach((lbl,i)=>{
+    const ly=mg.t+18+i*22;
+    g.append('line').attr('x1',W-mg.r+10).attr('x2',W-mg.r+30).attr('y1',ly).attr('y2',ly)
+      .attr('stroke',colors[i]).attr('stroke-width',2).attr('stroke-dasharray',dash[i]);
+    g.append('text').attr('x',W-mg.r+34).attr('y',ly+4.5)
+      .attr('font-size',12).attr('font-family','var(--font-ui)').attr('fill',colors[i]).text(lbl);
+  });
+
+  g.append('text').attr('x',(xSc(0)+xSc(Math.PI/2))/2).attr('y',H-8)
+    .attr('text-anchor','middle').attr('font-size',11).attr('font-family','var(--font-ui)').attr('fill','#888').text('φ');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+  Figure 7 — Carlson convergence
+═══════════════════════════════════════════════════════════════════════════ */
+function rfSteps(x0,y0,z0) {
+  const cr=0.0027; let xn=x0,yn=y0,zn=z0;
+  const exact=carlsonRF(x0,y0,z0);
+  const steps=[];
+  for(let i=0;i<=14;i++){
+    const A=(xn+yn+zn)/3;
+    const X=1-xn/A,Y=1-yn/A,Z=-(X+Y);
+    const E2=X*Y-Z*Z,E3=X*Y*Z;
+    const approx=(1/Math.sqrt(A))*(1-E2/10+E3/14+E2*E2/24-3*E2*E3/44);
+    steps.push({i,err:Math.max(Math.abs(approx-exact)/Math.abs(exact),1e-17)});
+    if(Math.max(Math.abs(X),Math.abs(Y),Math.abs(Z))<cr)break;
+    const sx=Math.sqrt(xn),sy=Math.sqrt(yn),sz=Math.sqrt(zn);
+    const lam=sx*sy+sy*sz+sz*sx;
+    xn=(xn+lam)/4;yn=(yn+lam)/4;zn=(zn+lam)/4;
+  }
+  return steps;
+}
+
+function drawCarlson() {
+  const x=+document.getElementById('carl-x').value;
+  const y=+document.getElementById('carl-y').value;
+  const z=+document.getElementById('carl-z').value;
+  document.getElementById('carl-x-v').textContent=x.toFixed(2);
+  document.getElementById('carl-y-v').textContent=y.toFixed(2);
+  document.getElementById('carl-z-v').textContent=z.toFixed(2);
+
+  const svg=document.getElementById('fig-carlson');
+  const W=figW(svg),H=260;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const g=d3.select(svg);g.selectAll('*').remove();
+
+  const steps=rfSteps(x,y,z);
+  const mg={t:20,r:20,b:46,l:70};
+  const xSc=d3.scaleLinear([0,steps.length-1],[mg.l,W-mg.r]);
+  const ySc=d3.scaleLog([1e-17,1],[H-mg.b,mg.t]).clamp(true);
+
+  g.append('g').attr('transform',`translate(0,${H-mg.b})`)
+    .call(d3.axisBottom(xSc).ticks(steps.length-1).tickFormat(d3.format('d')))
+    .selectAll('text').attr('font-size',11).attr('font-family','var(--font-ui)');
+  g.append('g').attr('transform',`translate(${mg.l},0)`)
+    .call(d3.axisLeft(ySc).tickValues([1,1e-4,1e-8,1e-12,1e-16]).tickFormat(d3.format('.0e')))
+    .selectAll('text').attr('font-size',11).attr('font-family','var(--font-ui)');
+
+  g.append('path').attr('d',d3.line().x((_,i)=>xSc(i)).y(d=>ySc(d.err))(steps))
+    .attr('fill','none').attr('stroke','var(--accent)').attr('stroke-width',2.5);
+  steps.forEach(s=>{
+    g.append('circle').attr('cx',xSc(s.i)).attr('cy',ySc(s.err)).attr('r',4).attr('fill','var(--accent)');
+  });
+
+  // machine epsilon line
+  g.append('line').attr('x1',mg.l).attr('x2',W-mg.r).attr('y1',ySc(2.2e-16)).attr('y2',ySc(2.2e-16))
+    .attr('stroke','var(--accent-r)').attr('stroke-width',1).attr('stroke-dasharray','5,3');
+  g.append('text').attr('x',W-mg.r-2).attr('y',ySc(2.2e-16)-5)
+    .attr('text-anchor','end').attr('font-size',10.5).attr('font-family','var(--font-ui)').attr('fill','var(--accent-r)').text('machine ε');
+
+  g.append('text').attr('x',(mg.l+W-mg.r)/2).attr('y',H-8)
+    .attr('text-anchor','middle').attr('font-size',11).attr('font-family','var(--font-ui)').attr('fill','#888').text('Duplication step');
+  g.append('text').attr('transform',`translate(14,${(H-mg.b+mg.t)/2}) rotate(-90)`)
+    .attr('text-anchor','middle').attr('font-size',11).attr('font-family','var(--font-ui)').attr('fill','#888').text('Relative error');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+  Validation table
+═══════════════════════════════════════════════════════════════════════════ */
+function buildValidation() {
+  const tbody = document.getElementById('val-tbody');
+  const fmtPhi=v=>{
+    const m=[[Math.PI/6,'π/6'],[Math.PI/4,'π/4'],[Math.PI/3,'π/3'],[Math.PI/2,'π/2']];
+    for(const[fv,fl]of m)if(Math.abs(v-fv)<1e-6)return fl;
+    return v.toFixed(4);
+  };
+  REFS.forEach(r=>{
+    const jF=ellipticF(r.phi,r.m), jE=ellipticE(r.phi,r.m);
+    const dF=Math.abs(jF-r.F), dE=Math.abs(jE-r.E);
+    const ok=dF<1e-12&&dE<1e-12;
+    const tr=document.createElement('tr');
+    tr.className=ok?'pass':'fail';
+    const fe=v=>v.toExponential(2);
+    tr.innerHTML=`<td>${fmtPhi(r.phi)}</td><td>${r.m}</td><td>${r.F.toFixed(12)}</td><td>${jF.toFixed(12)}</td><td>${fe(dF)}</td><td>${r.E.toFixed(12)}</td><td>${jE.toFixed(12)}</td><td>${fe(dE)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+  Event bindings + init (D3 figures)
+═══════════════════════════════════════════════════════════════════════════ */
+function bindAndDraw() {
+  [['arc-m','arc-phi'],drawArc],
+  [['kep-e','kep-th'],drawOrbit],
+  [['kepeq-e'],drawKeplerEq],
+  [['bdj-m'],drawBDJ],
+  [['carl-x','carl-y','carl-z'],drawCarlson],
+  [['prec-T'],drawPrecession];
+
+  const allPairs=[
+    [['arc-m','arc-phi'],drawArc],
+    [['kep-e','kep-th'],drawOrbit],
+    [['kepeq-e'],drawKeplerEq],
+    [['bdj-m'],drawBDJ],
+    [['carl-x','carl-y','carl-z'],drawCarlson],
+    [['prec-T'],drawPrecession],
+  ];
+  allPairs.forEach(([ids,fn])=>ids.forEach(id=>document.getElementById(id)?.addEventListener('input',fn)));
+
+  drawArc(); drawPrecession(); drawOrbit(); drawKeplerEq(); drawBDJ(); drawCarlson();
+  buildValidation();
+
+  let resizeTimer;
+  window.addEventListener('resize',()=>{
+    clearTimeout(resizeTimer);
+    resizeTimer=setTimeout(()=>{drawArc();drawPrecession();drawOrbit();drawKeplerEq();drawBDJ();drawCarlson();},150);
+  });
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', bindAndDraw);
+} else {
+  bindAndDraw();
+}
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+  Three.js — 3D Solar System (ES module)
+═══════════════════════════════════════════════════════════════════════════ -->
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const SCALE = 14; // AU → scene units
+const DEG   = Math.PI / 180;
+
+// ── Scene setup ──────────────────────────────────────────────────────────
+const canvas = document.getElementById('solar-canvas');
+if (!canvas) throw new Error('solar-canvas not found');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+function setSize() {
+  const W = canvas.parentElement.clientWidth;
+  const H = canvas.clientHeight;
+  renderer.setSize(W, H, false);
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+}
+
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 10000);
+camera.position.set(0, 55, 70);
+camera.lookAt(0, 0, 0);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x03030f);
+scene.fog = new THREE.FogExp2(0x03030f, 0.0006);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 5;
+controls.maxDistance = 600;
+controls.target.set(0, 0, 0);
+
+// ── Lighting ─────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0x223366, 0.6));
+const sunLight = new THREE.PointLight(0xfff5cc, 3.5, 500, 1.5);
+scene.add(sunLight);
+
+// ── Sun ──────────────────────────────────────────────────────────────────
+const sunMat = new THREE.MeshBasicMaterial({ color: 0xfff2a0 });
+const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(1.4, 32, 32), sunMat);
+scene.add(sunMesh);
+
+// Sun glow (additive sprite)
+const glowTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const ctx = c.getContext('2d');
+  const gr = ctx.createRadialGradient(64,64,0,64,64,64);
+  gr.addColorStop(0,   'rgba(255,240,150,0.9)');
+  gr.addColorStop(0.15,'rgba(255,210,80,0.6)');
+  gr.addColorStop(0.4, 'rgba(255,160,30,0.2)');
+  gr.addColorStop(1,   'rgba(255,120,0,0)');
+  ctx.fillStyle = gr; ctx.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(c);
+})();
+const glowMat = new THREE.SpriteMaterial({ map:glowTex, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:0.9 });
+const glowSprite = new THREE.Sprite(glowMat);
+glowSprite.scale.set(12,12,1);
+scene.add(glowSprite);
+
+// ── Stars ─────────────────────────────────────────────────────────────────
+const starPos = new Float32Array(4000*3);
+for (let i=0;i<4000;i++){
+  const th=Math.random()*Math.PI*2, ph=Math.acos(Math.random()*2-1), r=400+Math.random()*400;
+  starPos[i*3]   = r*Math.sin(ph)*Math.cos(th);
+  starPos[i*3+1] = r*Math.sin(ph)*Math.sin(th);
+  starPos[i*3+2] = r*Math.cos(ph);
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos,3));
+const starMat = new THREE.PointsMaterial({ color:0xffffff, size:0.6, sizeAttenuation:true, transparent:true, opacity:0.7 });
+scene.add(new THREE.Points(starGeo, starMat));
+
+// ── Ecliptic grid ─────────────────────────────────────────────────────────
+const gridHelper = new THREE.GridHelper(200, 40, 0x111133, 0x0d0d22);
+gridHelper.material.opacity = 0.4;
+gridHelper.material.transparent = true;
+scene.add(gridHelper);
+
+// ── Planet data (same as global PLANETS but copied for module scope) ──────
+const PDATA = window.PLANETS; // exposed via global
+
+// Build planet meshes + orbit lines
+const planetMeshes = [];
+const orbitLines   = [];
+const labelDivs    = [];
+
+PDATA.forEach(p => {
+  // Sphere
+  const geo = new THREE.SphereGeometry(p.r3d, 20, 20);
+  const mat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(p.color),
+    emissive: new THREE.Color(p.color),
+    emissiveIntensity: 0.12,
+    roughness: 0.7,
+    metalness: 0.1
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+  planetMeshes.push(mesh);
+
+  // Orbit path (pre-computed at T=0)
+  const orbitPts = window.orbitPoints(p, 0, true, 256);
+  const positions = new Float32Array((orbitPts.length)*3);
+  orbitPts.forEach((pt,k)=>{
+    positions[k*3]   = pt.x * SCALE;
+    positions[k*3+1] = pt.z * SCALE;   // ecliptic z → Three.js y
+    positions[k*3+2] = -pt.y * SCALE;  // ecliptic y → Three.js -z
+  });
+  const orbitGeo = new THREE.BufferGeometry();
+  orbitGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+  const orbitMat = new THREE.LineBasicMaterial({color:0x334466, transparent:true, opacity:0.5});
+  const line = new THREE.LineLoop(orbitGeo, orbitMat);
+  scene.add(line);
+  orbitLines.push(line);
+
+  // Saturn ring
+  if (p.name === 'Saturn') {
+    const ringGeo = new THREE.RingGeometry(p.r3d*1.35, p.r3d*2.2, 64);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color:0xc4a56a, side:THREE.DoubleSide, transparent:true, opacity:0.4
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI/2.2;
+    mesh.add(ring);
+  }
+
+  // HTML label
+  const div = document.createElement('div');
+  div.className = 'planet-label';
+  div.textContent = p.name;
+  canvas.parentElement.appendChild(div);
+  labelDivs.push(div);
+});
+
+// ── Hover interaction ─────────────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2(-9,-9);
+const hoverInfo = document.getElementById('hover-info');
+
+canvas.addEventListener('mousemove', ev => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = ((ev.clientX - rect.left) / rect.width)  *  2 - 1;
+  mouse.y = -((ev.clientY - rect.top)  / rect.height) *  2 + 1;
+});
+canvas.addEventListener('mouseleave', () => { mouse.set(-9,-9); hoverInfo.style.opacity='0'; });
+
+// ── Controls ──────────────────────────────────────────────────────────────
+const speedEl   = document.getElementById('ss-speed');
+const orbitsEl  = document.getElementById('ss-orbits');
+const labelsEl  = document.getElementById('ss-labels');
+const inclEl    = document.getElementById('ss-incl');
+const speedValEl= document.getElementById('ss-speed-v');
+
+speedEl.addEventListener('input', ()=>{ speedValEl.textContent=parseFloat(speedEl.value).toFixed(1)+'×'; });
+orbitsEl.addEventListener('change', ()=>{ orbitLines.forEach(l=>l.visible=orbitsEl.checked); });
+labelsEl.addEventListener('change', ()=>{ labelDivs.forEach(d=>{ d.style.display=labelsEl.checked?'':'none'; }); });
+
+// Rebuild orbits when inclination toggled
+inclEl.addEventListener('change', () => {
+  const useIncl = inclEl.checked;
+  PDATA.forEach((p, pi) => {
+    const pts = window.orbitPoints(p, 0, useIncl, 256);
+    const pos = orbitLines[pi].geometry.attributes.position;
+    pts.forEach((pt,k)=>{
+      pos.array[k*3]   = pt.x * SCALE;
+      pos.array[k*3+1] = pt.z * SCALE;
+      pos.array[k*3+2] = -pt.y * SCALE;
+    });
+    pos.needsUpdate = true;
+  });
+});
+
+// ── Animation ─────────────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+const vec3  = new THREE.Vector3();
+
+// Project 3D position to canvas 2D
+function toScreen(worldPos) {
+  const p = worldPos.clone().project(camera);
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  return { x:(p.x+1)/2*W, y:(-p.y+1)/2*H };
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt_years = clock.getDelta() * parseFloat(speedEl.value);
+  const T_total_yr = clock.elapsedTime * parseFloat(speedEl.value);
+  const T_cy = T_total_yr / 100;
+  const useIncl = inclEl.checked;
+
+  PDATA.forEach((p, pi) => {
+    const pos3 = window.planetXYZ(p, T_cy, useIncl);
+    planetMeshes[pi].position.set(pos3.x*SCALE, pos3.z*SCALE, -pos3.y*SCALE);
+
+    // Update label position
+    const div = labelDivs[pi];
+    if (labelsEl.checked) {
+      const sc = toScreen(planetMeshes[pi].position);
+      div.style.left = (sc.x + 8) + 'px';
+      div.style.top  = (sc.y - 8) + 'px';
+      div.style.display = '';
+    } else {
+      div.style.display = 'none';
+    }
+  });
+
+  // Hover raycasting
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(planetMeshes);
+  if (hits.length > 0) {
+    const idx = planetMeshes.indexOf(hits[0].object);
+    if (idx >= 0) {
+      const p = PDATA[idx];
+      const T_cy_now = T_cy % 1;
+      const e_now = p.e + p.ed * T_cy;
+      hoverInfo.innerHTML = `<b>${p.name}</b><br>a = ${p.a.toFixed(4)} AU &ensp; e = ${e_now.toFixed(4)}<br>i = ${p.i.toFixed(2)}° &ensp; P = ${(Math.pow(p.a,1.5)).toFixed(2)} yr`;
+      hoverInfo.style.opacity = '1';
+    }
+  } else {
+    hoverInfo.style.opacity = '0';
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+setSize();
+window.addEventListener('resize', setSize);
+animate();
+</script>
+
+</body>
+</html>

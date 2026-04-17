@@ -17,6 +17,43 @@ function result = par_worker(func_name, varargin)
         case 'jacobiThetaEta'
             [Th, H] = jacobiThetaEta(varargin{:});
             result = {Th, H};
+        case 'weierstrassP'
+            result = weierstrassP(varargin{:});
+        case 'weierstrassPPrime'
+            result = weierstrassPPrime(varargin{:});
+        case 'weierstrassZeta'
+            result = weierstrassZeta(varargin{:});
+        case 'weierstrassSigma'
+            result = weierstrassSigma(varargin{:});
+        case 'ellipticBD'
+            [B, D, S] = ellipticBD(varargin{:});
+            result = {B, D, S};
+        case 'ellipticBDJ'
+            if numel(varargin) >= 3
+                [B, D, J] = ellipticBDJ(varargin{:});
+                result = {B, D, J};
+            else
+                [B, D] = ellipticBDJ(varargin{:});
+                result = {B, D};
+            end
+        case 'carlsonRF'
+            result = carlsonRF(varargin{:});
+        case 'carlsonRD'
+            result = carlsonRD(varargin{:});
+        case 'carlsonRJ'
+            result = carlsonRJ(varargin{:});
+        case 'carlsonRC'
+            result = carlsonRC(varargin{:});
+        case 'jacobiEDJ'
+            if numel(varargin) >= 3
+                [Eu, Du, Ju] = jacobiEDJ(varargin{:});
+                result = {Eu, Du, Ju};
+            else
+                [Eu, Du] = jacobiEDJ(varargin{:});
+                result = {Eu, Du};
+            end
+        case 'cel'
+            result = cel(varargin{:});
         otherwise
             error('par_worker: unknown function %s', func_name);
     end

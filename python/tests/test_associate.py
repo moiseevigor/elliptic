@@ -65,7 +65,6 @@ class TestJacobiEDJ:
         m = 0.6
         u = np.linspace(0.01, 1.5, 20)
         Eu, Du, _ = elliptic.jacobiEDJ(u, m)
-        # B_u = u - D_u, B_u + D_u = u
         Bu = u - Du
         np.testing.assert_allclose(Bu + Du, u, atol=1e-13)
 
@@ -74,6 +73,33 @@ class TestJacobiEDJ:
         u = np.linspace(0.01, 1.2, 15)
         Eu, Du, _ = elliptic.jacobiEDJ(u, m)
         np.testing.assert_allclose(Eu, u - m * Du, atol=1e-13)
+
+    def test_dDu_du_equals_sn2(self):
+        """d(D_u)/du = sn²(u|m) — numerical derivative, mirrors testEllipticBDJ.m"""
+        m, u0, h = 0.5, 0.6, 1e-7
+        _, Dp, _ = elliptic.jacobiEDJ(np.array([u0 + h]), m)
+        _, Dm, _ = elliptic.jacobiEDJ(np.array([u0 - h]), m)
+        dDu = (float(Dp[0]) - float(Dm[0])) / (2 * h)
+        sn, _, _, _ = elliptic.ellipj(np.array([u0]), m)
+        assert abs(dDu - float(sn[0]) ** 2) < 1e-6
+
+    def test_dEu_du_equals_dn2(self):
+        """d(E_u)/du = dn²(u|m) — numerical derivative, mirrors testEllipticBDJ.m"""
+        m, u0, h = 0.5, 0.6, 1e-7
+        Ep, _, _ = elliptic.jacobiEDJ(np.array([u0 + h]), m)
+        Em, _, _ = elliptic.jacobiEDJ(np.array([u0 - h]), m)
+        dEu = (float(Ep[0]) - float(Em[0])) / (2 * h)
+        _, _, dn, _ = elliptic.ellipj(np.array([u0]), m)
+        assert abs(dEu - float(dn[0]) ** 2) < 1e-6
+
+    def test_Ju_n0_equals_Du(self):
+        """J_u(u, n=0|m) = D_u(u|m) — from testEllipticBDJ.m"""
+        from scipy.special import ellipk
+        m = 0.5
+        K = float(ellipk(m))
+        u = np.linspace(0.05, 0.9 * K, 15)
+        _, Du, Ju0 = elliptic.jacobiEDJ(u, m, np.zeros_like(u))
+        np.testing.assert_allclose(np.asarray(Ju0), np.asarray(Du), atol=1e-12)
 
 
 class TestElliptic3:
@@ -106,6 +132,41 @@ class TestCarlson:
             np.testing.assert_allclose(elliptic.carlsonRC(x, y),
                                        elliprc(x, y), atol=1e-12)
 
+    def test_RF_symmetric(self):
+        """RF is symmetric in all three arguments — testCarlson.m"""
+        a, b, c = 1.0, 2.0, 3.0
+        vals = [float(elliptic.carlsonRF(x, y, z))
+                for x, y, z in [(a,b,c),(b,a,c),(c,b,a),(a,c,b)]]
+        assert max(abs(v - vals[0]) for v in vals) < 1e-13
+
+    def test_RF_xxx(self):
+        """RF(x,x,x) = x^(-1/2) — DLMF 19.20.2"""
+        x = 2.5
+        assert abs(float(elliptic.carlsonRF(x, x, x)) - x**(-0.5)) < 1e-13
+
+    def test_RD_xxx(self):
+        """RD(x,x,x) = x^(-3/2) — DLMF 19.20.17"""
+        x = 2.0
+        assert abs(float(elliptic.carlsonRD(x, x, x)) - x**(-1.5)) < 1e-12
+
+    def test_RD_symmetric_xy(self):
+        """RD is symmetric in first two arguments but NOT the third"""
+        rd_xy = float(elliptic.carlsonRD(1.0, 2.0, 3.0))
+        rd_yx = float(elliptic.carlsonRD(2.0, 1.0, 3.0))
+        rd_xz = float(elliptic.carlsonRD(1.0, 3.0, 2.0))
+        assert abs(rd_xy - rd_yx) < 1e-12
+        assert abs(rd_xy - rd_xz) > 1e-6  # NOT symmetric in z
+
+    def test_RJ_symmetric_xyz(self):
+        """RJ symmetric in first three arguments"""
+        vals = [float(elliptic.carlsonRJ(x, y, z, 0.5))
+                for x, y, z in [(1.,2.,3.),(2.,1.,3.),(3.,1.,2.)]]
+        assert max(abs(v - vals[0]) for v in vals) < 1e-11
+
+    def test_RC_pole(self):
+        """RC(x, 0) = inf"""
+        assert np.isinf(float(elliptic.carlsonRC(1.0, 0.0)))
+
 
 class TestBulirsch:
     def test_cel1_vs_K(self):
@@ -114,15 +175,32 @@ class TestBulirsch:
         np.testing.assert_allclose(elliptic.cel1(kc), ellipk(m), atol=1e-12)
 
     def test_cel2_vs_E(self):
-        m = np.array([0.2, 0.5, 0.8])
+        """cel2(kc, 1, kc²) = E(m) — matches testBulirschCEL.m"""
+        m = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
         kc = np.sqrt(1 - m)
-        np.testing.assert_allclose(elliptic.cel2(kc, 1.0, 1 - m), ellipe(m), atol=1e-12)
+        np.testing.assert_allclose(elliptic.cel2(kc, 1.0, kc**2), ellipe(m), atol=1e-12)
 
     def test_cel2_B(self):
-        m = np.array([0.3, 0.6, 0.85])
+        """cel2(kc, 1, 0) = B(m) — matches testBulirschCEL.m"""
+        m = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
         kc = np.sqrt(1 - m)
         B, _, _ = elliptic.ellipticBD(m)
         np.testing.assert_allclose(elliptic.cel2(kc, 1.0, 0.0), B, atol=1e-12)
+
+    def test_cel2_D(self):
+        """cel2(kc, 0, 1) = D(m) — matches testBulirschCEL.m"""
+        m = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
+        kc = np.sqrt(1 - m)
+        _, D, _ = elliptic.ellipticBD(m)
+        np.testing.assert_allclose(elliptic.cel2(kc, 0.0, 1.0), D, atol=1e-12)
+
+    def test_cel3_vs_Pi(self):
+        """cel3(kc, 1-n) = Pi(n|m) — matches testBulirschCEL.m"""
+        m, n = 0.5, 0.3
+        kc = float(np.sqrt(1 - m))
+        Pi_leg = float(elliptic.elliptic3(np.pi / 2, m, n))
+        Pi_cel = float(elliptic.cel3(kc, 1 - n))
+        assert abs(Pi_cel - Pi_leg) < 1e-12
 
 
 class TestWeierstrass:

@@ -85,29 +85,38 @@ def _elliptic12_numpy(u: np.ndarray, m: np.ndarray, eps: float):
     u_g = u[maskN]
     m_g = m[maskN]
 
-    s  = np.sin(u_g)
-    c  = np.cos(u_g)
-    d2 = 1.0 - m_g * s ** 2         # Δ²
+    # Period reduction: F(φ + kπ, m) = F(φ, m) + 2k·K(m)
+    #                   E(φ + kπ, m) = E(φ, m) + 2k·E_complete(m)
+    #                   Z(φ + kπ, m) = Z(φ, m)  [period π]
+    k   = np.round(u_g / math.pi).astype(np.int64)
+    u_r = u_g - k * math.pi             # reduced to (-π/2, π/2]
 
-    # K(m) and E(m) for Zeta computation
+    # K(m) and E(m) — complete integrals
     K_m = _rf_numpy(np.zeros_like(m_g), 1.0 - m_g, np.ones_like(m_g))
     Em  = K_m - m_g / 3.0 * _rd_numpy(np.zeros_like(m_g), 1.0 - m_g, np.ones_like(m_g))
 
-    # Incomplete integrals
-    RF = _rf_numpy(c ** 2, d2, np.ones_like(u_g))
-    RD = _rd_numpy(c ** 2, d2, np.ones_like(u_g))
+    s  = np.sin(u_r)
+    c  = np.cos(u_r)
+    d2 = 1.0 - m_g * s ** 2            # Δ²
 
-    F_g = s * RF
-    E_g = F_g - m_g * s ** 3 / 3.0 * RD
-    Z_g = E_g - (Em / K_m) * F_g
+    RF = _rf_numpy(c ** 2, d2, np.ones_like(u_r))
+    RD = _rd_numpy(c ** 2, d2, np.ones_like(u_r))
 
-    # Handle s == 0 (phi == 0 or multiple of pi)
+    F_r = s * RF
+    E_r = F_r - m_g * s ** 3 / 3.0 * RD
+    Z_r = E_r - (Em / K_m) * F_r
+
+    # Handle s == 0 (φ == 0 or multiple of π)
     zero = s == 0.0
-    F_g[zero] = 0.0
-    E_g[zero] = 0.0
-    Z_g[zero] = 0.0
+    F_r[zero] = 0.0
+    E_r[zero] = 0.0
+    Z_r[zero] = 0.0
 
-    # sin(phi) already carries the correct sign for odd symmetry.
+    # Apply period shifts
+    F_g = F_r + 2.0 * k * K_m
+    E_g = E_r + 2.0 * k * Em
+    Z_g = Z_r                           # Z has period π, no shift needed
+
     F[maskN] = F_g
     E[maskN] = E_g
     Z[maskN] = Z_g

@@ -191,3 +191,81 @@ def _weierS_numpy(z, e1, e2, e3):
     S = np.sign(z) * np.exp(log_sigma)
     S[z == 0.0] = 0.0
     return S
+
+
+# -----------------------------------------------------------------------
+# Weierstrass invariants and P-derivative
+# -----------------------------------------------------------------------
+
+def weierstrassInvariants(e1, e2, e3):
+    """Lattice invariants g₂, g₃ and discriminant Δ from the three roots.
+
+    The roots e1, e2, e3 are the values of ℘ at the three half-periods,
+    satisfying e1 > e2 > e3 and e1 + e2 + e3 = 0 (A&S 18.1.2).
+
+    g₂ = -4(e1 e2 + e1 e3 + e2 e3)  [A&S 18.1.3]
+    g₃ =  4 e1 e2 e3
+    Δ  = g₂³ - 27 g₃²
+
+    Parameters
+    ----------
+    e1, e2, e3 : array_like (real, e1 > e2 > e3)
+
+    Returns
+    -------
+    g2, g3, Delta : arrays
+    """
+    e1 = np.asarray(e1, dtype=np.float64)
+    e2 = np.asarray(e2, dtype=np.float64)
+    e3 = np.asarray(e3, dtype=np.float64)
+    xp = array_namespace(e1, e2, e3)
+    e1, e2, e3 = (np.asarray(x) for x in (e1, e2, e3))
+    e1, e2, e3 = np.broadcast_arrays(e1, e2, e3)
+    g2    = -4.0 * (e1*e2 + e1*e3 + e2*e3)
+    g3    =  4.0 * e1 * e2 * e3
+    Delta = g2**3 - 27.0 * g3**2
+    return xp.asarray(g2), xp.asarray(g3), xp.asarray(Delta)
+
+
+def weierstrassPPrime(z, e1, e2, e3):
+    """Derivative ℘'(z; e1, e2, e3) of the Weierstrass P-function.
+
+    ℘'(z) = -2(e1-e3)^{3/2} · cn(w,m) · dn(w,m) / sn³(w,m)
+
+    where  w = z√(e1-e3),  m = (e2-e3)/(e1-e3)  (A&S 18.9.8).
+
+    Verification identity: (℘')² = 4℘³ - g₂℘ - g₃.
+
+    Parameters
+    ----------
+    z : array_like
+    e1, e2, e3 : array_like  (e1 > e2 > e3)
+
+    Returns
+    -------
+    dP : array
+    """
+    z  = np.asarray(z,  dtype=np.float64)
+    e1 = np.asarray(e1, dtype=np.float64)
+    e2 = np.asarray(e2, dtype=np.float64)
+    e3 = np.asarray(e3, dtype=np.float64)
+    xp = array_namespace(z, e1, e2, e3)
+    z, e1, e2, e3 = np.broadcast_arrays(
+        np.asarray(z), np.asarray(e1), np.asarray(e2), np.asarray(e3))
+    orig_shape = z.shape
+
+    z_f  = z.ravel();  e1_f = e1.ravel(); e2_f = e2.ravel(); e3_f = e3.ravel()
+    m    = (e2_f - e3_f) / (e1_f - e3_f)
+    w    = z_f * np.sqrt(e1_f - e3_f)
+    sn, cn, dn, _ = _ellipj_numpy(w, m)
+    scale = -2.0 * (e1_f - e3_f)**1.5
+    dP = scale * cn * dn / np.where(np.abs(sn) < np.finfo(float).eps**(1/3), np.nan, sn**3)
+    # poles at sn = 0
+    dP[np.abs(sn) < np.finfo(float).eps**(1/3)] = np.inf
+    return xp.asarray(dP.reshape(orig_shape))
+
+
+def _ellipj_numpy(w, m):
+    """Thin shim — import avoids circular dependency."""
+    from .ellipj import _ellipj_numpy as _ej
+    return _ej(w, m)

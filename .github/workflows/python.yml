@@ -43,7 +43,7 @@ jobs:
       - name: Install with torch
         run: pip install -e ".[dev,torch]"
       - name: Run tests (torch backend)
-        run: python -m pytest tests/ -q -k "numpy or torch"
+        run: python -m pytest tests/ -q
 
   test-jax:
     runs-on: ubuntu-latest
@@ -55,4 +55,4 @@ jobs:
       - name: Install with jax
         run: pip install -e ".[dev,jax]"
       - name: Run tests (jax backend)
-        run: python -m pytest tests/ -q -k "numpy or jax"
+        run: python -m pytest tests/ -q

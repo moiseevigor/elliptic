@@ -103,7 +103,7 @@ Full API, GPU benchmarks, and JAX examples → **[`python/README.md`](python/REA
 ## Use cases
 
 Elliptic functions arise across physics, astronomy, geometry, and signal processing wherever periodic or nonlinear dynamics appear.
-The interactive examples at **https://moiseeviorg.github.io/elliptic/examples** show the functions in action.
+The interactive examples at **https://moiseevigor.github.io/elliptic/examples/** show the functions in action.
 
 ### Celestial mechanics
 

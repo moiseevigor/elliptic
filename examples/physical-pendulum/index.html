@@ -16,12 +16,15 @@
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 
   <style>
+/* ═══════════════════════════════════════════════════════════════════
+   Reset & Variables — matches arclength-celestial-mechanics exactly
+═══════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
   --font-body:  'Merriweather', Georgia, serif;
-  --font-ui:    'Source Sans 3', system-ui, sans-serif;
-  --font-mono:  'JetBrains Mono', monospace;
+  --font-ui:    'Source Sans 3', system-ui, -apple-system, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   --text:       #1a1a1a;
   --text-light: #555;
   --text-muted: #888;
@@ -32,92 +35,219 @@
   --accent-r:   #b71c1c;
   --accent-g:   #1b5e20;
   --accent-o:   #e65100;
-  --accent-p:   #6a1b9a;
-  --body-w:     680px;
-  --mid-w:      780px;
-  --page-w:     1020px;
+  --accent-p:   #4a148c;
+  --body-w:     648px;
+  --mid-w:      960px;
+  --page-w:     1200px;
 }
 
-body { font-family: var(--font-body); font-size: 17px; line-height: 1.75; color: var(--text); background: var(--bg); }
+html { scroll-behavior: smooth; }
 
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.88;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══ Layout containers ══════════════════════════════════════════ */
 .l-body   { max-width: var(--body-w);  margin: 0 auto; padding: 0 24px; }
 .l-middle { max-width: var(--mid-w);   margin: 0 auto; padding: 0 24px; }
 .l-page   { max-width: var(--page-w);  margin: 0 auto; padding: 0 24px; }
 
-/* ── nav ── */
-nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.95); backdrop-filter: blur(6px); border-bottom: 1px solid var(--border); }
-.nav-row { max-width: var(--page-w); margin: 0 auto; padding: 8px 24px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-family: var(--font-ui); font-size: 13px; }
+/* ═══ Navigation ═════════════════════════════════════════════════ */
+nav {
+  position: sticky; top: 0; z-index: 300;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-row {
+  max-width: var(--page-w);
+  margin: 0 auto;
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
 nav a { color: var(--accent); text-decoration: none; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
 nav a:hover { background: #e8f0fe; }
 .nav-back { color: var(--text-muted) !important; margin-right: 8px; }
 .nav-sep  { color: #ccc; padding: 0; font-size: 11px; }
 
-/* ── article ── */
+/* ═══ Article ════════════════════════════════════════════════════ */
 article { counter-reset: section; padding-bottom: 80px; }
 
-/* ── hero ── */
-.hero { padding: 64px 0 52px; border-bottom: 1px solid var(--border); margin-bottom: 52px; }
-.hero h1 { font-family: var(--font-ui); font-size: clamp(1.9rem, 4vw, 2.7rem); font-weight: 700; line-height: 1.2; color: #111; margin-bottom: 20px; letter-spacing: -0.025em; }
-.hero-lead { font-size: 1.05rem; color: var(--text-light); max-width: 580px; margin-bottom: 24px; line-height: 1.75; }
-.hero-meta { font-family: var(--font-ui); font-size: 13px; color: var(--text-muted); display: flex; gap: 20px; flex-wrap: wrap; }
+/* ═══ Hero ═══════════════════════════════════════════════════════ */
+.hero {
+  padding: 64px 0 52px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 52px;
+}
+.hero h1 {
+  font-family: var(--font-ui);
+  font-size: clamp(1.9rem, 4vw, 2.7rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #111;
+  margin-bottom: 20px;
+  letter-spacing: -0.025em;
+}
+.hero-lead {
+  font-size: 1.1rem;
+  color: var(--text-light);
+  max-width: 580px;
+  margin-bottom: 24px;
+  line-height: 1.75;
+}
+.hero-meta {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex; gap: 20px; flex-wrap: wrap;
+}
+.hero-meta a { color: var(--text-muted); text-decoration: underline; }
 
-/* ── headings ── */
-h2 { font-family: var(--font-ui); font-size: 1.35rem; font-weight: 700; margin: 60px 0 20px; color: #111; letter-spacing: -0.02em; scroll-margin-top: 56px; }
-h2::before { counter-increment: section; content: counter(section) '. '; color: var(--text-muted); font-weight: 400; }
-h3 { font-family: var(--font-ui); font-size: 1.05rem; font-weight: 600; color: #222; margin: 32px 0 12px; }
+/* ═══ Section headings ═══════════════════════════════════════════ */
+h2 {
+  font-family: var(--font-ui);
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 60px 0 20px;
+  color: #111;
+  letter-spacing: -0.02em;
+  scroll-margin-top: 56px;
+}
+h2::before {
+  counter-increment: section;
+  content: counter(section) '. ';
+  color: var(--text-muted);
+  font-weight: 400;
+}
+h3 {
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #222;
+  margin: 32px 0 12px;
+}
+
 p { margin-bottom: 18px; }
+
 a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
 
-code { font-family: var(--font-mono); font-size: 0.82em; background: #f3f3f3; border: 1px solid #e0e0e0; padding: 1px 5px; border-radius: 3px; }
-pre  { font-family: var(--font-mono); font-size: 13px; line-height: 1.6; background: #f6f6f6; border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; overflow-x: auto; margin: 20px 0; }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: #f3f3f3;
+  border: 1px solid #e0e0e0;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
 
-/* ── figures ── */
+pre {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  background: #f6f6f6;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 20px 0;
+}
+
+/* ═══ Figures ════════════════════════════════════════════════════ */
 figure { margin: 36px 0; }
-.fig-box { background: var(--fig-bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px 16px; overflow: visible; }
+
+.fig-box {
+  background: var(--fig-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px 16px;
+  overflow: visible;
+}
 .fig-box svg { display: block; width: 100%; overflow: visible; }
-figcaption { font-family: var(--font-ui); font-size: 13px; color: var(--text-muted); line-height: 1.55; margin-top: 12px; padding: 0 2px; }
+
+figcaption {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin-top: 12px;
+  padding: 0 2px;
+}
 figcaption strong { color: var(--text-light); }
 
-/* ── controls ── */
-.ctrl-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-family: var(--font-ui); font-size: 14px; color: var(--text-light); margin-bottom: 12px; }
-.ctrl-row label { display: flex; align-items: center; gap: 7px; }
-input[type=range] { width: 120px; accent-color: var(--accent); cursor: pointer; }
-.val-badge { font-family: var(--font-mono); font-size: 13px; min-width: 52px; color: var(--accent); }
+/* ═══ Interactive controls ═══════════════════════════════════════ */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  margin-bottom: 14px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-light);
+}
+.ctrl { display: flex; align-items: center; gap: 7px; }
+input[type=range] { width: 110px; accent-color: var(--accent); cursor: pointer; }
+.val {
+  display: inline-block;
+  min-width: 52px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  text-align: right;
+}
+select {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  background: #fff;
+}
 
-/* ── two-panel animation layout ── */
+/* ═══ Data table ═════════════════════════════════════════════════ */
+.data-table { width:100%; border-collapse:collapse; font-family:var(--font-ui); font-size:13px; margin:20px 0; }
+.data-table th { border-bottom:2px solid var(--border); padding:7px 11px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); }
+.data-table td { padding:5px 11px; border-bottom:1px solid #f0f0f0; font-family:var(--font-mono); font-size:12px; }
+.data-table tr:last-child td { border-bottom: none; }
+
+/* ═══ Footer ═════════════════════════════════════════════════════ */
+footer { border-top:1px solid var(--border); padding:28px 0; font-family:var(--font-ui); font-size:13px; color:var(--text-muted); }
+.foot-row { max-width:var(--page-w); margin:0 auto; padding:0 24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+footer a { color:var(--text-muted); }
+
+/* ═══ Responsive ═════════════════════════════════════════════════ */
+@media (max-width:680px) {
+  .l-body, .l-middle, .l-page { padding:0 16px; }
+  h2 { font-size:1.15rem; }
+}
+
+/* ═══ Pendulum-specific additions ════════════════════════════════ */
 .anim-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 @media (max-width: 640px) { .anim-wrap { grid-template-columns: 1fr; } }
 
 .pendulum-canvas { background: var(--fig-bg); border: 1px solid var(--border); border-radius: 8px; display: block; width: 100%; aspect-ratio: 1/1; }
 .phase-canvas    { background: var(--fig-bg); border: 1px solid var(--border); border-radius: 8px; display: block; width: 100%; aspect-ratio: 1/1; }
 
-/* ── btn ── */
 .btn { font-family: var(--font-ui); font-size: 13px; font-weight: 600; padding: 5px 14px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); cursor: pointer; }
 .btn:hover { background: #f0f0f0; }
 .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .btn.primary:hover { background: #0d47a1; }
 
-/* ── comparison table ── */
-.data-table { width:100%; border-collapse:collapse; font-family:var(--font-ui); font-size:13px; margin:20px 0; }
-.data-table th { border-bottom:2px solid var(--border); padding:7px 11px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); }
-.data-table td { padding:5px 11px; border-bottom:1px solid #f0f0f0; }
-.data-table td:first-child { font-family: var(--font-ui); }
-.data-table td:not(:first-child) { font-family: var(--font-mono); font-size:12px; }
-.data-table tr:last-child td { border-bottom: none; }
-.mono { font-family: var(--font-mono); font-size: 0.85em; }
-
-/* ── callout ── */
 .callout { background: #e8f0fe; border-left: 4px solid var(--accent); border-radius: 0 6px 6px 0; padding: 14px 18px; margin: 24px 0; font-family: var(--font-ui); font-size: 14.5px; line-height: 1.6; color: #1a237e; }
 .callout.warn { background: #fff8e1; border-color: var(--accent-o); color: #5d4037; }
 .callout.result { background: #e8f5e9; border-color: var(--accent-g); color: #1b5e20; }
-
-/* ── section divider ── */
-.divider { border: none; border-top: 1px solid var(--border); margin: 56px 0; }
-
-/* ── footer ── */
-footer { border-top:1px solid var(--border); padding:28px 0; font-family:var(--font-ui); font-size:13px; color:var(--text-muted); }
-.foot-row { max-width:var(--page-w); margin:0 auto; padding:0 24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
-footer a { color:var(--text-muted); }
   </style>
 </head>
 <body>
@@ -283,18 +413,10 @@ $$\dot\theta(t) = 2k\sqrt{\frac{g}{L}}\,\operatorname{cn}\!\left(\sqrt{\frac{g}{
 <div class="l-page">
 <figure>
   <div class="fig-box">
-    <div class="ctrl-row" style="justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
-        <label>
-          Amplitude $\theta_0$
-          <input type="range" id="sl-theta" min="5" max="175" value="60" step="1">
-          <span class="val-badge" id="lbl-theta">60°</span>
-        </label>
-        <label>
-          Length $L$
-          <input type="range" id="sl-length" min="0.2" max="3.0" value="1.0" step="0.1">
-          <span class="val-badge" id="lbl-length">1.0 m</span>
-        </label>
+    <div class="controls" style="justify-content:space-between;">
+      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center;">
+        <div class="ctrl"><label>Amplitude $\theta_0$</label><input type="range" id="sl-theta" min="5" max="175" value="60" step="1"><span class="val" id="lbl-theta">60°</span></div>
+        <div class="ctrl"><label>Length $L$</label><input type="range" id="sl-length" min="0.2" max="3.0" value="1.0" step="0.1"><span class="val" id="lbl-length">1.0 m</span></div>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="btn primary" id="btn-play">⏸ Pause</button>
@@ -414,12 +536,8 @@ $$\frac{d\,\operatorname{sn}}{du} = \operatorname{cn}\,\operatorname{dn}, \quad
 <div class="l-middle">
 <figure>
   <div class="fig-box">
-    <div class="ctrl-row">
-      <label>
-        Modulus $m = k^2$
-        <input type="range" id="sl-m" min="0" max="0.999" value="0.5" step="0.001">
-        <span class="val-badge" id="lbl-m">0.500</span>
-      </label>
+    <div class="controls">
+      <div class="ctrl"><label>Modulus $m = k^2$</label><input type="range" id="sl-m" min="0" max="0.999" value="0.5" step="0.001"><span class="val" id="lbl-m">0.500</span></div>
     </div>
     <div id="jacobi-chart"></div>
   </div>
@@ -517,22 +635,17 @@ $$T = 4\sqrt{\frac{I}{mgd}}\,K(k^2), \quad k = \sin\!\left(\frac{\theta_0}{2}\ri
 <div class="l-page">
 <figure>
   <div class="fig-box">
-    <div class="ctrl-row">
-      <label>
-        Amplitude $\theta_0$
-        <input type="range" id="sl-phys-theta" min="5" max="175" value="60" step="1">
-        <span class="val-badge" id="lbl-phys-theta">60°</span>
-      </label>
-      <label>
-        Shape
-        <select id="sel-shape" style="font-family:var(--font-ui);font-size:13px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;">
+    <div class="controls">
+      <div class="ctrl"><label>Amplitude $\theta_0$</label><input type="range" id="sl-phys-theta" min="5" max="175" value="60" step="1"><span class="val" id="lbl-phys-theta">60°</span></div>
+      <div class="ctrl"><label>Shape</label>
+        <select id="sel-shape">
           <option value="point">Point mass on rod</option>
           <option value="rod-end" selected>Uniform rod (pivot at end)</option>
           <option value="rod-quarter">Uniform rod (pivot at L/4)</option>
           <option value="disk">Solid disk (pivot at edge)</option>
           <option value="ring">Hollow ring (pivot at edge)</option>
         </select>
-      </label>
+      </div>
     </div>
     <div id="comparison-chart"></div>
   </div>

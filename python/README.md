@@ -9,10 +9,10 @@ Works identically on NumPy arrays, PyTorch tensors (CPU and CUDA), and JAX array
 ## Install
 
 ```bash
-pip install elliptic                   # NumPy only
-pip install "elliptic[torch]"          # + PyTorch backend
-pip install "elliptic[jax]"            # + JAX backend
-pip install "elliptic[dev]"            # + test deps (scipy, mpmath, pytest)
+pip install elliptic-functions                   # NumPy only
+pip install "elliptic-functions[torch]"          # + PyTorch backend
+pip install "elliptic-functions[jax]"            # + JAX backend
+pip install "elliptic-functions[dev]"            # + test deps (scipy, mpmath, pytest)
 ```
 
 ## Quick start

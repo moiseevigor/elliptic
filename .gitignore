@@ -4,3 +4,5 @@
 slprj/
 codegen/
 *.autosave
+python/elliptic/__pycache__/
+python/tests/__pycache__/

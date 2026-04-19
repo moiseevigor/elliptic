@@ -16,8 +16,8 @@ jobs:
       - matlab/run-tests:
           test-results-junit: test-results/results.xml
           logging-level: 'Detailed'
-          select-by-folder: tests
-          source-folder: src
+          select-by-folder: matlab/tests
+          source-folder: matlab/src
       - store_test_results:
           path: test-results
   build-octave:
@@ -33,7 +33,7 @@ jobs:
       - run:
           name: Run Octave tests
           command: |
-            octave --eval "addpath(fullfile(pwd, 'src')); cd tests; test testElliptic12; test testElliptic3; test testEllipj; test testThetaPrime; test testAgm; test testJacobiThetaEta;"
+            octave --eval "addpath(fullfile(pwd, 'matlab', 'src')); cd matlab/tests; test testElliptic12; test testElliptic3; test testEllipj; test testThetaPrime; test testAgm; test testJacobiThetaEta;"
 workflows:
   build:
     jobs:

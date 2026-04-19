@@ -10,9 +10,11 @@ Relations:
 """
 from __future__ import annotations
 
+import math
 import numpy as np
-from array_api_compat import array_namespace
-from .elliptic12 import elliptic12
+
+from ._xputils import get_xp
+from .elliptic12 import _elliptic12_xp
 
 
 def ellipticBD(m):
@@ -20,49 +22,33 @@ def ellipticBD(m):
 
     Parameters
     ----------
-    m : array_like
-        Parameter, 0 <= m < 1.
+    m : array_like   Parameter, 0 <= m < 1.
 
     Returns
     -------
     B, D, S : arrays
     """
-    m = np.asarray(m, dtype=np.float64)
-    xp = array_namespace(m)
-    orig_shape = m.shape
-    m_np = np.asarray(m).ravel()
-
-    B_np, D_np, S_np = _bd_numpy(m_np)
-    return (xp.asarray(B_np.reshape(orig_shape)),
-            xp.asarray(D_np.reshape(orig_shape)),
-            xp.asarray(S_np.reshape(orig_shape)))
+    xp = get_xp(m)
+    m = xp.asarray(m, dtype=xp.float64)
+    return _bd_xp(xp, m)
 
 
-def _bd_numpy(m: np.ndarray):
-    """Use K and E at phi=pi/2 computed via elliptic12."""
-    import math
-    phi = np.full_like(m, math.pi / 2)
-    # elliptic12 returns (F, E, Z) — at phi=pi/2 F=K, E=E(m)
-    F_np, E_np, _ = _elliptic12_numpy_direct(phi, m)
-    K = F_np
-    E = E_np
+def _bd_xp(xp, m):
+    phi = xp.full_like(m, math.pi * 0.5)
+    K, E, _ = _elliptic12_xp(xp, phi, m)
 
-    D = np.zeros_like(m)
-    nz = m != 0.0
-    D[nz]  = (K[nz] - E[nz]) / m[nz]
-    D[~nz] = np.pi / 4.0
-
+    # D = (K - E) / m,  limit at m=0: π/4
+    D = xp.where(m == 0.0,
+                 xp.full_like(m, math.pi * 0.25),
+                 (K - E) / xp.where(m == 0.0, xp.ones_like(m), m))
     B = K - D
-
-    S = np.zeros_like(m)
-    S[nz]  = (D[nz] - B[nz]) / m[nz]
-    S[~nz] = np.pi / 16.0
-
+    S = xp.where(m == 0.0,
+                 xp.full_like(m, math.pi / 16.0),
+                 (D - B) / xp.where(m == 0.0, xp.ones_like(m), m))
     return B, D, S
 
 
-def _elliptic12_numpy_direct(phi, m):
-    """Call the numpy core of elliptic12 directly (avoids circular import)."""
-    from .elliptic12 import _elliptic12_numpy
-    eps = np.finfo(np.float64).eps
-    return _elliptic12_numpy(phi, m, eps)
+def _bd_numpy(m: np.ndarray):
+    """Legacy numpy entry point used by bulirsch.py."""
+    m = np.asarray(m, dtype=np.float64)
+    return _bd_xp(np, m)

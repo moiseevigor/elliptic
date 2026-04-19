@@ -16,109 +16,87 @@ from __future__ import annotations
 
 import math
 import numpy as np
-from array_api_compat import array_namespace
 
-from .carlson import _rf_numpy, _rd_numpy
+from ._xputils import get_xp
+from .carlson import _rf_xp, _rd_xp, _rf_numpy, _rd_numpy
 
 
 def elliptic12(u, m):
-    """Incomplete elliptic integrals of the first and second kind and Jacobi Zeta.
+    """Incomplete elliptic integrals F(u|m), E(u|m) and Jacobi Zeta Z(u|m).
 
     Parameters
     ----------
-    u : array_like
-        Phase in radians.
-    m : array_like
-        Parameter, 0 <= m <= 1.  Scalar or same shape as *u*.
+    u : array_like   Phase in radians.
+    m : array_like   Parameter, 0 <= m <= 1.
 
     Returns
     -------
-    F, E, Z : arrays
-        Values of F(u|m), E(u|m), Z(u|m) with the same shape as the
-        broadcast of *u* and *m*.
+    F, E, Z : arrays with broadcast shape of *u* and *m*.
     """
-    u = np.asarray(u, dtype=np.float64)
-    m = np.asarray(m, dtype=np.float64)
-    xp = array_namespace(u, m)
+    xp = get_xp(u, m)
+    u = xp.asarray(u, dtype=xp.float64)
+    m = xp.asarray(m, dtype=xp.float64)
     u, m = xp.broadcast_arrays(u, m)
-    orig_shape = u.shape
+    return _elliptic12_xp(xp, u, m)
 
-    F, E, Z = _elliptic12_numpy(np.asarray(u).ravel(), np.asarray(m).ravel(),
-                                np.finfo(np.float64).eps)
 
-    return (xp.asarray(F.reshape(orig_shape)),
-            xp.asarray(E.reshape(orig_shape)),
-            xp.asarray(Z.reshape(orig_shape)))
+def _elliptic12_xp(xp, u, m):
+    """Backend-native F, E, Z via Carlson forms.  u and m are 1-D xp arrays."""
+    # Period reduction: F(u+kπ|m) = F(u|m) + 2k·K(m), Z period π
+    k   = xp.round(u / math.pi)
+    u_r = u - k * math.pi          # reduced to (-π/2, π/2]
+
+    # Complete integrals K(m), E(m) via Carlson
+    z0  = xp.zeros_like(m)
+    o1  = xp.ones_like(m)
+    mc  = 1.0 - m
+    K_m = _rf_xp(xp, z0, mc, o1)
+    Em  = K_m - m / 3.0 * _rd_xp(xp, z0, mc, o1)
+
+    s   = xp.sin(u_r)
+    c   = xp.cos(u_r)
+    d2  = 1.0 - m * s * s
+
+    RF  = _rf_xp(xp, c * c, d2, xp.ones_like(u_r))
+    RD  = _rd_xp(xp, c * c, d2, xp.ones_like(u_r))
+
+    F_r = s * RF
+    E_r = F_r - m * s * s * s / 3.0 * RD
+    Z_r = E_r - (Em / K_m) * F_r
+
+    # s == 0 → zero (handles u = multiple of π)
+    F_r = xp.where(s == 0.0, xp.zeros_like(F_r), F_r)
+    E_r = xp.where(s == 0.0, xp.zeros_like(E_r), E_r)
+    Z_r = xp.where(s == 0.0, xp.zeros_like(Z_r), Z_r)
+
+    F = F_r + 2.0 * k * K_m
+    E = E_r + 2.0 * k * Em
+    Z = Z_r
+
+    # m == 0: F = E = u, Z = 0
+    F = xp.where(m == 0.0, u, F)
+    E = xp.where(m == 0.0, u, E)
+    Z = xp.where(m == 0.0, xp.zeros_like(Z), Z)
+
+    # m == 1: F = log(tan(π/4 + u_r/2)), E via sin, Z = sin(u_r)
+    F_m1 = xp.log(xp.tan(math.pi / 4 + u_r * 0.5))
+    um1  = xp.abs(u_r)
+    Nf   = xp.floor((um1 + math.pi * 0.5) / math.pi)
+    sgn  = xp.where(u >= 0.0, xp.ones_like(u), -xp.ones_like(u))
+    E_m1 = ((-1.0) ** Nf * xp.sin(um1) + 2.0 * Nf) * sgn
+    Z_m1 = xp.sin(u_r)           # (-1)^Nf * sin(u), Nf=0 for |u_r|<π/2
+
+    near_pole_m1 = xp.abs(u_r) >= math.pi * 0.5 - 1e-14
+    F_m1 = xp.where(near_pole_m1, xp.full_like(F_m1, math.inf) * sgn, F_m1)
+    F = xp.where(m == 1.0, F_m1, F)
+    E = xp.where(m == 1.0, E_m1, E)
+    Z = xp.where(m == 1.0, Z_m1, Z)
+
+    return F, E, Z
 
 
 def _elliptic12_numpy(u: np.ndarray, m: np.ndarray, eps: float):
-    """Pure-NumPy implementation (flat 1-D arrays in, flat 1-D arrays out)."""
-    N = u.size
-    F = np.zeros(N)
-    E = np.zeros(N)
-    Z = np.zeros(N)
-
-    # --- special cases ---
-    mask0 = m == 0.0
-    mask1 = m == 1.0
-    maskN = ~mask0 & ~mask1 & (m >= 0.0) & (m <= 1.0)
-
-    # m == 0: F = E = u, Z = 0
-    F[mask0] = u[mask0]
-    E[mask0] = u[mask0]
-
-    # m == 1
-    if np.any(mask1):
-        um1 = np.abs(u[mask1])
-        Nf = np.floor((um1 + math.pi / 2) / math.pi)
-        idx1 = np.where(mask1)[0]
-        good = um1 < math.pi / 2
-        F[idx1[good]] = np.log(np.tan(math.pi / 4 + u[idx1[good]] / 2))
-        F[idx1[~good]] = np.inf * np.sign(u[idx1[~good]])
-        E[mask1] = ((-1.0) ** Nf * np.sin(um1) + 2.0 * Nf) * np.sign(u[mask1])
-        Z[mask1] = (-1.0) ** Nf * np.sin(u[mask1])
-
-    if not np.any(maskN):
-        return F, E, Z
-
-    # --- general case via Carlson forms ---
-    u_g = u[maskN]
-    m_g = m[maskN]
-
-    # Period reduction: F(φ + kπ, m) = F(φ, m) + 2k·K(m)
-    #                   E(φ + kπ, m) = E(φ, m) + 2k·E_complete(m)
-    #                   Z(φ + kπ, m) = Z(φ, m)  [period π]
-    k   = np.round(u_g / math.pi).astype(np.int64)
-    u_r = u_g - k * math.pi             # reduced to (-π/2, π/2]
-
-    # K(m) and E(m) — complete integrals
-    K_m = _rf_numpy(np.zeros_like(m_g), 1.0 - m_g, np.ones_like(m_g))
-    Em  = K_m - m_g / 3.0 * _rd_numpy(np.zeros_like(m_g), 1.0 - m_g, np.ones_like(m_g))
-
-    s  = np.sin(u_r)
-    c  = np.cos(u_r)
-    d2 = 1.0 - m_g * s ** 2            # Δ²
-
-    RF = _rf_numpy(c ** 2, d2, np.ones_like(u_r))
-    RD = _rd_numpy(c ** 2, d2, np.ones_like(u_r))
-
-    F_r = s * RF
-    E_r = F_r - m_g * s ** 3 / 3.0 * RD
-    Z_r = E_r - (Em / K_m) * F_r
-
-    # Handle s == 0 (φ == 0 or multiple of π)
-    zero = s == 0.0
-    F_r[zero] = 0.0
-    E_r[zero] = 0.0
-    Z_r[zero] = 0.0
-
-    # Apply period shifts
-    F_g = F_r + 2.0 * k * K_m
-    E_g = E_r + 2.0 * k * Em
-    Z_g = Z_r                           # Z has period π, no shift needed
-
-    F[maskN] = F_g
-    E[maskN] = E_g
-    Z[maskN] = Z_g
-
-    return F, E, Z
+    """Legacy numpy entry point (flat 1-D in, flat 1-D out)."""
+    u = np.asarray(u, dtype=np.float64).ravel()
+    m = np.asarray(m, dtype=np.float64).ravel()
+    return _elliptic12_xp(np, u, m)

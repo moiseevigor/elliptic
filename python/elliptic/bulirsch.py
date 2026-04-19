@@ -11,85 +11,47 @@ Special cases:
 """
 from __future__ import annotations
 
+import math
 import numpy as np
-from array_api_compat import array_namespace
-from .ellipticBD import _bd_numpy
-from .elliptic12 import _elliptic12_numpy
-from .carlson import _rj_numpy
+
+from ._xputils import get_xp
+from .ellipticBD import _bd_xp
+from .elliptic12 import _elliptic12_xp
+from .carlson import _rj_xp
 
 
 def cel(kc, p, a, b):
-    """Bulirsch generalised complete elliptic integral.
-
-    Parameters
-    ----------
-    kc : array_like
-        Complementary modulus, kc >= 0.
-    p : array_like
-        Characteristic parameter, p > 0.
-    a, b : array_like
-        Numerator coefficients.
-
-    Returns
-    -------
-    C : array
-    """
-    kc = np.asarray(kc, dtype=np.float64)
-    p  = np.asarray(p,  dtype=np.float64)
-    a  = np.asarray(a,  dtype=np.float64)
-    b  = np.asarray(b,  dtype=np.float64)
-    xp = array_namespace(kc, p, a, b)
+    """Bulirsch generalised complete elliptic integral."""
+    xp = get_xp(kc, p, a, b)
+    kc = xp.asarray(kc, dtype=xp.float64)
+    p  = xp.asarray(p,  dtype=xp.float64)
+    a  = xp.asarray(a,  dtype=xp.float64)
+    b  = xp.asarray(b,  dtype=xp.float64)
     kc, p, a, b = xp.broadcast_arrays(kc, p, a, b)
-    orig_shape = kc.shape
-
-    C = _cel_numpy(np.asarray(kc).ravel(), np.asarray(p).ravel(),
-                   np.asarray(a).ravel(), np.asarray(b).ravel())
-    return xp.asarray(C.reshape(orig_shape))
+    return _cel_xp(xp, kc, p, a, b)
 
 
-def _cel_numpy(kc, p, a, b):
-    import math
-    N = kc.size
-    C = np.zeros(N)
+def _cel_xp(xp, kc, p, a, b):
+    m    = 1.0 - kc * kc
+    phi  = xp.full_like(m, math.pi * 0.5)
+    K, _, _ = _elliptic12_xp(xp, phi, m)
+    B, D, _ = _bd_xp(xp, m)
 
-    bad  = kc < 0.0
-    pole = p <= 0.0
-    C[bad]  = np.nan
-    C[pole] = np.inf
+    # p ≈ 1 branch: C = a*B + b*D
+    C_p1 = a * B + b * D
 
-    ok = ~bad & ~pole
-    if not np.any(ok):
-        return C
+    # p ≠ 1 branch: C = a*K + (b - a*p)*(Pi - K)/(1-p)
+    n_val  = 1.0 - p
+    mc     = 1.0 - m
+    n_safe = xp.where(xp.abs(n_val) < 1e-14, xp.ones_like(n_val), n_val)
+    RJ     = _rj_xp(xp, xp.zeros_like(m), mc, xp.ones_like(m), p)
+    J_n    = RJ / 3.0
+    Pi_n   = K + n_val * J_n
+    C_pn   = a * K + (b - a * p) * (Pi_n - K) / n_safe
 
-    m  = 1.0 - kc[ok] ** 2
-    eps = np.finfo(np.float64).eps
-
-    phi_half = np.full(m.shape, math.pi / 2)
-    K, _, _  = _elliptic12_numpy(phi_half, m, eps)  # K(m)
-    Bv, Dv, _ = _bd_numpy(m)
-
-    pp = p[ok]; aa = a[ok]; bb = b[ok]
-
-    p1 = np.abs(pp - 1.0) < 1e-12
-    pn = ~p1
-    Cv = np.zeros(np.sum(ok))
-
-    # p ≈ 1: cel = a*B + b*D
-    Cv[p1] = aa[p1] * Bv[p1] + bb[p1] * Dv[p1]
-
-    # p ≠ 1: cel = a*K + (b - a*p)*(Pi - K)/(1-p)
-    if np.any(pn):
-        m_pn  = m[pn];  p_pn  = pp[pn]
-        a_pn  = aa[pn]; b_pn  = bb[pn]; K_pn = K[pn]
-        n_val = 1.0 - p_pn   # n for Pi(n|m)
-        kc_pn = np.sqrt(1.0 - m_pn)
-        # J_complete = (1/3) * RJ(0, kc^2, 1, p)  at phi=pi/2 → s=1, c=0
-        RJ_val = _rj_numpy(np.zeros_like(m_pn), kc_pn ** 2, np.ones_like(m_pn), p_pn)
-        J_n    = RJ_val / 3.0
-        Pi_n   = K_pn + n_val * J_n
-        Cv[pn] = a_pn * K_pn + (b_pn - a_pn * p_pn) * (Pi_n - K_pn) / n_val
-
-    C[ok] = Cv
+    C = xp.where(xp.abs(p - 1.0) < 1e-12, C_p1, C_pn)
+    C = xp.where(kc < 0.0, xp.full_like(C, math.nan), C)
+    C = xp.where(p <= 0.0, xp.full_like(C, math.inf), C)
     return C
 
 

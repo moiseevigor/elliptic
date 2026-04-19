@@ -140,12 +140,12 @@ def _time_fn(fn: Callable, args: tuple, reps: int) -> Tuple[float, float]:
 
 
 def _time_gpu(fn: Callable, args: tuple, reps: int) -> Tuple[float, float, float]:
-    """Return (mean_ms, cpu_mb, gpu_mb) using CUDA events for accurate GPU timing."""
+    """Return (mean_ms, cpu_mb, gpu_mb) using CUDA events for accurate GPU timing.
+
+    *fn* is a zero-argument callable (args are captured in a closure).
+    """
     if not _CUDA:
         raise RuntimeError("CUDA not available")
-    # warm-up + JIT
-    fn(*args); torch.cuda.synchronize()
-    fn(*args); torch.cuda.synchronize()
 
     torch.cuda.reset_peak_memory_stats()
     gc.collect()
@@ -155,7 +155,7 @@ def _time_gpu(fn: Callable, args: tuple, reps: int) -> Tuple[float, float, float
     end   = torch.cuda.Event(enable_timing=True)
     start.record()
     for _ in range(reps):
-        fn(*args)
+        fn()
     end.record()
     torch.cuda.synchronize()
     elapsed = start.elapsed_time(end) / reps   # ms
@@ -318,17 +318,16 @@ def run_torch_cpu(sizes: List[int], reps: int) -> List[Row]:
 
 
 def run_torch_cuda(sizes: List[int], reps: int) -> List[Row]:
-    # The functions compute on numpy (CPU) internally. CUDA tensors are moved
-    # to CPU before computation, results moved back. This measures the full
-    # GPU↔CPU data transfer overhead + CPU computation — the realistic cost
-    # of calling these functions from a CUDA workflow.
-    def _cuda_roundtrip(fn, cuda_args):
-        cpu_args = tuple(a.cpu() if isinstance(a, torch.Tensor) else a for a in cuda_args)
-        result = fn(*cpu_args)
-        if isinstance(result, tuple):
-            return tuple(r.cuda() if isinstance(r, torch.Tensor) else torch.tensor(r).cuda()
-                         for r in result)
-        return result.cuda() if isinstance(result, torch.Tensor) else torch.tensor(result).cuda()
+    """Run functions natively on CUDA tensors; optionally with torch.compile."""
+    _has_compile = hasattr(torch, "compile")
+
+    def _compiled(fn):
+        if _has_compile:
+            try:
+                return torch.compile(fn, fullgraph=False, dynamic=True)
+            except Exception:
+                return fn
+        return fn
 
     rows = []
     for N in sizes:
@@ -339,11 +338,21 @@ def run_torch_cuda(sizes: List[int], reps: int) -> List[Row]:
                 continue
             try:
                 args = make_args(d_cuda)
-                roundtrip = lambda *a, _fn=fn, _args=args: _cuda_roundtrip(_fn, _args)
-                ms, cpu_mb, gpu_mb = _time_gpu(roundtrip, (), reps)
+                cfn  = _compiled(fn)
+                # warm-up: let torch.compile trace the graph
+                cfn(*args); torch.cuda.synchronize()
+                cfn(*args); torch.cuda.synchronize()
+                ms, cpu_mb, gpu_mb = _time_gpu(lambda: cfn(*args), (), reps)
                 rows.append(Row(label, "torch-cuda", N, ms, N / ms / 1000, cpu_mb, gpu_mb))
-            except Exception:
-                pass
+            except Exception as e:
+                # fall back: direct call without compile
+                try:
+                    cfn2 = fn
+                    cfn2(*args); torch.cuda.synchronize()
+                    ms, cpu_mb, gpu_mb = _time_gpu(lambda: cfn2(*args), (), reps)
+                    rows.append(Row(label, "torch-cuda", N, ms, N / ms / 1000, cpu_mb, gpu_mb))
+                except Exception:
+                    pass
     return rows
 
 

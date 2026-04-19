@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "elliptic"
-version = "0.1.0"
+name = "elliptic-functions"
+version = "4.0.0"
 description = "Elliptic integrals and functions — NumPy, PyTorch, JAX"
 readme = "README.md"
 requires-python = ">=3.10"

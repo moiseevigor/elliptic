@@ -120,8 +120,18 @@ if ~isempty(I)
 
     mmax = length(I);
 	mn = max(n);
+
+    % Period reduction (fix for issue #28): F(u+k*pi|m) = F(u|m) + 2*k*K(m).
+    % tan(n*pi/2) is numerically unstable for large n; reducing u to (-pi/2, pi/2]
+    % first avoids accumulated errors in the Landen descent.
+    K_vals = pi ./ (2 .* a(mn,:));                                  % K(m) for each unique m
+    u_work = signU .* u(I);
+    k_per  = round(u_work ./ pi);                                   % number of full half-periods
+    phin0  = u_work - k_per .* pi;                                  % reduced to (-pi/2, pi/2]
+    K_per  = k_per .* K_vals(K);                                    % period correction for F
+
 	phin = zeros(1,mmax);     C  = zeros(1,mmax);
-	Cp = C;  e  = zeros(1,mmax);  phin(:) = signU.*u(I);
+	Cp = C;  e  = zeros(1,mmax);  phin(:) = phin0;
 	c2 = c.^2;
 	e_vals = 2.^(0:mn-1);                                          % pre-compute powers of 2
 	for i = 1:mn                                                    % Descending Landen Transformation
@@ -135,7 +145,7 @@ if ~isempty(I)
         end
 	end
 
-    Ff = phin ./ (a(mn,K).*e*2);
+    Ff = phin ./ (a(mn,K).*e*2) + K_per;                           % F_reduced + period correction
     F(I) = Ff.*signU;                                               % Incomplete Ell. Int. of the First Kind
     Z(I) = Cp.*signU;                                               % Jacobi Zeta Function
     E(I) = (Cp + (1 - 1/2*C) .* Ff).*signU;                         % Incomplete Ell. Int. of the Second Kind

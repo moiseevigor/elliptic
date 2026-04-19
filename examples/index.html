@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Examples — Elliptic Integrals &amp; Functions</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --font-body:  'Merriweather', Georgia, serif;
+      --font-ui:    'Source Sans 3', system-ui, sans-serif;
+      --font-mono:  'JetBrains Mono', monospace;
+      --text:       #1a1a1a;
+      --text-light: #555;
+      --text-muted: #888;
+      --border:     #e0e0e0;
+      --bg:         #ffffff;
+      --fig-bg:     #fafafa;
+      --accent:     #1565c0;
+      --accent-r:   #b71c1c;
+      --accent-g:   #1b5e20;
+      --accent-o:   #e65100;
+      --max-w:      720px;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.75;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    /* ── nav ── */
+    .nav-back {
+      display: block;
+      font-family: var(--font-ui);
+      font-size: 13px;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--fig-bg);
+    }
+    .nav-back:hover { text-decoration: underline; }
+
+    /* ── layout ── */
+    .page {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── header ── */
+    .page-header { margin-bottom: 48px; }
+    .page-header h1 {
+      font-family: var(--font-ui);
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .page-header p {
+      font-family: var(--font-ui);
+      font-size: 1rem;
+      color: var(--text-light);
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    /* ── section headings ── */
+    .section-label {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── example cards ── */
+    .examples-grid {
+      display: grid;
+      gap: 20px;
+      margin-bottom: 56px;
+    }
+
+    .card {
+      display: block;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 24px 28px;
+      background: var(--bg);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 12px rgba(21,101,192,0.10);
+    }
+
+    .card-eyebrow {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .card h2 {
+      font-family: var(--font-ui);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .card p {
+      font-family: var(--font-ui);
+      font-size: 0.93rem;
+      color: var(--text-light);
+      line-height: 1.55;
+      margin-bottom: 14px;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--fig-bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 2px 7px;
+      color: var(--text-light);
+    }
+
+    /* ── coming-soon card variant ── */
+    .card.soon {
+      opacity: 0.55;
+      cursor: default;
+      pointer-events: none;
+    }
+    .card.soon .card-eyebrow { color: var(--text-muted); }
+    .badge-soon {
+      display: inline-block;
+      font-family: var(--font-ui);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--text-muted);
+      border-radius: 3px;
+      padding: 1px 6px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    /* ── footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      font-family: var(--font-ui);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<a class="nav-back" href="https://moiseevigor.github.io/elliptic/">&larr; moiseevigor/elliptic</a>
+
+<div class="page">
+
+  <header class="page-header">
+    <h1>Interactive Examples</h1>
+    <p>
+      Live, browser-based visualisations of elliptic integrals and functions.
+      All computations run client-side — no server, no install.
+      Built with <a href="https://threejs.org" style="color:var(--accent)">Three.js</a>,
+      <a href="https://d3js.org" style="color:var(--accent)">D3</a>, and
+      <a href="https://katex.org" style="color:var(--accent)">KaTeX</a>.
+    </p>
+  </header>
+
+  <!-- ── Celestial mechanics ── -->
+  <p class="section-label">Celestial mechanics &amp; orbital dynamics</p>
+  <div class="examples-grid">
+
+    <a class="card" href="arclength-celestial-mechanics/">
+      <p class="card-eyebrow">Elliptic integrals · 3D visualisation</p>
+      <h2>Arc Length &amp; Celestial Mechanics</h2>
+      <p>
+        Derive the arc length of an ellipse via $E(\varphi|m)$, trace Keplerian orbits in 3D,
+        solve Kepler's equation numerically, and watch the Carlson duplication algorithm converge.
+        Includes a live Mercury perihelion precession demo.
+      </p>
+      <div class="card-tags">
+        <span class="tag">elliptic12</span>
+        <span class="tag">ellipticBDJ</span>
+        <span class="tag">carlsonRF</span>
+        <span class="tag">arclength_ellipse</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- ── Jacobi functions ── -->
+  <p class="section-label">Jacobi elliptic functions</p>
+  <div class="examples-grid">
+
+    <div class="card soon">
+      <p class="card-eyebrow">Nonlinear dynamics <span class="badge-soon">coming soon</span></p>
+      <h2>Physical Pendulum &amp; Exact Trajectories</h2>
+      <p>
+        Exact period for large-amplitude oscillations via $K(k^2)$,
+        phase-portrait animation using $\mathrm{sn}$, and separatrix behaviour as $\theta_0 \to \pi$.
+      </p>
+      <div class="card-tags">
+        <span class="tag">ellipj</span>
+        <span class="tag">cel1</span>
+      </div>
+    </div>
+
+    <div class="card soon">
+      <p class="card-eyebrow">Rigid body rotation <span class="badge-soon">coming soon</span></p>
+      <h2>Euler–Poinsot Motion</h2>
+      <p>
+        Torque-free rotation of an asymmetric top: $\omega_1 = \omega_0\,\mathrm{cn}(t|m)$,
+        polhode animation, and Euler angle integration.
+      </p>
+      <div class="card-tags">
+        <span class="tag">ellipj</span>
+        <span class="tag">jacobiEDJ</span>
+        <span class="tag">elliptic12</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Waves ── -->
+  <p class="section-label">Nonlinear waves &amp; signal processing</p>
+  <div class="examples-grid">
+
+    <div class="card soon">
+      <p class="card-eyebrow">KdV equation <span class="badge-soon">coming soon</span></p>
+      <h2>Cnoidal Waves</h2>
+      <p>
+        Exact KdV cnoidal wave solution $u(x,t) = A\,\mathrm{cn}^2(\kappa(x-vt)|m)$
+        animated across the soliton limit $m \to 1$.
+      </p>
+      <div class="card-tags">
+        <span class="tag">ellipj</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Weierstrass ── -->
+  <p class="section-label">Weierstrass &amp; modular forms</p>
+  <div class="examples-grid">
+
+    <div class="card soon">
+      <p class="card-eyebrow">Complex analysis <span class="badge-soon">coming soon</span></p>
+      <h2>Weierstrass ℘ Function &amp; Elliptic Curves</h2>
+      <p>
+        Domain-colouring of $\wp(z)$ over the complex plane,
+        lattice geometry from invariants $g_2, g_3$, and the group law on $y^2 = 4x^3 - g_2 x - g_3$.
+      </p>
+      <div class="card-tags">
+        <span class="tag">weierstrassP</span>
+        <span class="tag">weierstrassZeta</span>
+        <span class="tag">weierstrassInvariants</span>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    Source: <a href="https://github.com/moiseevigor/elliptic">github.com/moiseevigor/elliptic</a>
+    &nbsp;·&nbsp;
+    MATLAB/Octave &amp; Python implementations of elliptic integrals and functions.
+  </footer>
+
+</div>
+
+</body>
+</html>

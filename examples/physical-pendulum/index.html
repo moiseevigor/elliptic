@@ -88,8 +88,8 @@ input[type=range] { width: 120px; accent-color: var(--accent); cursor: pointer; 
 .anim-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 @media (max-width: 640px) { .anim-wrap { grid-template-columns: 1fr; } }
 
-.pendulum-canvas { background: var(--fig-bg); border: 1px solid var(--border); border-radius: 8px; display: block; width: 100%; }
-.phase-canvas    { background: var(--fig-bg); border: 1px solid var(--border); border-radius: 8px; display: block; width: 100%; }
+.pendulum-canvas { background: var(--fig-bg); border: 1px solid var(--border); border-radius: 8px; display: block; width: 100%; aspect-ratio: 1/1; }
+.phase-canvas    { background: var(--fig-bg); border: 1px solid var(--border); border-radius: 8px; display: block; width: 100%; aspect-ratio: 1/1; }
 
 /* ── btn ── */
 .btn { font-family: var(--font-ui); font-size: 13px; font-weight: 600; padding: 5px 14px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); cursor: pointer; }
@@ -639,24 +639,30 @@ function ellipticK(m) {
   return carlsonRF(0, mc, 1);
 }
 
-/* Jacobi AGM — returns [sn, cn, dn] at (u, m) */
+/* Jacobi AGM — returns [sn, cn, dn] at (u, m)
+   Forward AGM builds a,b,c until c_n → 0.
+   Backward step uses c[i]/a[i], NOT b[i]/a[i] (b[i]/a[i] → 1, giving wrong result). */
 function jacobi(u, m) {
   if (m < 1e-14) return [Math.sin(u), Math.cos(u), 1.0];
-  if (m > 1 - 1e-14) return [Math.tanh(u), 1/Math.cosh(u), 1/Math.cosh(u)];
+  if (m > 1 - 1e-14) { const s = Math.tanh(u), ch = 1/Math.cosh(u); return [s, ch, ch]; }
 
-  const N = 20;
-  const a = [1.0], b = [Math.sqrt(1-m)];
-  for (let i = 0; i < N; i++) {
-    a.push(0.5*(a[i]+b[i]));
-    b.push(Math.sqrt(a[i]*b[i]));
+  // Forward AGM: a_0=1, b_0=sqrt(1-m), c_0=sqrt(m)
+  const a = [1.0], b = [Math.sqrt(1 - m)], c = [Math.sqrt(m)];
+  for (let i = 0; i < 30; i++) {
+    a.push(0.5 * (a[i] + b[i]));
+    b.push(Math.sqrt(a[i] * b[i]));
+    c.push(0.5 * (a[i] - b[i]));
+    if (c[c.length - 1] < 1e-16) break;
   }
+  const N = c.length - 1;
+
+  // phi_N = 2^N * a_N * u; backward: phi_{n-1} = (phi_n + arcsin(c_n/a_n·sin(phi_n)))/2
   let phi = Math.pow(2, N) * a[N] * u;
-  for (let i = N; i > 0; i--) {
-    phi = 0.5*(phi + Math.asin(b[i]/a[i] * Math.sin(phi)));
+  for (let i = N; i >= 1; i--) {
+    phi = 0.5 * (phi + Math.asin(Math.max(-1, Math.min(1, c[i] / a[i] * Math.sin(phi)))));
   }
   const sn = Math.sin(phi), cn = Math.cos(phi);
-  const dn = Math.sqrt(Math.max(0, 1 - m*sn*sn));
-  return [sn, cn, dn];
+  return [sn, cn, Math.sqrt(Math.max(0, 1 - m * sn * sn))];
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -786,9 +792,9 @@ function jacobi(u, m) {
 
   function drawPendulum(ctx, theta, thetaSHO, W, H) {
     ctx.clearRect(0,0,W,H);
-    const ox = W/2, oy = H*0.12;
-    const pxPerM = Math.min(W,H)*0.38 / L;
-    const px = L * pxPerM;
+    // Pivot at 50% height so the bob stays in-canvas at all amplitudes up to ~178°
+    const ox = W / 2, oy = H * 0.5;
+    const px = Math.min(W, H) * 0.42;   // arm length in px, independent of L
 
     // pivot
     ctx.beginPath(); ctx.arc(ox, oy, 5, 0, 2*Math.PI);
@@ -829,8 +835,8 @@ function jacobi(u, m) {
     const cx = W/2, cy = H/2;
     const scaleX = W / (2.2 * Math.PI);
     const om0 = getOmega0();
-    const maxDth = 2 * om0 * getK() * (ellipticK(getK2()) > 0 ? 1 : 1);
-    const scaleY = (H * 0.40) / Math.max(om0 * 2, maxDth * 1.1);
+    // Fixed separatrix-based scale: 2·ω₀ (peak velocity on separatrix) → 44% of canvas
+    const scaleY = (H * 0.44) / (2.1 * om0);
 
     // axes
     ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
@@ -916,22 +922,32 @@ function jacobi(u, m) {
        </div>`).join('');
   }
 
+  function syncCanvas(cv) {
+    // Keep pixel buffer matched to CSS display size (handles responsive layout)
+    const r = window.devicePixelRatio || 1;
+    const w = Math.round(cv.clientWidth  * r) || 340;
+    const h = Math.round(cv.clientHeight * r) || 340;
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    return [w, h];
+  }
+
   function frame(ts) {
     if (!paused) {
-      if (lastTime !== null) t += (ts - lastTime) / 1000 * 0.7; // 0.7× real time
+      if (lastTime !== null) t += (ts - lastTime) / 1000 * 0.7;
       lastTime = ts;
     } else {
       lastTime = ts;
     }
 
-    const W = cvP.width, H = cvP.height;
+    const [W, H] = syncCanvas(cvP); syncCanvas(cvPh);
     const theta = exactTheta(t);
     const sHO = sHOTheta(t);
     const [snv, cnv] = jacobi(getOmega0()*t, getK2());
     const dtheta = 2 * getK() * getOmega0() * cnv;
 
+    const Wph = cvPh.width, Hph = cvPh.height;
     drawPendulum(ctxP, theta, sHO, W, H);
-    drawPhase(ctxPh, theta, dtheta, W, H);
+    drawPhase(ctxPh, theta, dtheta, Wph, Hph);
     updateStats(theta, dtheta, getT());
 
     requestAnimationFrame(frame);

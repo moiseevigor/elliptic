@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Physical Pendulum — Elliptic Functions in Action</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+  <style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-body:  'Merriweather', Georgia, serif;
+  --font-ui:    'Source Sans 3', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', monospace;
+  --text:       #1a1a1a;
+  --text-light: #555;
+  --text-muted: #888;
+  --border:     #e0e0e0;
+  --bg:         #ffffff;
+  --fig-bg:     #fafafa;
+  --accent:     #1565c0;
+  --accent-r:   #b71c1c;
+  --accent-g:   #1b5e20;
+  --accent-o:   #e65100;
+  --accent-p:   #6a1b9a;
+  --body-w:     680px;
+  --mid-w:      780px;
+  --page-w:     1020px;
+}
+
+body { font-family: var(--font-body); font-size: 17px; line-height: 1.75; color: var(--text); background: var(--bg); }
+
+.l-body   { max-width: var(--body-w);  margin: 0 auto; padding: 0 24px; }
+.l-middle { max-width: var(--mid-w);   margin: 0 auto; padding: 0 24px; }
+.l-page   { max-width: var(--page-w);  margin: 0 auto; padding: 0 24px; }
+
+/* ── nav ── */
+nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.95); backdrop-filter: blur(6px); border-bottom: 1px solid var(--border); }
+.nav-row { max-width: var(--page-w); margin: 0 auto; padding: 8px 24px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-family: var(--font-ui); font-size: 13px; }
+nav a { color: var(--accent); text-decoration: none; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+nav a:hover { background: #e8f0fe; }
+.nav-back { color: var(--text-muted) !important; margin-right: 8px; }
+.nav-sep  { color: #ccc; padding: 0; font-size: 11px; }
+
+/* ── article ── */
+article { counter-reset: section; padding-bottom: 80px; }
+
+/* ── hero ── */
+.hero { padding: 64px 0 52px; border-bottom: 1px solid var(--border); margin-bottom: 52px; }
+.hero h1 { font-family: var(--font-ui); font-size: clamp(1.9rem, 4vw, 2.7rem); font-weight: 700; line-height: 1.2; color: #111; margin-bottom: 20px; letter-spacing: -0.025em; }
+.hero-lead { font-size: 1.05rem; color: var(--text-light); max-width: 580px; margin-bottom: 24px; line-height: 1.75; }
+.hero-meta { font-family: var(--font-ui); font-size: 13px; color: var(--text-muted); display: flex; gap: 20px; flex-wrap: wrap; }
+
+/* ── headings ── */
+h2 { font-family: var(--font-ui); font-size: 1.35rem; font-weight: 700; margin: 60px 0 20px; color: #111; letter-spacing: -0.02em; scroll-margin-top: 56px; }
+h2::before { counter-increment: section; content: counter(section) '. '; color: var(--text-muted); font-weight: 400; }
+h3 { font-family: var(--font-ui); font-size: 1.05rem; font-weight: 600; color: #222; margin: 32px 0 12px; }
+p { margin-bottom: 18px; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+code { font-family: var(--font-mono); font-size: 0.82em; background: #f3f3f3; border: 1px solid #e0e0e0; padding: 1px 5px; border-radius: 3px; }
+pre  { font-family: var(--font-mono); font-size: 13px; line-height: 1.6; background: #f6f6f6; border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; overflow-x: auto; margin: 20px 0; }
+
+/* ── figures ── */
+figure { margin: 36px 0; }
+.fig-box { background: var(--fig-bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px 16px; overflow: visible; }
+.fig-box svg { display: block; width: 100%; overflow: visible; }
+figcaption { font-family: var(--font-ui); font-size: 13px; color: var(--text-muted); line-height: 1.55; margin-top: 12px; padding: 0 2px; }
+figcaption strong { color: var(--text-light); }
+
+/* ── controls ── */
+.ctrl-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-family: var(--font-ui); font-size: 14px; color: var(--text-light); margin-bottom: 12px; }
+.ctrl-row label { display: flex; align-items: center; gap: 7px; }
+input[type=range] { width: 120px; accent-color: var(--accent); cursor: pointer; }
+.val-badge { font-family: var(--font-mono); font-size: 13px; min-width: 52px; color: var(--accent); }
+
+/* ── two-panel animation layout ── */
+.anim-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 640px) { .anim-wrap { grid-template-columns: 1fr; } }
+
+.pendulum-canvas { background: var(--fig-bg); border: 1px solid var(--border); border-radius: 8px; display: block; width: 100%; }
+.phase-canvas    { background: var(--fig-bg); border: 1px solid var(--border); border-radius: 8px; display: block; width: 100%; }
+
+/* ── btn ── */
+.btn { font-family: var(--font-ui); font-size: 13px; font-weight: 600; padding: 5px 14px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); cursor: pointer; }
+.btn:hover { background: #f0f0f0; }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.primary:hover { background: #0d47a1; }
+
+/* ── comparison table ── */
+.data-table { width:100%; border-collapse:collapse; font-family:var(--font-ui); font-size:13px; margin:20px 0; }
+.data-table th { border-bottom:2px solid var(--border); padding:7px 11px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); }
+.data-table td { padding:5px 11px; border-bottom:1px solid #f0f0f0; }
+.data-table td:first-child { font-family: var(--font-ui); }
+.data-table td:not(:first-child) { font-family: var(--font-mono); font-size:12px; }
+.data-table tr:last-child td { border-bottom: none; }
+.mono { font-family: var(--font-mono); font-size: 0.85em; }
+
+/* ── callout ── */
+.callout { background: #e8f0fe; border-left: 4px solid var(--accent); border-radius: 0 6px 6px 0; padding: 14px 18px; margin: 24px 0; font-family: var(--font-ui); font-size: 14.5px; line-height: 1.6; color: #1a237e; }
+.callout.warn { background: #fff8e1; border-color: var(--accent-o); color: #5d4037; }
+.callout.result { background: #e8f5e9; border-color: var(--accent-g); color: #1b5e20; }
+
+/* ── section divider ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 56px 0; }
+
+/* ── footer ── */
+footer { border-top:1px solid var(--border); padding:28px 0; font-family:var(--font-ui); font-size:13px; color:var(--text-muted); }
+.foot-row { max-width:var(--page-w); margin:0 auto; padding:0 24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+footer a { color:var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-row">
+    <a class="nav-back" href="https://moiseevigor.github.io/elliptic/">moiseevigor/elliptic</a>
+    <span class="nav-sep">›</span>
+    <a href="../">Examples</a>
+    <span class="nav-sep">›</span>
+    <a href="#">Physical Pendulum</a>
+  </div>
+</nav>
+
+<article>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════════════════════════ -->
+<div class="hero">
+<div class="l-body">
+  <h1>The Physical Pendulum</h1>
+  <p class="hero-lead">
+    From the small-angle harmonic approximation to the exact solution via
+    Jacobi elliptic functions — with a live pendulum, phase portrait,
+    and period divergence at the separatrix.
+  </p>
+  <div class="hero-meta">
+    <span>Functions: <code>sn</code>, <code>cn</code>, <code>dn</code>, <code>K(m)</code></span>
+    <span>Topics: Jacobi elliptic functions · nonlinear dynamics · phase portraits</span>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     §1 — EQUATION OF MOTION
+════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+<h2 id="eom">Equation of motion</h2>
+
+<p>
+  A pendulum of length $L$ and mass $m$ in gravity $g$ satisfies
+</p>
+
+$$\ddot\theta + \frac{g}{L}\sin\theta = 0.$$
+
+<p>
+  For <em>small</em> angles $\theta \ll 1$ we replace $\sin\theta \approx \theta$,
+  giving simple harmonic motion with period $T_0 = 2\pi\sqrt{L/g}$ — independent
+  of amplitude. For large amplitudes this approximation breaks down badly, and the
+  true period depends on the initial angle through a complete elliptic integral.
+</p>
+
+<p>
+  The exact solution is obtained from energy conservation. With $\dot\theta = 0$ at
+  the maximum angle $\theta_0$, the energy equation gives
+</p>
+
+$$\frac{d\theta}{dt} = \pm\sqrt{\frac{2g}{L}(\cos\theta - \cos\theta_0)}.$$
+
+<p>
+  Substituting $\sin(\theta/2) = k\sin\varphi$ where $k = \sin(\theta_0/2)$
+  transforms this into a standard elliptic integral of the first kind.
+</p>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     §2 — EXACT PERIOD
+════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+<h2 id="period">Exact period</h2>
+
+<p>The quarter-period — time from $\theta = 0$ to $\theta = \theta_0$ — equals</p>
+
+$$\frac{T}{4} = \sqrt{\frac{L}{g}}\int_0^{\pi/2}\frac{d\varphi}{\sqrt{1 - k^2\sin^2\varphi}} = \sqrt{\frac{L}{g}}\,K(k^2),$$
+
+<p>so the <strong>exact period</strong> is</p>
+
+$$\boxed{T = 4\sqrt{\frac{L}{g}}\,K(k^2), \quad k = \sin\!\left(\frac{\theta_0}{2}\right).}$$
+
+<p>
+  Here $K(m) = \int_0^{\pi/2}(1 - m\sin^2\varphi)^{-1/2}\,d\varphi$ is the complete elliptic
+  integral of the first kind. As $\theta_0 \to \pi$ (pendulum approaches vertical), $k \to 1$
+  and $K(k^2) \to \infty$ logarithmically — the period diverges.
+</p>
+
+<p>
+  The familiar small-angle result $T_0 = 2\pi\sqrt{L/g}$ is the limiting case
+  $K(0) = \pi/2$, giving $T = 4\sqrt{L/g}\cdot\pi/2 = 2\pi\sqrt{L/g}$.
+</p>
+
+</div>
+
+<!-- ═══ Period vs amplitude figure ══════════════════════════════════ -->
+<div class="l-middle">
+<figure>
+  <div class="fig-box">
+    <div id="period-chart"></div>
+  </div>
+  <figcaption>
+    <strong>Fig. 1 — Period vs. amplitude.</strong>
+    The exact period $T(\theta_0) = 4\sqrt{L/g}\,K(\sin^2(\theta_0/2))$ (blue) versus
+    the small-angle approximation $T_0 = 2\pi\sqrt{L/g}$ (dashed grey). At $\theta_0 = 90°$
+    the error is already ~18%; at $\theta_0 = 170°$ the true period is $4\times$ larger.
+    Hover to read off values.
+  </figcaption>
+</figure>
+</div>
+
+<div class="l-body">
+
+<h3>Series expansion</h3>
+
+<p>
+  Expanding $K(k^2)$ in powers of $k = \sin(\theta_0/2)$ gives the asymptotic series
+</p>
+
+$$T = T_0\left(1 + \frac{1}{16}\theta_0^2 + \frac{11}{3072}\theta_0^4 + \cdots\right), \quad \theta_0 \ll 1.$$
+
+<p>
+  At $\theta_0 = 30°$ the first correction term is already sufficient; by $60°$ three
+  terms are needed for 0.1% accuracy. Beyond $120°$ no finite truncation is adequate —
+  you must evaluate $K(k^2)$ exactly.
+</p>
+
+<table class="data-table">
+  <thead><tr><th>θ₀</th><th>k²</th><th>K(k²)</th><th>T / T₀ (exact)</th><th>T / T₀ (small-angle)</th><th>Error</th></tr></thead>
+  <tbody id="period-table"></tbody>
+</table>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     §3 — EXACT TRAJECTORY
+════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+<h2 id="trajectory">Exact trajectory via Jacobi sn</h2>
+
+<p>
+  The full time-domain solution uses the Jacobi elliptic function $\operatorname{sn}(u \mid m)$.
+  Starting from rest at $\theta_0$, the exact angle at time $t$ is
+</p>
+
+$$\theta(t) = 2\arcsin\!\left(k\,\operatorname{sn}\!\left(\sqrt{\frac{g}{L}}\,t\;\Big|\;k^2\right)\right), \quad k = \sin\!\left(\frac{\theta_0}{2}\right).$$
+
+<p>
+  The angular velocity is
+</p>
+
+$$\dot\theta(t) = 2k\sqrt{\frac{g}{L}}\,\operatorname{cn}\!\left(\sqrt{\frac{g}{L}}\,t\;\Big|\;k^2\right).$$
+
+<p>
+  In the limit $\theta_0 \to 0$: $k \to 0$, $\operatorname{sn}(u|0) = \sin u$,
+  $\operatorname{cn}(u|0) = \cos u$ — recovering simple harmonic motion.
+  In the limit $\theta_0 \to \pi$: $k \to 1$, $\operatorname{sn}(u|1) = \tanh u$,
+  describing the homoclinic orbit that asymptotes to the inverted equilibrium.
+</p>
+
+</div>
+
+<!-- ═══ Live pendulum animation ══════════════════════════════════════ -->
+<div class="l-page">
+<figure>
+  <div class="fig-box">
+    <div class="ctrl-row" style="justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+        <label>
+          Amplitude $\theta_0$
+          <input type="range" id="sl-theta" min="5" max="175" value="60" step="1">
+          <span class="val-badge" id="lbl-theta">60°</span>
+        </label>
+        <label>
+          Length $L$
+          <input type="range" id="sl-length" min="0.2" max="3.0" value="1.0" step="0.1">
+          <span class="val-badge" id="lbl-length">1.0 m</span>
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn primary" id="btn-play">⏸ Pause</button>
+        <button class="btn" id="btn-reset">↺ Reset</button>
+      </div>
+    </div>
+
+    <div class="anim-wrap">
+      <div>
+        <canvas id="cv-pendulum" class="pendulum-canvas" width="340" height="340"></canvas>
+        <div style="font-family:var(--font-ui);font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center;">
+          Blue = exact elliptic &nbsp;|&nbsp; Grey dashed = small-angle SHO
+        </div>
+      </div>
+      <div>
+        <canvas id="cv-phase" class="phase-canvas" width="340" height="340"></canvas>
+        <div style="font-family:var(--font-ui);font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center;">
+          Phase portrait $(\theta,\,\dot\theta)$ — dot moves in real time
+        </div>
+      </div>
+    </div>
+
+    <div id="anim-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;font-family:var(--font-ui);font-size:13px;">
+    </div>
+  </div>
+  <figcaption>
+    <strong>Fig. 2 — Live pendulum.</strong>
+    The blue pendulum uses the exact $\operatorname{sn}$ solution; the grey ghost uses the
+    small-angle approximation. Drag the sliders to change amplitude or length. Watch the
+    phase portrait close into a nearly circular orbit at small angles and bulge into an
+    elongated elliptic curve at large angles.
+  </figcaption>
+</figure>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     §4 — PHASE PORTRAIT
+════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+<h2 id="phase">Phase portrait and energy curves</h2>
+
+<p>
+  Each orbit in the $(\theta, \dot\theta)$ plane is a level set of the conserved energy
+</p>
+
+$$E = \frac{1}{2}\dot\theta^2 - \frac{g}{L}\cos\theta = -\frac{g}{L}\cos\theta_0.$$
+
+<p>
+  This gives the phase-portrait equation
+</p>
+
+$$\dot\theta = \pm\sqrt{\frac{2g}{L}(\cos\theta - \cos\theta_0)}.$$
+
+<p>
+  The family of curves is parameterized by $k^2 = \sin^2(\theta_0/2) \in [0,1)$ for
+  <em>libration</em> (bounded oscillation) and $k^2 > 1$ for <em>rotation</em> (full
+  revolution). The boundary $k = 1$ is the <strong>separatrix</strong>, the heteroclinic
+  orbit connecting the unstable equilibria at $\theta = \pm\pi$.
+</p>
+
+</div>
+
+<!-- ═══ Full phase portrait figure ══════════════════════════════════ -->
+<div class="l-middle">
+<figure>
+  <div class="fig-box">
+    <div id="phase-full-chart"></div>
+  </div>
+  <figcaption>
+    <strong>Fig. 3 — Complete phase portrait.</strong>
+    Libration orbits (blue, $k < 1$) are closed; the separatrix (red, $k = 1$) divides
+    libration from rotation orbits (green, $k > 1$). The equilibria at
+    $(\theta, \dot\theta) = (0, 0)$ (stable) and $(\pm\pi, 0)$ (unstable saddle) are marked.
+  </figcaption>
+</figure>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     §5 — JACOBI FUNCTIONS
+════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+<h2 id="jacobi">Jacobi elliptic functions</h2>
+
+<p>
+  The three functions $\operatorname{sn}$, $\operatorname{cn}$, $\operatorname{dn}$ are defined
+  via the amplitude $\varphi = \operatorname{am}(u \mid m)$ — the inverse of
+  $F(\varphi \mid m)$:
+</p>
+
+$$\operatorname{sn}(u \mid m) = \sin\varphi, \quad
+  \operatorname{cn}(u \mid m) = \cos\varphi, \quad
+  \operatorname{dn}(u \mid m) = \sqrt{1 - m\sin^2\varphi}.$$
+
+<p>
+  They satisfy the differential equations
+</p>
+
+$$\frac{d\,\operatorname{sn}}{du} = \operatorname{cn}\,\operatorname{dn}, \quad
+  \frac{d\,\operatorname{cn}}{du} = -\operatorname{sn}\,\operatorname{dn}, \quad
+  \frac{d\,\operatorname{dn}}{du} = -m\,\operatorname{sn}\,\operatorname{cn},$$
+
+<p>
+  and the identities $\operatorname{sn}^2 + \operatorname{cn}^2 = 1$,
+  $m\,\operatorname{sn}^2 + \operatorname{dn}^2 = 1$.
+</p>
+
+<p>
+  For the pendulum: $\operatorname{sn}$ gives $\theta(t)$, $\operatorname{cn}$ gives
+  $\dot\theta(t)$, and $\operatorname{dn}$ gives the kinetic energy factor.
+  The modulus $m = k^2$ controls the shape — from sinusoidal ($m = 0$) to
+  hyperbolic ($m = 1$).
+</p>
+
+</div>
+
+<!-- ═══ sn/cn/dn plot ════════════════════════════════════════════════ -->
+<div class="l-middle">
+<figure>
+  <div class="fig-box">
+    <div class="ctrl-row">
+      <label>
+        Modulus $m = k^2$
+        <input type="range" id="sl-m" min="0" max="0.999" value="0.5" step="0.001">
+        <span class="val-badge" id="lbl-m">0.500</span>
+      </label>
+    </div>
+    <div id="jacobi-chart"></div>
+  </div>
+  <figcaption>
+    <strong>Fig. 4 — Jacobi elliptic functions vs. $u$.</strong>
+    At $m = 0$: sn = sin, cn = cos (simple harmonic).
+    At $m \to 1$: sn = tanh, cn = sech, dn = sech (separatrix, infinite period).
+    The quarter-period $K(m)$ is the first zero of cn and first maximum of sn.
+  </figcaption>
+</figure>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     §6 — SEPARATRIX
+════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+<h2 id="separatrix">The separatrix and period divergence</h2>
+
+<p>
+  As $\theta_0 \to \pi^-$ (pendulum released just below vertical), $k \to 1$ and the
+  period diverges logarithmically:
+</p>
+
+$$K(k^2) \;\underset{k\to 1}{\sim}\; \ln\!\frac{4}{\sqrt{1-k^2}} \;=\; \ln\!\frac{4}{\cos(\theta_0/2)}.$$
+
+<p>
+  Physically: near the inverted equilibrium the restoring force vanishes and the pendulum
+  lingers indefinitely. This is the <em>separatrix</em> in the phase portrait — the
+  boundary between oscillation and rotation. The exact form at $k = 1$ is the
+  <strong>heteroclinic orbit</strong>
+</p>
+
+$$\theta(t) = 4\arctan\!\left(e^{\sqrt{g/L}\,t}\right) - \pi, \quad \dot\theta = 2\sqrt{\frac{g}{L}}\operatorname{sech}\!\left(\sqrt{\frac{g}{L}}\,t\right).$$
+
+</div>
+
+<!-- ═══ Period divergence figure ══════════════════════════════════════ -->
+<div class="l-middle">
+<figure>
+  <div class="fig-box">
+    <div id="divergence-chart"></div>
+  </div>
+  <figcaption>
+    <strong>Fig. 5 — Period divergence near the separatrix.</strong>
+    Log-linear plot of $T/T_0$ vs. $180° - \theta_0$. The dashed line shows the
+    logarithmic approximation $T \approx \frac{4}{\pi}\sqrt{L/g}\ln(8/\varepsilon)$
+    where $\varepsilon = \pi - \theta_0$. At 1° from vertical, $T/T_0 \approx 5.2$.
+  </figcaption>
+</figure>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     §7 — PHYSICAL PENDULUM
+════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+<h2 id="physical">The physical (compound) pendulum</h2>
+
+<p>
+  A real pendulum is not a point mass on a massless rod. For an extended rigid body pivoting
+  about a fixed axis, the equation of motion is
+</p>
+
+$$I\ddot\theta + mgd\sin\theta = 0,$$
+
+<p>
+  where $I$ is the moment of inertia about the pivot and $d$ is the distance from the pivot
+  to the centre of mass. Defining the <em>equivalent length</em>
+  $L_\text{eq} = I/(md)$, this is identical to the mathematical pendulum with
+  $L \to L_\text{eq}$. The exact period is therefore
+</p>
+
+$$T = 4\sqrt{\frac{I}{mgd}}\,K(k^2), \quad k = \sin\!\left(\frac{\theta_0}{2}\right).$$
+
+<p>
+  The equivalent length is always $\geq$ the distance $d$ (by the parallel-axis theorem),
+  so the physical pendulum is <em>always slower</em> than a simple pendulum of length $d$.
+</p>
+
+<h3>Common shapes</h3>
+
+<table class="data-table">
+  <thead><tr><th>Shape</th><th>Pivot</th><th>$I$</th><th>$d$</th><th>$L_\text{eq} = I/(md)$</th></tr></thead>
+  <tbody>
+    <tr><td>Point mass on rod (length $L$)</td><td>End</td><td>$mL^2$</td><td>$L$</td><td>$L$</td></tr>
+    <tr><td>Uniform rod (length $L$)</td><td>End</td><td>$\tfrac{1}{3}mL^2$</td><td>$L/2$</td><td>$\tfrac{2}{3}L$</td></tr>
+    <tr><td>Uniform rod (length $L$)</td><td>$L/4$ from end</td><td>$\tfrac{7}{48}mL^2$</td><td>$L/4$</td><td>$\tfrac{7}{12}L$</td></tr>
+    <tr><td>Solid disk (radius $R$)</td><td>Edge</td><td>$\tfrac{3}{2}mR^2$</td><td>$R$</td><td>$\tfrac{3}{2}R$</td></tr>
+    <tr><td>Hollow ring (radius $R$)</td><td>Edge</td><td>$2mR^2$</td><td>$R$</td><td>$2R$</td></tr>
+  </tbody>
+</table>
+
+</div>
+
+<!-- ═══ Physical pendulum comparison ════════════════════════════════ -->
+<div class="l-page">
+<figure>
+  <div class="fig-box">
+    <div class="ctrl-row">
+      <label>
+        Amplitude $\theta_0$
+        <input type="range" id="sl-phys-theta" min="5" max="175" value="60" step="1">
+        <span class="val-badge" id="lbl-phys-theta">60°</span>
+      </label>
+      <label>
+        Shape
+        <select id="sel-shape" style="font-family:var(--font-ui);font-size:13px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;">
+          <option value="point">Point mass on rod</option>
+          <option value="rod-end" selected>Uniform rod (pivot at end)</option>
+          <option value="rod-quarter">Uniform rod (pivot at L/4)</option>
+          <option value="disk">Solid disk (pivot at edge)</option>
+          <option value="ring">Hollow ring (pivot at edge)</option>
+        </select>
+      </label>
+    </div>
+    <div id="comparison-chart"></div>
+  </div>
+  <figcaption>
+    <strong>Fig. 6 — Physical pendulum comparison.</strong>
+    Exact $\theta(t)$ for the mathematical pendulum (blue), the selected physical pendulum
+    shape (orange), and the small-angle approximation (dashed). The physical pendulum has
+    a longer period due to $L_\text{eq} > L$.
+  </figcaption>
+</figure>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     §8 — SUMMARY
+════════════════════════════════════════════════════════════════════ -->
+<div class="l-body">
+<h2 id="summary">Summary</h2>
+
+<div class="callout result">
+  The pendulum is the canonical example of a nonlinear oscillator whose exact solution
+  requires elliptic functions. The small-angle approximation $\sin\theta \approx \theta$
+  discards all elliptic structure; the exact solution restores it through $K(k^2)$ for
+  the period and $\operatorname{sn}(u|k^2)$ for the trajectory.
+</div>
+
+<table class="data-table">
+  <thead><tr><th>Quantity</th><th>Small-angle</th><th>Exact (elliptic)</th></tr></thead>
+  <tbody>
+    <tr><td>Period $T$</td><td>$2\pi\sqrt{L/g}$</td><td>$4\sqrt{L/g}\,K(k^2)$</td></tr>
+    <tr><td>Trajectory $\theta(t)$</td><td>$\theta_0\cos(\omega_0 t)$</td><td>$2\arcsin(k\operatorname{sn}(\omega_0 t|k^2))$</td></tr>
+    <tr><td>Angular velocity</td><td>$-\theta_0\omega_0\sin(\omega_0 t)$</td><td>$2k\omega_0\operatorname{cn}(\omega_0 t|k^2)$</td></tr>
+    <tr><td>At separatrix ($\theta_0\to\pi$)</td><td>Breaks down</td><td>$\theta(t) = 4\arctan(e^{\omega_0 t}) - \pi$</td></tr>
+    <tr><td>Valid for</td><td>$\theta_0 \lesssim 15°$ (&lt;1% error)</td><td>All $\theta_0 \in (0°, 180°)$</td></tr>
+  </tbody>
+</table>
+
+<h3>Code</h3>
+
+<p>Using the <code>elliptic-functions</code> Python package:</p>
+
+<pre>import numpy as np, elliptic
+
+g, L, theta0 = 9.81, 1.0, 2.5          # near separatrix: 143°
+k  = np.sin(theta0 / 2)
+K  = float(elliptic.cel1(np.sqrt(1 - k**2)))   # K(k²)
+T  = 4 * K * np.sqrt(L / g)            # exact period
+
+t  = np.linspace(0, T, 500)
+sn, cn, dn, _ = elliptic.ellipj(t * np.sqrt(g / L), k**2)
+theta     = 2 * np.arcsin(k * np.asarray(sn))
+theta_dot = 2 * k * np.sqrt(g / L) * np.asarray(cn)</pre>
+
+<p>In MATLAB/Octave:</p>
+
+<pre>g = 9.81; L = 1.0; theta0 = 2.5;
+k  = sin(theta0/2);
+K  = cel1(sqrt(1 - k^2));              % K(k²)
+T  = 4 * K * sqrt(L/g);
+
+t  = linspace(0, T, 500);
+[sn, cn] = ellipj(t * sqrt(g/L), k^2);
+theta     = 2 * asin(k * sn);
+theta_dot = 2 * k * sqrt(g/L) * cn;</pre>
+
+</div>
+
+</article>
+
+<footer>
+  <div class="foot-row">
+    <span>Source: <a href="https://github.com/moiseevigor/elliptic">github.com/moiseevigor/elliptic</a></span>
+    <span>References: Abramowitz &amp; Stegun §16–17 · NIST DLMF §22</span>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════════════ -->
+<script>
+/* ════════════════════════════════════════════════════════════════
+   Elliptic function library (browser JS, Carlson method)
+════════════════════════════════════════════════════════════════ */
+
+function carlsonRF(x, y, z) {
+  let xn = x, yn = y, zn = z;
+  for (let i = 0; i < 30; i++) {
+    const sx = Math.sqrt(xn), sy = Math.sqrt(yn), sz = Math.sqrt(zn);
+    const lam = sx*sy + sy*sz + sz*sx;
+    const A = (xn+yn+zn)/3;
+    const X = 1-xn/A, Y = 1-yn/A, Z = -(X+Y);
+    if (Math.max(Math.abs(X), Math.abs(Y), Math.abs(Z)) < 0.003) break;
+    xn = (xn+lam)/4; yn = (yn+lam)/4; zn = (zn+lam)/4;
+  }
+  const A = (xn+yn+zn)/3;
+  const X = 1-xn/A, Y = 1-yn/A, Z = -(X+Y);
+  const E2 = X*Y-Z*Z, E3 = X*Y*Z;
+  return (1/Math.sqrt(A))*(1-E2/10+E3/14+E2*E2/24-3*E2*E3/44);
+}
+
+function ellipticK(m) {
+  if (m <= 0) return Math.PI/2;
+  if (m >= 1) return 1e15;
+  const mc = 1 - m;
+  return carlsonRF(0, mc, 1);
+}
+
+/* Jacobi AGM — returns [sn, cn, dn] at (u, m) */
+function jacobi(u, m) {
+  if (m < 1e-14) return [Math.sin(u), Math.cos(u), 1.0];
+  if (m > 1 - 1e-14) return [Math.tanh(u), 1/Math.cosh(u), 1/Math.cosh(u)];
+
+  const N = 20;
+  const a = [1.0], b = [Math.sqrt(1-m)];
+  for (let i = 0; i < N; i++) {
+    a.push(0.5*(a[i]+b[i]));
+    b.push(Math.sqrt(a[i]*b[i]));
+  }
+  let phi = Math.pow(2, N) * a[N] * u;
+  for (let i = N; i > 0; i--) {
+    phi = 0.5*(phi + Math.asin(b[i]/a[i] * Math.sin(phi)));
+  }
+  const sn = Math.sin(phi), cn = Math.cos(phi);
+  const dn = Math.sqrt(Math.max(0, 1 - m*sn*sn));
+  return [sn, cn, dn];
+}
+
+/* ════════════════════════════════════════════════════════════════
+   §1 — Period table
+════════════════════════════════════════════════════════════════ */
+(function buildTable() {
+  const angles = [10,20,30,45,60,90,120,150,160,170];
+  const tbody = document.getElementById('period-table');
+  angles.forEach(deg => {
+    const th = deg * Math.PI / 180;
+    const k2 = Math.sin(th/2)**2;
+    const K  = ellipticK(k2);
+    const ratio = K / (Math.PI/2);
+    const saSeries = 1 + th*th/16 + 11*th*th*th*th/3072;
+    const err = Math.abs(saSeries - ratio) / ratio * 100;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${deg}°</td><td>${k2.toFixed(4)}</td><td>${K.toFixed(5)}</td>` +
+                   `<td>${ratio.toFixed(5)}</td><td>${saSeries.toFixed(5)}</td>` +
+                   `<td style="color:${err>2?'var(--accent-r)':'inherit'}">${err.toFixed(2)}%</td>`;
+    tbody.appendChild(tr);
+  });
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   Fig. 1 — Period vs amplitude (D3)
+════════════════════════════════════════════════════════════════ */
+(function periodChart() {
+  const W = 680, H = 280, mg = {t:20, r:24, b:48, l:60};
+  const pw = W-mg.l-mg.r, ph = H-mg.t-mg.b;
+
+  const svg = d3.select('#period-chart').append('svg')
+    .attr('viewBox', `0 0 ${W} ${H}`);
+  const g = svg.append('g').attr('transform', `translate(${mg.l},${mg.t})`);
+
+  const angles = d3.range(1, 179, 0.5);
+  const data = angles.map(deg => {
+    const th = deg * Math.PI / 180;
+    const k2 = Math.sin(th/2)**2;
+    return { deg, ratio: ellipticK(k2) / (Math.PI/2) };
+  });
+
+  const xS = d3.scaleLinear().domain([0,180]).range([0,pw]);
+  const yS = d3.scaleLinear().domain([1, 7]).range([ph,0]);
+
+  // axes
+  g.append('g').attr('transform',`translate(0,${ph})`).call(d3.axisBottom(xS).ticks(9).tickFormat(d=>d+'°'));
+  g.append('g').call(d3.axisLeft(yS).ticks(7));
+
+  // axis labels
+  g.append('text').attr('x', pw/2).attr('y', ph+40).attr('text-anchor','middle')
+    .attr('font-family','var(--font-ui)').attr('font-size',13).attr('fill','#888').text('Amplitude θ₀');
+  g.append('text').attr('transform','rotate(-90)').attr('x',-ph/2).attr('y',-44)
+    .attr('text-anchor','middle').attr('font-family','var(--font-ui)').attr('font-size',13).attr('fill','#888').text('T / T₀');
+
+  // T₀ reference line
+  g.append('line').attr('x1',0).attr('y1',yS(1)).attr('x2',pw).attr('y2',yS(1))
+    .attr('stroke','#aaa').attr('stroke-dasharray','5,3').attr('stroke-width',1);
+  g.append('text').attr('x',pw-4).attr('y',yS(1)-5).attr('text-anchor','end')
+    .attr('font-family','var(--font-ui)').attr('font-size',11).attr('fill','#aaa').text('T₀ (small-angle)');
+
+  // exact curve
+  const line = d3.line().x(d=>xS(d.deg)).y(d=>yS(Math.min(d.ratio,7))).defined(d=>d.ratio<7);
+  g.append('path').datum(data).attr('d',line).attr('fill','none')
+    .attr('stroke','var(--accent)').attr('stroke-width',2.2);
+
+  // hover crosshair
+  const crossV = g.append('line').attr('stroke','#ccc').attr('stroke-width',1).attr('y1',0).attr('y2',ph).style('opacity',0);
+  const dot = g.append('circle').attr('r',4).attr('fill','var(--accent)').style('opacity',0);
+  const tip = g.append('g').style('opacity',0);
+  const tipBg = tip.append('rect').attr('rx',4).attr('fill','white').attr('stroke','var(--border)').attr('stroke-width',1);
+  const tipTxt = tip.append('text').attr('font-family','var(--font-ui)').attr('font-size',12).attr('fill','#333');
+
+  svg.append('rect').attr('x',mg.l).attr('y',mg.t).attr('width',pw).attr('height',ph)
+    .attr('fill','transparent')
+    .on('mousemove', function(event) {
+      const [mx] = d3.pointer(event, this);
+      const deg = xS.invert(mx - mg.l);
+      const th = deg * Math.PI / 180;
+      const k2 = Math.sin(th/2)**2;
+      const ratio = ellipticK(k2)/(Math.PI/2);
+      if (ratio > 7) return;
+      const cx = mx - mg.l, cy = yS(ratio);
+      crossV.attr('x1',cx).attr('x2',cx).style('opacity',1);
+      dot.attr('cx',cx).attr('cy',cy).style('opacity',1);
+      const lbl = `θ₀=${deg.toFixed(0)}°  T/T₀=${ratio.toFixed(3)}`;
+      tipTxt.text(lbl);
+      const tw = lbl.length * 6.8 + 14, th2 = 22;
+      const tx = cx+mg.l > pw/2 ? cx-tw-8 : cx+8;
+      tipBg.attr('x',tx).attr('y',cy-14).attr('width',tw).attr('height',th2);
+      tipTxt.attr('x',tx+7).attr('y',cy+2);
+      tip.style('opacity',1);
+    })
+    .on('mouseleave', () => { crossV.style('opacity',0); dot.style('opacity',0); tip.style('opacity',0); });
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   Fig. 2 — Live pendulum animation
+════════════════════════════════════════════════════════════════ */
+(function pendulumAnim() {
+  const cvP = document.getElementById('cv-pendulum');
+  const cvPh = document.getElementById('cv-phase');
+  const ctxP = cvP.getContext('2d');
+  const ctxPh = cvPh.getContext('2d');
+
+  let theta0 = 60 * Math.PI / 180;
+  let L = 1.0;
+  const g = 9.81;
+  let t = 0, paused = false;
+  let lastTime = null;
+  let trailExact = [], trailSHO = [];
+  const TRAIL_MAX = 400;
+
+  function getK2()  { return Math.sin(theta0/2)**2; }
+  function getK()   { return Math.sin(theta0/2); }
+  function getOmega0() { return Math.sqrt(g/L); }
+  function getKm()  { return ellipticK(getK2()); }
+  function getT()   { return 4 * getKm() / getOmega0(); }
+
+  function exactTheta(t) {
+    const k = getK(), m = k*k, om = getOmega0();
+    const [sn] = jacobi(om * t, m);
+    return 2 * Math.asin(Math.max(-1, Math.min(1, k * sn)));
+  }
+  function sHOTheta(t) {
+    return theta0 * Math.cos(Math.sqrt(g/L) * t);
+  }
+
+  function drawPendulum(ctx, theta, thetaSHO, W, H) {
+    ctx.clearRect(0,0,W,H);
+    const ox = W/2, oy = H*0.12;
+    const pxPerM = Math.min(W,H)*0.38 / L;
+    const px = L * pxPerM;
+
+    // pivot
+    ctx.beginPath(); ctx.arc(ox, oy, 5, 0, 2*Math.PI);
+    ctx.fillStyle = '#555'; ctx.fill();
+
+    // SHO ghost
+    const gx = ox + px * Math.sin(thetaSHO);
+    const gy = oy + px * Math.cos(thetaSHO);
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(gx, gy);
+    ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(gx, gy, 10, 0, 2*Math.PI);
+    ctx.fillStyle = '#ddd'; ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1; ctx.fill(); ctx.stroke();
+
+    // exact pendulum rod
+    const ex = ox + px * Math.sin(theta);
+    const ey = oy + px * Math.cos(theta);
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ex, ey);
+    ctx.strokeStyle = '#1565c0'; ctx.lineWidth = 2; ctx.stroke();
+
+    // trail
+    trailExact.forEach((p, i) => {
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.5, 0, 2*Math.PI);
+      ctx.fillStyle = `rgba(21,101,192,${(i/trailExact.length)*0.35})`; ctx.fill();
+    });
+
+    // bob
+    ctx.beginPath(); ctx.arc(ex, ey, 12, 0, 2*Math.PI);
+    ctx.fillStyle = '#1565c0'; ctx.strokeStyle = '#0d47a1'; ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
+
+    trailExact.push({x: ex, y: ey});
+    if (trailExact.length > TRAIL_MAX) trailExact.shift();
+
+    return {ox, oy, px, ex, ey};
+  }
+
+  function drawPhase(ctx, theta, dtheta, W, H) {
+    ctx.clearRect(0,0,W,H);
+    const cx = W/2, cy = H/2;
+    const scaleX = W / (2.2 * Math.PI);
+    const om0 = getOmega0();
+    const maxDth = 2 * om0 * getK() * (ellipticK(getK2()) > 0 ? 1 : 1);
+    const scaleY = (H * 0.40) / Math.max(om0 * 2, maxDth * 1.1);
+
+    // axes
+    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,H); ctx.stroke();
+
+    // axis labels
+    ctx.font = '11px var(--font-ui)'; ctx.fillStyle = '#999'; ctx.textAlign = 'center';
+    ctx.fillText('θ', W-10, cy-5);
+    ctx.fillText('±π', cx + Math.PI*scaleX, cy+14);
+    ctx.fillText('−π', cx - Math.PI*scaleX, cy+14);
+    ctx.textAlign = 'right';
+    ctx.fillText('dθ/dt', cx-5, 14);
+
+    // background orbits for context
+    [0.2, 0.4, 0.6, 0.8, 0.95].forEach(k2 => {
+      const pts = [];
+      for (let deg = -180; deg <= 180; deg += 1) {
+        const th = deg * Math.PI / 180;
+        const val = 2*g/L * (Math.cos(th) - (1 - 2*k2));
+        if (val < 0) continue;
+        pts.push({x: cx + th*scaleX, y: cy - Math.sqrt(val)*scaleY});
+      }
+      if (pts.length < 2) return;
+      ctx.beginPath(); pts.forEach((p,i) => i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+      // bottom arc
+      const ptsB = pts.map(p => ({x:p.x, y: 2*cy-p.y}));
+      ptsB.reverse().forEach(p => ctx.lineTo(p.x,p.y));
+      ctx.closePath();
+      ctx.strokeStyle = `rgba(21,101,192,0.12)`; ctx.lineWidth = 1; ctx.stroke();
+    });
+
+    // separatrix
+    const sepPts = [];
+    for (let deg = -179; deg <= 179; deg += 0.5) {
+      const th = deg * Math.PI / 180;
+      const val = 2*g/L * (Math.cos(th) + 1);
+      if (val < 0) continue;
+      sepPts.push({x: cx + th*scaleX, y: cy - Math.sqrt(val)*scaleY});
+    }
+    ctx.beginPath(); sepPts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+    const sepB = sepPts.map(p=>({x:p.x,y:2*cy-p.y})).reverse();
+    sepB.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.strokeStyle='var(--accent-r)'; ctx.lineWidth=1.4; ctx.stroke();
+
+    // current orbit
+    const k2 = getK2(), k = getK();
+    const orbitPts = [];
+    for (let deg = -180; deg <= 180; deg += 0.5) {
+      const th = deg * Math.PI / 180;
+      const val = 2*g/L * (Math.cos(th) - Math.cos(theta0));
+      if (val < 0) continue;
+      orbitPts.push({x: cx + th*scaleX, y: cy - Math.sqrt(val)*scaleY});
+    }
+    if (orbitPts.length > 1) {
+      ctx.beginPath(); orbitPts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+      const orbitB = orbitPts.map(p=>({x:p.x,y:2*cy-p.y})).reverse();
+      orbitB.forEach(p=>ctx.lineTo(p.x,p.y));
+      ctx.strokeStyle='var(--accent)'; ctx.lineWidth=2; ctx.stroke();
+    }
+
+    // current state dot
+    const dx = cx + theta*scaleX;
+    const dy = cy - dtheta*scaleY;
+    ctx.beginPath(); ctx.arc(dx,dy,6,0,2*Math.PI);
+    ctx.fillStyle='var(--accent)'; ctx.fill();
+    ctx.strokeStyle='white'; ctx.lineWidth=2; ctx.stroke();
+  }
+
+  function updateStats(theta, dtheta, T) {
+    const el = document.getElementById('anim-stats');
+    const k2 = getK2();
+    const items = [
+      ['Period T', T.toFixed(3) + ' s'],
+      ['T / T₀', (T / (2*Math.PI*Math.sqrt(L/g))).toFixed(3)],
+      ['K(k²)', ellipticK(k2).toFixed(4)],
+      ['k² = sin²(θ₀/2)', k2.toFixed(4)],
+    ];
+    el.innerHTML = items.map(([label, val]) =>
+      `<div style="background:var(--fig-bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;">
+         <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-ui);margin-bottom:2px;">${label}</div>
+         <div style="font-family:var(--font-mono);font-size:14px;color:var(--accent);">${val}</div>
+       </div>`).join('');
+  }
+
+  function frame(ts) {
+    if (!paused) {
+      if (lastTime !== null) t += (ts - lastTime) / 1000 * 0.7; // 0.7× real time
+      lastTime = ts;
+    } else {
+      lastTime = ts;
+    }
+
+    const W = cvP.width, H = cvP.height;
+    const theta = exactTheta(t);
+    const sHO = sHOTheta(t);
+    const [snv, cnv] = jacobi(getOmega0()*t, getK2());
+    const dtheta = 2 * getK() * getOmega0() * cnv;
+
+    drawPendulum(ctxP, theta, sHO, W, H);
+    drawPhase(ctxPh, theta, dtheta, W, H);
+    updateStats(theta, dtheta, getT());
+
+    requestAnimationFrame(frame);
+  }
+
+  function resetTrail() { trailExact = []; trailSHO = []; }
+
+  document.getElementById('sl-theta').addEventListener('input', function() {
+    theta0 = +this.value * Math.PI / 180;
+    document.getElementById('lbl-theta').textContent = this.value + '°';
+    t = 0; resetTrail();
+  });
+  document.getElementById('sl-length').addEventListener('input', function() {
+    L = +this.value;
+    document.getElementById('lbl-length').textContent = L.toFixed(1) + ' m';
+    t = 0; resetTrail();
+  });
+  document.getElementById('btn-play').addEventListener('click', function() {
+    paused = !paused;
+    this.textContent = paused ? '▶ Play' : '⏸ Pause';
+  });
+  document.getElementById('btn-reset').addEventListener('click', function() {
+    t = 0; resetTrail();
+  });
+
+  requestAnimationFrame(frame);
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   Fig. 3 — Full phase portrait (D3)
+════════════════════════════════════════════════════════════════ */
+(function phasePortrait() {
+  const W = 760, H = 340, mg = {t:20, r:24, b:48, l:60};
+  const pw = W-mg.l-mg.r, ph = H-mg.t-mg.b;
+  const g = 9.81, L = 1.0;
+
+  const svg = d3.select('#phase-full-chart').append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const gr = svg.append('g').attr('transform',`translate(${mg.l},${mg.t})`);
+
+  const xS = d3.scaleLinear().domain([-Math.PI, Math.PI]).range([0,pw]);
+  const om0 = Math.sqrt(g/L);
+  const yS = d3.scaleLinear().domain([-3.5*om0, 3.5*om0]).range([ph,0]);
+
+  gr.append('g').attr('transform',`translate(0,${ph})`).call(
+    d3.axisBottom(xS).tickValues([-Math.PI,-Math.PI/2,0,Math.PI/2,Math.PI])
+      .tickFormat(d => {const v={[-Math.PI]:'-π',[-Math.PI/2]:'-π/2',[0]:'0',[Math.PI/2]:'π/2',[Math.PI]:'π'}; return v[d]||'';}));
+  gr.append('g').call(d3.axisLeft(yS).ticks(7));
+  gr.append('text').attr('x',pw/2).attr('y',ph+40).attr('text-anchor','middle')
+    .attr('font-family','var(--font-ui)').attr('font-size',13).attr('fill','#888').text('θ (radians)');
+  gr.append('text').attr('transform','rotate(-90)').attr('x',-ph/2).attr('y',-46)
+    .attr('text-anchor','middle').attr('font-family','var(--font-ui)').attr('font-size',13).attr('fill','#888').text('dθ/dt (rad/s)');
+
+  function drawOrbit(k2, color, width) {
+    const pts = [];
+    for (let deg = -180; deg <= 180; deg += 0.25) {
+      const th = deg * Math.PI / 180;
+      const cos_th0 = 1 - 2*k2;
+      const val = 2*g/L*(Math.cos(th) - cos_th0);
+      if (val < 0) continue;
+      pts.push([th, Math.sqrt(val)]);
+    }
+    if (pts.length < 2) return;
+    const ptsTop = pts.map(p => [xS(p[0]), yS(p[1])]);
+    const ptsBot = pts.map(p => [xS(p[0]), yS(-p[1])]).reverse();
+    const all = [...ptsTop, ...ptsBot];
+    gr.append('path').attr('d', 'M'+all.map(p=>p.join(',')).join('L')+'Z')
+      .attr('fill','none').attr('stroke',color).attr('stroke-width',width);
+  }
+
+  // libration orbits
+  [0.05,0.15,0.3,0.5,0.7,0.85,0.95].forEach(k2 => drawOrbit(k2,'var(--accent)',k2>0.8?1.8:1.2));
+
+  // separatrix
+  const sepPts = [];
+  for (let deg = -179.5; deg <= 179.5; deg += 0.2) {
+    const th = deg * Math.PI / 180;
+    const val = 2*g/L*(Math.cos(th)+1);
+    if (val < 0) continue;
+    sepPts.push([th, Math.sqrt(val)]);
+  }
+  const sTop = sepPts.map(p=>[xS(p[0]),yS(p[1])]);
+  const sBot = sepPts.map(p=>[xS(p[0]),yS(-p[1])]).reverse();
+  gr.append('path').attr('d','M'+[...sTop,...sBot].map(p=>p.join(',')).join('L'))
+    .attr('fill','none').attr('stroke','var(--accent-r)').attr('stroke-width',2.2);
+
+  // rotation orbits
+  [1.3, 2.0, 3.0].forEach(k2 => {
+    const pts = [];
+    for (let deg = -180; deg <= 180; deg += 0.25) {
+      const th = deg * Math.PI / 180;
+      const val = 2*g/L*(Math.cos(th) - (1-2*k2));
+      if (val < 0) continue;
+      pts.push([xS(th), yS(Math.sqrt(val))]);
+    }
+    if (pts.length>1) {
+      gr.append('path').attr('d','M'+pts.map(p=>p.join(',')).join('L'))
+        .attr('fill','none').attr('stroke','var(--accent-g)').attr('stroke-width',1.4);
+      const ptsB = pts.map(p=>[p[0],2*yS(0)-p[1]]);
+      gr.append('path').attr('d','M'+ptsB.map(p=>p.join(',')).join('L'))
+        .attr('fill','none').attr('stroke','var(--accent-g)').attr('stroke-width',1.4);
+    }
+  });
+
+  // equilibria
+  [[0,0,'▪ stable'],[Math.PI,0,'▪ saddle'],[-Math.PI,0,'']].forEach(([th,dth,lbl]) => {
+    const col = th===0 ? 'var(--accent)' : 'var(--accent-r)';
+    gr.append('circle').attr('cx',xS(th)).attr('cy',yS(dth)).attr('r',5)
+      .attr('fill',col).attr('stroke','white').attr('stroke-width',1.5);
+    if (lbl) gr.append('text').attr('x',xS(th)+8).attr('y',yS(dth)-6)
+      .attr('font-family','var(--font-ui)').attr('font-size',11).attr('fill',col).text(lbl);
+  });
+
+  // legend
+  const leg = gr.append('g').attr('transform',`translate(${pw-160},8)`);
+  [[`var(--accent)`,'Libration (k<1)'],[`var(--accent-r)`,'Separatrix (k=1)'],['var(--accent-g)','Rotation (k>1)']].forEach(([c,l],i) => {
+    leg.append('line').attr('x1',0).attr('x2',18).attr('y1',i*18+7).attr('y2',i*18+7)
+      .attr('stroke',c).attr('stroke-width',2);
+    leg.append('text').attr('x',22).attr('y',i*18+11)
+      .attr('font-family','var(--font-ui)').attr('font-size',11).attr('fill','#555').text(l);
+  });
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   Fig. 4 — Jacobi functions (D3, interactive slider)
+════════════════════════════════════════════════════════════════ */
+(function jacobiChart() {
+  const W = 760, H = 260, mg = {t:20, r:24, b:42, l:50};
+  const pw = W-mg.l-mg.r, ph = H-mg.t-mg.b;
+
+  const svg = d3.select('#jacobi-chart').append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const gr = svg.append('g').attr('transform',`translate(${mg.l},${mg.t})`);
+
+  const xS = d3.scaleLinear().range([0,pw]);
+  const yS = d3.scaleLinear().domain([-1.15, 1.15]).range([ph,0]);
+
+  gr.append('g').attr('transform',`translate(0,${ph})`).attr('class','x-axis');
+  gr.append('g').call(d3.axisLeft(yS).ticks(5));
+  gr.append('line').attr('y1',0).attr('y2',ph).attr('stroke','#e0e0e0').attr('stroke-width',1).attr('class','K-line');
+  gr.append('text').attr('class','K-label').attr('font-family','var(--font-ui)').attr('font-size',11).attr('fill','#999');
+
+  const snPath = gr.append('path').attr('fill','none').attr('stroke','var(--accent)').attr('stroke-width',2);
+  const cnPath = gr.append('path').attr('fill','none').attr('stroke','var(--accent-r)').attr('stroke-width',2);
+  const dnPath = gr.append('path').attr('fill','none').attr('stroke','var(--accent-g)').attr('stroke-width',2);
+
+  const leg = gr.append('g').attr('transform',`translate(${pw-170},4)`);
+  [['var(--accent)','sn(u|m)'],['var(--accent-r)','cn(u|m)'],['var(--accent-g)','dn(u|m)']].forEach(([c,l],i) => {
+    leg.append('line').attr('x1',0).attr('x2',16).attr('y1',i*16+6).attr('y2',i*16+6)
+      .attr('stroke',c).attr('stroke-width',2);
+    leg.append('text').attr('x',20).attr('y',i*16+10)
+      .attr('font-family','var(--font-ui)').attr('font-size',11).attr('fill','#555').text(l);
+  });
+
+  gr.append('text').attr('x',pw/2).attr('y',ph+34).attr('text-anchor','middle')
+    .attr('font-family','var(--font-ui)').attr('font-size',13).attr('fill','#888').text('u');
+
+  function update(m) {
+    const K = ellipticK(m);
+    const uMax = Math.min(4*K, 20);
+    xS.domain([0, uMax]);
+
+    const pts = d3.range(0, uMax, uMax/400).map(u => {
+      const [sn,cn,dn] = jacobi(u,m);
+      return {u, sn, cn, dn};
+    });
+
+    const line = key => d3.line().x(d=>xS(d.u)).y(d=>yS(d[key]));
+    snPath.attr('d', line('sn')(pts));
+    cnPath.attr('d', line('cn')(pts));
+    dnPath.attr('d', line('dn')(pts));
+
+    gr.select('.x-axis').call(d3.axisBottom(xS).ticks(8).tickFormat(d => {
+      if (Math.abs(d - K) < K*0.06) return 'K';
+      if (Math.abs(d - 2*K) < K*0.06) return '2K';
+      if (Math.abs(d - 3*K) < K*0.06) return '3K';
+      return d.toFixed(1);
+    }));
+
+    gr.select('.K-line').attr('x1',xS(K)).attr('x2',xS(K));
+    gr.select('.K-label').attr('x',xS(K)+4).attr('y',14).text(`K = ${K.toFixed(3)}`);
+  }
+
+  update(0.5);
+
+  document.getElementById('sl-m').addEventListener('input', function() {
+    const m = +this.value;
+    document.getElementById('lbl-m').textContent = m.toFixed(3);
+    update(m);
+  });
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   Fig. 5 — Period divergence (D3)
+════════════════════════════════════════════════════════════════ */
+(function divergenceChart() {
+  const W = 760, H = 280, mg = {t:20, r:24, b:48, l:66};
+  const pw = W-mg.l-mg.r, ph = H-mg.t-mg.b;
+
+  const svg = d3.select('#divergence-chart').append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const gr = svg.append('g').attr('transform',`translate(${mg.l},${mg.t})`);
+
+  const eps_vals = d3.range(0.02, 180, 0.1);
+  const data = eps_vals.map(eps => {
+    const th0 = (180 - eps) * Math.PI / 180;
+    const k2 = Math.sin(th0/2)**2;
+    const ratio = ellipticK(k2) / (Math.PI/2);
+    const approx = (4/Math.PI) * Math.log(8 / (eps * Math.PI/180));
+    return { eps, ratio: Math.min(ratio, 15), approx: Math.min(approx, 15) };
+  });
+
+  const xS = d3.scaleLog().domain([0.02, 180]).range([0, pw]);
+  const yS = d3.scaleLinear().domain([1, 8]).range([ph, 0]);
+
+  gr.append('g').attr('transform',`translate(0,${ph})`)
+    .call(d3.axisBottom(xS).tickValues([0.1,0.5,1,5,10,30,90,180]).tickFormat(d=>d+'°'));
+  gr.append('g').call(d3.axisLeft(yS).ticks(7));
+
+  gr.append('text').attr('x',pw/2).attr('y',ph+40).attr('text-anchor','middle')
+    .attr('font-family','var(--font-ui)').attr('font-size',13).attr('fill','#888').text('180° − θ₀  (distance from separatrix, log scale)');
+  gr.append('text').attr('transform','rotate(-90)').attr('x',-ph/2).attr('y',-52)
+    .attr('text-anchor','middle').attr('font-family','var(--font-ui)').attr('font-size',13).attr('fill','#888').text('T / T₀');
+
+  const validData = data.filter(d=>d.ratio<=8);
+  const validApprox = data.filter(d=>d.approx<=8 && d.approx>0);
+
+  gr.append('path').datum(validData)
+    .attr('d', d3.line().x(d=>xS(d.eps)).y(d=>yS(d.ratio)))
+    .attr('fill','none').attr('stroke','var(--accent)').attr('stroke-width',2.2);
+
+  gr.append('path').datum(validApprox)
+    .attr('d', d3.line().x(d=>xS(d.eps)).y(d=>yS(d.approx)))
+    .attr('fill','none').attr('stroke','#aaa').attr('stroke-width',1.5).attr('stroke-dasharray','5,4');
+
+  // annotations
+  [[1, 'T/T₀ ≈ 5.2 at 1°'], [10, 'T/T₀ ≈ 3.1 at 10°']].forEach(([eps, lbl]) => {
+    const th0 = (180-eps)*Math.PI/180;
+    const ratio = ellipticK(Math.sin(th0/2)**2) / (Math.PI/2);
+    if (ratio > 8) return;
+    gr.append('circle').attr('cx',xS(eps)).attr('cy',yS(ratio)).attr('r',4).attr('fill','var(--accent)');
+    gr.append('text').attr('x',xS(eps)+7).attr('y',yS(ratio)-4)
+      .attr('font-family','var(--font-ui)').attr('font-size',11).attr('fill','#555').text(lbl);
+  });
+
+  const leg = gr.append('g').attr('transform',`translate(${pw-200},8)`);
+  [['var(--accent)','Exact K(k²)',''],['#aaa','Log approximation','5,4']].forEach(([c,l,d],i)=>{
+    leg.append('line').attr('x1',0).attr('x2',18).attr('y1',i*17+7).attr('y2',i*17+7)
+      .attr('stroke',c).attr('stroke-width',2).attr('stroke-dasharray',d);
+    leg.append('text').attr('x',22).attr('y',i*17+11)
+      .attr('font-family','var(--font-ui)').attr('font-size',11).attr('fill','#555').text(l);
+  });
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   Fig. 6 — Physical pendulum comparison (D3)
+════════════════════════════════════════════════════════════════ */
+(function physComparison() {
+  const W = 960, H = 300, mg = {t:20, r:24, b:48, l:60};
+  const pw = W-mg.l-mg.r, ph = H-mg.t-mg.b;
+  const g = 9.81, L = 1.0;
+
+  const svg = d3.select('#comparison-chart').append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const gr = svg.append('g').attr('transform',`translate(${mg.l},${mg.t})`);
+
+  const shapes = {
+    'point':       { Leq: L,          label: 'Point mass (L_eq = L)' },
+    'rod-end':     { Leq: 2/3*L,      label: 'Uniform rod (L_eq = 2L/3)' },
+    'rod-quarter': { Leq: 7/12*L,     label: 'Uniform rod pivot at L/4 (L_eq = 7L/12)' },
+    'disk':        { Leq: 3/2*L,      label: 'Solid disk (L_eq = 3R/2)' },
+    'ring':        { Leq: 2*L,        label: 'Hollow ring (L_eq = 2R)' },
+  };
+
+  const xS = d3.scaleLinear().range([0, pw]);
+  const yS = d3.scaleLinear().range([ph, 0]);
+
+  gr.append('g').attr('transform',`translate(0,${ph})`).attr('class','x-axis');
+  gr.append('g').attr('class','y-axis');
+  gr.append('text').attr('x',pw/2).attr('y',ph+40).attr('text-anchor','middle')
+    .attr('font-family','var(--font-ui)').attr('font-size',13).attr('fill','#888').text('Time (s)');
+  gr.append('text').attr('transform','rotate(-90)').attr('x',-ph/2).attr('y',-44)
+    .attr('text-anchor','middle').attr('font-family','var(--font-ui)').attr('font-size',13).attr('fill','#888').text('θ (radians)');
+
+  const sHOPath  = gr.append('path').attr('fill','none').attr('stroke','#bbb').attr('stroke-width',1.5).attr('stroke-dasharray','5,3');
+  const mathPath = gr.append('path').attr('fill','none').attr('stroke','var(--accent)').attr('stroke-width',2.2);
+  const physPath = gr.append('path').attr('fill','none').attr('stroke','var(--accent-o)').attr('stroke-width',2.2);
+
+  const leg = gr.append('g').attr('transform',`translate(${pw-260},8)`);
+  [['var(--accent)','Mathematical pendulum'],['var(--accent-o)','Physical pendulum (selected)'],['#bbb','Small-angle SHO']].forEach(([c,l,d],i)=>{
+    leg.append('line').attr('x1',0).attr('x2',18).attr('y1',i*17+7).attr('y2',i*17+7)
+      .attr('stroke',c).attr('stroke-width',2).attr('stroke-dasharray',d||'');
+    leg.append('text').attr('x',22).attr('y',i*17+11)
+      .attr('font-family','var(--font-ui)').attr('font-size',11).attr('fill','#555').text(l);
+  });
+
+  function update() {
+    const theta0 = +document.getElementById('sl-phys-theta').value * Math.PI / 180;
+    const shape = document.getElementById('sel-shape').value;
+    const Leq = shapes[shape].Leq;
+
+    const k2m = Math.sin(theta0/2)**2;
+    const Tm  = 4 * ellipticK(k2m) / Math.sqrt(g/L);
+    const Tp  = 4 * ellipticK(k2m) / Math.sqrt(g/Leq);
+    const T0  = 2 * Math.PI * Math.sqrt(L/g);
+    const tMax = Math.max(Tm, Tp) * 2.5;
+    const N = 500;
+
+    const ts = d3.range(0, tMax, tMax/N);
+    xS.domain([0, tMax]);
+    yS.domain([-theta0*1.15, theta0*1.15]);
+
+    gr.select('.x-axis').call(d3.axisBottom(xS).ticks(8));
+    gr.select('.y-axis').call(d3.axisLeft(yS).ticks(5).tickFormat(d => (d*180/Math.PI).toFixed(0)+'°'));
+
+    const k = Math.sin(theta0/2);
+    const om0m = Math.sqrt(g/L), om0p = Math.sqrt(g/Leq);
+
+    mathPath.attr('d', d3.line().x(t=>xS(t)).y(t=>{
+      const [sn] = jacobi(om0m*t, k2m);
+      return yS(2*Math.asin(Math.max(-1,Math.min(1,k*sn))));
+    })(ts));
+
+    physPath.attr('d', d3.line().x(t=>xS(t)).y(t=>{
+      const [sn] = jacobi(om0p*t, k2m);
+      return yS(2*Math.asin(Math.max(-1,Math.min(1,k*sn))));
+    })(ts));
+
+    sHOPath.attr('d', d3.line().x(t=>xS(t)).y(t=>yS(theta0*Math.cos(Math.sqrt(g/L)*t)))(ts));
+  }
+
+  update();
+  document.getElementById('sl-phys-theta').addEventListener('input', function() {
+    document.getElementById('lbl-phys-theta').textContent = this.value + '°';
+    update();
+  });
+  document.getElementById('sel-shape').addEventListener('change', update);
+})();
+
+</script>
+</body>
+</html>

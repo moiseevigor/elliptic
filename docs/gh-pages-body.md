@@ -13,6 +13,9 @@ Explore the mathematics behind the functions with live, browser-based visualisat
 | Example | Topics |
 |---------|--------|
 | [**Arc Length & Celestial Mechanics**](examples/arclength-celestial-mechanics/) | Ellipse arc length · Keplerian orbits · Kepler's equation · Associate integrals B, D, J · Carlson convergence |
+| [**Physical Pendulum & Exact Trajectories**](examples/physical-pendulum/) | Exact period via K(k²) · Jacobi sn/cn/dn · Phase portrait · Separatrix · Period divergence · Compound pendula |
+
+[**Browse all interactive examples →**](examples/)
 
 # Citations and references
 

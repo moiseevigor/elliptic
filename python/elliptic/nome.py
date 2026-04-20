@@ -31,19 +31,19 @@ def nomeq(m):
 def inversenomeq(q):
     """Inverse nome: parameter m from nome q.
 
-    Uses ``scipy.optimize.brentq`` to invert ``nomeq`` on [0, 1-ε].
-    Accurate for q in [0, 0.76]; warns for q > 0.76 (accuracy degrades
-    near m = 1 where the nome has an essential singularity).
+    Uses ``scipy.optimize.brentq`` to invert ``nomeq``. In double precision the
+    representable range is roughly q ∈ [0, 0.779]; beyond this, m(q) exceeds
+    1 - 2⁻⁵³ and cannot be represented.
 
     Parameters
     ----------
     q : array_like
-        Nome values in [0, 1).
+        Nome values in [0, q_max) with q_max ≈ 0.7789534...
 
     Returns
     -------
     m : array
-        Parameter m = m(q) in [0, 1].
+        Parameter m = m(q) in [0, 1).
     """
     import warnings
     from scipy.optimize import brentq
@@ -55,6 +55,14 @@ def inversenomeq(q):
 
     if np.any(q_flat < 0) or np.any(q_flat >= 1):
         raise ValueError("q must be in [0, 1)")
+
+    m_hi  = np.nextafter(1.0, 0.0)        # largest f64 strictly < 1
+    q_max = float(np.exp(-np.pi * ellipk(1.0 - m_hi) / ellipk(m_hi)))
+    if np.any(q_flat >= q_max):
+        raise ValueError(
+            f"inversenomeq: q must be < {q_max:.15f} in double precision "
+            "(the essential singularity of m(q) at q=1 cannot be resolved in f64)"
+        )
     if np.any(q_flat > 0.76):
         warnings.warn("inversenomeq: accuracy degrades for q > 0.76 (near m=1 singularity)",
                       RuntimeWarning, stacklevel=2)
@@ -69,7 +77,7 @@ def inversenomeq(q):
         if qi == 0.0:
             m_out[i] = 0.0
         else:
-            m_out[i] = brentq(lambda m: _nomeq_scalar(m) - qi, 0.0, 1.0 - 1e-15, xtol=1e-14)
+            m_out[i] = brentq(lambda m: _nomeq_scalar(m) - qi, 0.0, m_hi, xtol=1e-14)
 
     m_out = m_out.reshape(np.asarray(q).shape)
     return xp.asarray(m_out)

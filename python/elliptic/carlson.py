@@ -145,6 +145,9 @@ def carlsonRJ(x, y, z, p):
     """Carlson RJ(x, y, z, p) — symmetric elliptic integral of the third kind.
 
     J(phi,n|m) = (sin³phi/3) * RJ(cos²phi, 1-m sin²phi, 1, 1-n sin²phi).
+
+    Requires p > 0. For p < 0 the integral is a Cauchy principal value
+    (DLMF 19.20.14); not implemented — raises ValueError.
     """
     xp = get_xp(x, y, z, p)
     x = xp.asarray(x, dtype=xp.float64)
@@ -152,6 +155,14 @@ def carlsonRJ(x, y, z, p):
     z = xp.asarray(z, dtype=xp.float64)
     p = xp.asarray(p, dtype=xp.float64)
     x, y, z, p = xp.broadcast_arrays(x, y, z, p)
+
+    import numpy as _np
+    if _np.any(_np.asarray(p) <= 0.0):
+        raise ValueError(
+            "carlsonRJ: p must be > 0. For p < 0 the integral is a Cauchy "
+            "principal value (DLMF 19.20.14); use the transformation to "
+            "a q > 0 argument before calling."
+        )
     return _rj_xp(xp, x, y, z, p)
 
 

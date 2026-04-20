@@ -36,7 +36,10 @@ def elliptic3(u, m, n):
     ----------
     u : array_like   Phase in radians, 0 <= u <= pi/2.
     m : array_like   Parameter, 0 <= m <= 1.
-    n : array_like   Characteristic, 0 <= n < 1.
+    n : array_like   Characteristic, n <= 1. For n > 1 the integral is a
+                     Cauchy principal value (circular case, DLMF 19.7.3)
+                     which 10-point Gauss–Legendre cannot resolve; this
+                     function raises ValueError in that regime.
 
     Returns
     -------
@@ -47,6 +50,21 @@ def elliptic3(u, m, n):
     m = xp.asarray(m, dtype=xp.float64)
     n = xp.asarray(n, dtype=xp.float64)
     u, m, n = xp.broadcast_arrays(u, m, n)
+
+    import numpy as _np
+    n_np = _np.asarray(n)
+    u_np = _np.asarray(u)
+    if _np.any(n_np > 1.0):
+        # Check whether the singularity sin²θ = 1/n lies in [0, u]
+        with _np.errstate(invalid='ignore', divide='ignore'):
+            sing = _np.where(n_np > 1.0, _np.arcsin(_np.sqrt(1.0 / n_np)), _np.inf)
+        if _np.any((n_np > 1.0) & (u_np >= sing)):
+            raise ValueError(
+                "elliptic3: n > 1 with phase beyond the pole at arcsin(1/sqrt(n)) "
+                "is a Cauchy principal-value integral (DLMF 19.7.3); not supported "
+                "by 10-point Gauss–Legendre. Use a transformation (DLMF 19.7.4) "
+                "or compute via Carlson R_J with complex arguments."
+            )
 
     half_u = u * 0.5
     P = xp.zeros_like(u)

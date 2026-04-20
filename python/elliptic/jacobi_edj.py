@@ -10,7 +10,7 @@ Relations:
 """
 from __future__ import annotations
 
-from array_api_compat import array_namespace
+import numpy as np
 from .ellipj import ellipj
 from .ellipticBDJ import ellipticBDJ
 
@@ -32,17 +32,14 @@ def jacobiEDJ(u, m, n=None):
     Eu, Du : arrays
     Ju : array or None
     """
-    compute_J = n is not None
-    xp = array_namespace(u, m) if not compute_J else array_namespace(u, m, n)
+    u_arr = np.asarray(u, dtype=np.float64)
+    m_arr = np.asarray(m, dtype=np.float64)
+    u_arr, m_arr = np.broadcast_arrays(u_arr, m_arr)
 
-    _, _, _, phi = ellipj(u, m)
-    B, D, J = ellipticBDJ(phi, m, n)
-
-    m_arr = xp.asarray(m, dtype=xp.float64)
-    u_arr = xp.asarray(u, dtype=xp.float64)
-    m_arr, u_arr = xp.broadcast_arrays(m_arr, u_arr)
+    _, _, _, phi = ellipj(u_arr, m_arr)
+    B, D, J = ellipticBDJ(phi, m_arr, n)
 
     Du = D
-    Eu = u_arr - m_arr * D
+    Eu = u_arr - m_arr * np.asarray(D)
     Ju = J
     return Eu, Du, Ju

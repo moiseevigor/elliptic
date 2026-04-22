@@ -1,0 +1,167 @@
+/* GPU Asteroid Swarm — matches the distill.pub-style of the arclength example */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --font-body:'Merriweather',Georgia,serif;
+  --font-ui:'Source Sans 3',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono','Fira Code','Consolas',monospace;
+  --text:#1a1a1a; --text-light:#555; --text-muted:#888;
+  --border:#e0e0e0; --bg:#ffffff; --fig-bg:#fafafa;
+  --accent:#1565c0; --accent-r:#b71c1c; --accent-o:#e65100;
+  --accent-g:#1b5e20; --accent-p:#4a148c; --accent-t:#006064;
+  --body-w:648px; --mid-w:960px; --page-w:1200px;
+}
+
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);font-size:16px;line-height:1.88;
+  color:var(--text);background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+}
+
+.l-body{max-width:var(--body-w);margin:0 auto;padding:0 24px}
+.l-middle{max-width:var(--mid-w);margin:0 auto;padding:0 24px}
+.l-page{max-width:var(--page-w);margin:0 auto;padding:0 24px}
+
+nav{position:sticky;top:0;z-index:300;background:rgba(255,255,255,.96);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border)}
+.nav-row{max-width:var(--page-w);margin:0 auto;padding:8px 24px;
+         display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+         font-family:var(--font-ui);font-size:13px}
+nav a{color:var(--accent);text-decoration:none;padding:3px 8px;
+      border-radius:4px;white-space:nowrap}
+nav a:hover{background:#e8f0fe}
+.nav-back{color:var(--text-muted)!important;margin-right:8px}
+.nav-sep{color:#ccc;padding:0;font-size:11px}
+
+article{counter-reset:section;padding-bottom:80px}
+
+.hero{padding:64px 0 52px;border-bottom:1px solid var(--border);margin-bottom:52px}
+.hero h1{font-family:var(--font-ui);font-size:clamp(1.9rem,4vw,2.7rem);
+         font-weight:700;line-height:1.2;color:#111;margin-bottom:20px;
+         letter-spacing:-.025em}
+.hero-lead{font-size:1.1rem;color:var(--text-light);max-width:620px;
+           margin-bottom:24px;line-height:1.75}
+.hero-meta{font-family:var(--font-ui);font-size:13px;color:var(--text-muted);
+           display:flex;gap:20px;flex-wrap:wrap}
+.hero-meta a{color:var(--text-muted);text-decoration:underline}
+
+h2{font-family:var(--font-ui);font-size:1.35rem;font-weight:700;
+   margin:60px 0 20px;color:#111;letter-spacing:-.02em;scroll-margin-top:56px}
+h2::before{counter-increment:section;content:counter(section) '. ';
+           color:var(--text-muted);font-weight:400}
+h3{font-family:var(--font-ui);font-size:1.05rem;font-weight:600;
+   color:#222;margin:32px 0 12px}
+
+p{margin-bottom:18px}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
+
+code{font-family:var(--font-mono);font-size:.82em;background:#f3f3f3;
+     border:1px solid #e0e0e0;padding:1px 5px;border-radius:3px}
+
+pre{font-family:var(--font-mono);font-size:13px;line-height:1.6;
+    background:#f6f6f6;border:1px solid var(--border);border-radius:6px;
+    padding:16px 20px;overflow-x:auto;margin:20px 0}
+
+figure{margin:36px 0}
+.fig-box{background:var(--fig-bg);border:1px solid var(--border);
+         border-radius:8px;padding:20px 24px 16px;overflow:visible}
+.fig-box svg{display:block;width:100%;overflow:visible}
+figcaption{font-family:var(--font-ui);font-size:13px;color:var(--text-muted);
+           line-height:1.55;margin-top:12px;padding:0 2px}
+figcaption strong{color:var(--text-light)}
+
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;
+          margin-bottom:14px;font-family:var(--font-ui);font-size:13px;
+          color:var(--text-light)}
+.ctrl{display:flex;align-items:center;gap:7px}
+input[type=range]{width:110px;accent-color:var(--accent);cursor:pointer}
+.val{display:inline-block;min-width:52px;font-family:var(--font-mono);
+     font-size:12px;font-weight:500;color:var(--accent);text-align:right}
+select{font-family:var(--font-ui);font-size:13px;border:1px solid var(--border);
+       border-radius:4px;padding:3px 8px;background:#fff}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px;
+        font-family:var(--font-ui);font-size:13px;color:var(--text-light)}
+.leg{display:flex;align-items:center;gap:6px}
+.swatch{display:inline-block;width:22px;height:3px;border-radius:2px;flex-shrink:0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* 3D canvas */
+.canvas-wrap{position:relative}
+#swarm-canvas{width:100%;height:580px;display:block;border-radius:8px 8px 0 0;
+              cursor:grab;background:#04040e}
+#swarm-canvas:active{cursor:grabbing}
+.canvas-controls{background:#04040e;border-top:1px solid rgba(255,255,255,.08);
+                 border-radius:0 0 8px 8px;padding:10px 18px}
+.canvas-controls .controls{color:#aaa}
+.canvas-controls .ctrl label{color:#aaa}
+.canvas-controls input[type=range]{accent-color:#8ab4f8}
+.canvas-controls .val{color:#8ab4f8}
+.canvas-controls input[type=checkbox]{accent-color:#8ab4f8;cursor:pointer}
+.canvas-controls select{background:#0a0a18;color:#cfd8dc;border:1px solid #222}
+#swarm-hud{position:absolute;top:10px;left:14px;color:rgba(200,220,255,.75);
+           font-family:var(--font-ui);font-size:12px;pointer-events:none;
+           line-height:1.55;text-shadow:0 0 4px rgba(0,0,0,.9)}
+
+/* tables */
+.data-table{width:100%;border-collapse:collapse;font-family:var(--font-ui);
+            font-size:13px;margin:16px 0}
+.data-table th{border-bottom:2px solid var(--border);padding:7px 11px;
+               text-align:left;font-size:11px;font-weight:700;
+               text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.data-table td{padding:5px 11px;border-bottom:1px solid #f0f0f0;
+               font-family:var(--font-mono);font-size:12px}
+.data-table tr.hi td{background:#f0faf2}
+.data-table tr.mid td{background:#fffaf0}
+.data-table tr.low td{background:#fff0f0}
+
+/* code snippet */
+.code-snippet{margin:20px 0 28px;border:1px solid var(--border);
+              border-radius:7px;overflow:hidden;font-size:13.5px}
+.code-snippet-header{display:flex;align-items:center;gap:8px;background:#f0f4f8;
+                     border-bottom:1px solid var(--border);padding:6px 14px;
+                     font-family:var(--font-ui);font-size:11.5px;font-weight:600;
+                     color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase}
+.code-snippet-header .lang-badge{background:#dde8f5;color:#1a4a7a;border-radius:3px;
+                                 padding:1px 7px;font-size:10.5px;font-weight:700;
+                                 letter-spacing:.06em}
+.code-snippet pre{margin:0;border:none;border-radius:0;background:#f8fafc;
+                  padding:14px 18px;font-size:13px;line-height:1.65;overflow-x:auto}
+.kw{color:#0550ae;font-weight:600}
+.cm{color:#57606a;font-style:italic}
+.st{color:#0a3069}
+.nm{color:#953800}
+.op{color:#24292f}
+
+/* KPI cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+         gap:12px;margin:20px 0}
+.kpi{background:var(--fig-bg);border:1px solid var(--border);border-radius:8px;
+     padding:14px 16px;font-family:var(--font-ui)}
+.kpi .label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+            color:var(--text-muted)}
+.kpi .value{font-size:1.5rem;font-weight:700;color:var(--accent);margin-top:2px}
+.kpi .unit{font-size:12px;color:var(--text-light);margin-left:4px}
+.kpi .sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* disclaimer / callout */
+.callout{margin:22px 0;padding:14px 18px;background:#fff8e1;
+         border-left:3px solid #e65100;border-radius:4px;
+         font-family:var(--font-ui);font-size:13.5px;line-height:1.6}
+.callout strong{color:#bf5000}
+
+/* footer */
+footer{border-top:1px solid var(--border);padding:28px 0;
+       font-family:var(--font-ui);font-size:13px;color:var(--text-muted)}
+.foot-row{max-width:var(--page-w);margin:0 auto;padding:0 24px;
+          display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+footer a{color:var(--text-muted)}
+
+@media (max-width:680px){
+  .l-body,.l-middle,.l-page{padding:0 16px}
+  #swarm-canvas{height:400px}
+  h2{font-size:1.15rem}
+}

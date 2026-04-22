@@ -227,6 +227,24 @@
       </div>
     </a>
 
+    <a class="card" href="gpu-asteroid-swarm/">
+      <p class="card-eyebrow">Batched propagation · GPU · 1.5 M asteroids</p>
+      <h2>GPU Asteroid Swarm</h2>
+      <p>
+        Real JPL SBDB orbital elements propagated in parallel on GPU.
+        Per-body arc length $L(E) = a\,E(E|e^2)$ from <code>elliptic12</code>,
+        Kepler's equation solved via vectorised Newton, throughput compared
+        across NumPy, PyTorch CPU/CUDA and JAX.  Validated against
+        JPL Horizons on named asteroids.
+      </p>
+      <div class="card-tags">
+        <span class="tag">elliptic12</span>
+        <span class="tag">ellipticBD</span>
+        <span class="tag">carlsonRF</span>
+        <span class="tag">carlsonRD</span>
+      </div>
+    </a>
+
   </div>
 
   <!-- ── Jacobi functions ── -->

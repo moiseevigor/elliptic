@@ -14,6 +14,7 @@ Explore the mathematics behind the functions with live, browser-based visualisat
 |---------|--------|
 | [**Arc Length & Celestial Mechanics**](examples/arclength-celestial-mechanics/) | Ellipse arc length · Keplerian orbits · Kepler's equation · Associate integrals B, D, J · Carlson convergence |
 | [**Physical Pendulum & Exact Trajectories**](examples/physical-pendulum/) | Exact period via K(k²) · Jacobi sn/cn/dn · Phase portrait · Separatrix · Period divergence · Compound pendula |
+| [**GPU Asteroid Swarm**](examples/gpu-asteroid-swarm/) | Real SBDB catalog · Batched Keplerian propagation · Incomplete E(φ\|m) arc lengths · PyTorch CUDA / JAX / gpuArray · Horizons validation |
 
 [**Browse all interactive examples →**](examples/)
 

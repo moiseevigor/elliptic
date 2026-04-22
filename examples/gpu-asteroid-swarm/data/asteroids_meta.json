@@ -1,0 +1,27 @@
+{
+  "count": 1520578,
+  "epoch_median_jd": 2461000.5,
+  "a_stats": {
+    "min": 0.4617618582346673,
+    "max": 17456.21948813919,
+    "median": 2.667163374124517
+  },
+  "e_stats": {
+    "min": 3.08705653907682e-06,
+    "max": 0.9995898402670336,
+    "median": 0.1477105204398359
+  },
+  "source": "JPL SBDB Query API (sb-kind=a, e<1)",
+  "fields": [
+    "full_name",
+    "a",
+    "e",
+    "i",
+    "om",
+    "w",
+    "ma",
+    "epoch",
+    "H",
+    "class"
+  ]
+}

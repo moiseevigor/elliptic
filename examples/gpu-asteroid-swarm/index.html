@@ -79,19 +79,25 @@
   <h2 id="dataset">The Dataset — Real Small Bodies</h2>
 
   <p>
-    Public small-body catalogs list over a million asteroids with measured orbital
-    elements.  We pull the currently known, bound population
-    ($e < 1$) from the JPL Small-Body Database Query API, keeping only the six
-    Keplerian elements plus the epoch:
+    Before we benchmark anything we need a population to propagate. Public small-body
+    catalogs list over a million asteroids with measured orbital elements; we pull
+    the currently known, bound population ($e < 1$) from the JPL Small-Body Database
+    Query API and keep only the six Keplerian elements plus the epoch:
   </p>
   $$\{\,a,\ e,\ i,\ \Omega,\ \omega,\ M_0,\ t_0\,\}.$$
   <p>
     $a$ is the semi-major axis, $e$ the eccentricity, $i$ the inclination,
     $\Omega$ the longitude of the ascending node, $\omega$ the argument of perihelion,
-    $M_0$ the mean anomaly at epoch $t_0$.  Given the dataset, the state of every
-    body at any time $t$ follows from Kepler's equation
+    $M_0$ the mean anomaly at epoch $t_0$.  Given those seven numbers, the state of every
+    body at any time $t$ follows from Kepler's equation — the only thing that is
+    ever body-specific is solving it:
   </p>
   $$M(t) = M_0 + n\,(t - t_0), \qquad M = E - e\,\sin E,\qquad n=\sqrt{GM_\odot/a^3}.$$
+  <p>
+    Figure&nbsp;1 plots that population in the $(a,\,e)$ plane, with the inner
+    planets marked on the x-axis for scale. Figure&nbsp;2 shows the marginal
+    distributions in eccentricity and inclination.
+  </p>
 </div>
 
 <figure class="l-middle">
@@ -106,14 +112,18 @@
       </div>
       <div class="legend" id="pop-legend"></div>
     </div>
-    <svg id="fig-pop" style="height:360px"></svg>
+    <svg id="fig-pop" style="height:380px"></svg>
   </div>
   <figcaption>
     <strong>Figure 1.</strong>
     Every point is one asteroid from a stratified subset of the SBDB catalog.
-    The Kirkwood gaps (2.5, 2.82, 2.95, 3.27&thinsp;AU), the Hilda cluster near 3.96&thinsp;AU
-    and the Jupiter Trojans near 5.2&thinsp;AU are visible.  Near-Earth and Mars-crosser
-    populations sit to the left of the belt.
+    Planets are anchored on the top axis to give the $a$-scale a physical reference:
+    the main belt sits between Mars (1.52&thinsp;AU) and Jupiter (5.20&thinsp;AU).
+    Inside the belt the Kirkwood gaps (2.50, 2.82, 2.95, 3.27&thinsp;AU) stand out,
+    and so do the Hilda cluster near 3.96&thinsp;AU and the Jupiter Trojans near 5.2&thinsp;AU.
+    Near-Earth and Mars-crosser populations sit to the left of the belt.
+    Tap the <span style="font-family:var(--font-mono)">⛶</span> button in the top-right to expand
+    any figure on this page to full-screen.
   </figcaption>
 </figure>
 
@@ -133,21 +143,22 @@
 <div class="l-body">
   <h2 id="benchmark">GPU Benchmark — Bodies × Epochs</h2>
   <p>
-    The total work is $N_\text{bodies}\!\times\!N_\text{epochs}$ body-epochs.
+    With a population in hand we can measure throughput.  The total work is
+    $N_\text{bodies}\!\times\!N_\text{epochs}$ body-epochs.
     A modest 100k&thinsp;bodies &times; 2048&thinsp;epochs is already 200&thinsp;M body-epochs;
     at 1&thinsp;M&thinsp;bodies and hour-resolution over a decade, we cross $10^{10}$.
     On CPU these sizes run in tens of seconds to minutes; on GPU they collapse to
     hundreds of milliseconds.
   </p>
   <p>
-    Each body-epoch inside the kernel does:
+    Each body-epoch inside the kernel does three things:
     (i)&nbsp;a fixed-iteration Kepler-equation Newton solve,
     (ii)&nbsp;a rotation from the orbital plane to the inertial frame, and
     (iii)&nbsp;an incomplete elliptic integral of the second kind
-    $E(E_{\!k}\!\mid e^2)$ for arc length from perihelion.  The elliptic
-    integral is supplied by <code>elliptic.elliptic12</code>, which is
-    backend-agnostic — the same call dispatches to NumPy, to a CUDA
-    PyTorch tensor, or to JAX.
+    $E(E_{\!k}\!\mid e^2)$ for arc length from perihelion (the same integral
+    we'll visualise in §4).  The elliptic integral is supplied by
+    <code>elliptic.elliptic12</code>, which is backend-agnostic — the same call
+    dispatches to NumPy, to a CUDA PyTorch tensor, or to JAX.
   </p>
 
   <div class="kpi-row" id="kpi-row"></div>
@@ -241,18 +252,23 @@ L = a[:, <span class="kw">None</span>] * E_inc         <span class="cm"># (N_bod
 <div class="l-body">
   <h2 id="swarm">The Swarm in 3D</h2>
   <p>
-    A representative subset of the catalog is propagated live in the browser and
-    rendered as a single instanced point cloud.  Every frame solves Kepler's
-    equation for every body at the current simulated time — the same pipeline
-    the Python benchmark measures, just at a smaller scale suited to a phone or
-    laptop GPU.  The visible structures (belt concentration, Hildas, Trojans at
-    Jupiter's $L_4$/$L_5$) are real population features, not artefacts of the
-    renderer.
+    Numbers are one thing; seeing the population move is another.  The viewer
+    below runs the exact pipeline the Python benchmark measures — Kepler's
+    equation solved for every body, every frame — just at a smaller subset
+    suited to a phone or laptop GPU.  The visible structures (belt concentration,
+    Hildas, Trojans at Jupiter's $L_4$/$L_5$ points) are real population features,
+    not artefacts of the renderer.
+  </p>
+  <p>
+    Drag to rotate, scroll to zoom.  Zoom in close enough and the planet spheres
+    gain name labels.  The <em>Time rate</em> slider controls how many days of
+    simulation advance per real-time second; <em>Reference orbits</em> toggles
+    the dashed planetary orbit rings; <em>Planets</em> hides them entirely.
   </p>
 </div>
 
 <figure class="l-page" id="swarm-fig">
-  <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+  <div class="fig-box swarm-box">
     <div class="canvas-wrap">
       <canvas id="swarm-canvas" aria-label="3D asteroid swarm"></canvas>
       <div id="swarm-hud">loading subset&hellip;</div>
@@ -260,8 +276,8 @@ L = a[:, <span class="kw">None</span>] * E_inc         <span class="cm"># (N_bod
     <div class="canvas-controls">
       <div class="controls">
         <div class="ctrl"><label>Time rate</label>
-          <input type="range" id="sw-speed" min="0" max="3000" step="10" value="600">
-          <span class="val" id="sw-speed-v">600 d/s</span></div>
+          <input type="range" id="sw-speed" min="0" max="3000" step="10" value="100">
+          <span class="val" id="sw-speed-v">100 d/s</span></div>
         <div class="ctrl"><label>Color</label>
           <select id="sw-color">
             <option value="class" selected>orbit class</option>
@@ -272,7 +288,7 @@ L = a[:, <span class="kw">None</span>] * E_inc         <span class="cm"># (N_bod
         <div class="ctrl"><label>Point size</label>
           <input type="range" id="sw-size" min="0.4" max="4" step="0.1" value="1.5">
           <span class="val" id="sw-size-v">1.5</span></div>
-        <div class="ctrl"><input type="checkbox" id="sw-orbits"><label for="sw-orbits">Reference orbits</label></div>
+        <div class="ctrl"><input type="checkbox" id="sw-orbits" checked><label for="sw-orbits">Reference orbits</label></div>
         <div class="ctrl"><input type="checkbox" id="sw-planets" checked><label for="sw-planets">Planets</label></div>
         <span style="color:#555;font-size:12px;margin-left:8px">Drag to rotate · scroll to zoom</span>
       </div>
@@ -281,8 +297,10 @@ L = a[:, <span class="kw">None</span>] * E_inc         <span class="cm"># (N_bod
   <figcaption>
     <strong>Figure 6.</strong>
     Live Keplerian propagation of a stratified <span id="sw-count">5000</span>-body subset.
-    Planetary positions (Mercury&hellip;Jupiter) are shown in the same inertial frame for
-    scale.  Time rate is adjustable in days per second.
+    Planetary positions (Mercury&hellip;Jupiter) use J2000 mean elements in the same
+    inertial frame, so their rings line up with the asteroid swarm by construction.
+    Default time rate is 100&thinsp;days&thinsp;per&thinsp;second, tunable up to 3000&thinsp;d/s
+    — useful for watching Trojans librate around Jupiter's $L_4$/$L_5$ points.
   </figcaption>
 </figure>
 
@@ -290,19 +308,24 @@ L = a[:, <span class="kw">None</span>] * E_inc         <span class="cm"># (N_bod
 <div class="l-body">
   <h2 id="arclength">Arc Length &amp; Perimeter via Elliptic Integrals</h2>
   <p>
-    For a Keplerian orbit with semi-major axis $a$ and eccentricity $e$,
-    the arc length from perihelion to eccentric anomaly $E$ is
+    The benchmark above spent most of its time inside one integral. Let's look at
+    what that integral is and what it produces.  For a Keplerian orbit with
+    semi-major axis $a$ and eccentricity $e$, the arc length from perihelion to
+    eccentric anomaly $E$ is
   </p>
   $$L(E) \;=\; a\;E\!\bigl(E\,\bigl|\,e^2\bigr)\;=\; a\!\int_0^{E}\!\!\sqrt{1 - e^2\sin^2\theta}\,\mathrm{d}\theta,$$
   <p>
-    and the full orbital perimeter is
+    and the full orbital perimeter — the closed-form version of that same integral
+    evaluated at $E = 2\pi$ — is
   </p>
   $$P \;=\; 4a\,E(e^2).$$
   <p>
     Both are obtained from one call to <code>elliptic12</code> (or equivalently
-    <code>carlsonRF</code>/<code>carlsonRD</code>).  Below, the exact elliptic
-    result is compared against the common circular proxy $2\pi a$ — adequate
-    near $e=0$, wildly wrong at cometary eccentricities.
+    <code>carlsonRF</code>/<code>carlsonRD</code>).  The panel below compares the
+    exact elliptic result (red) against the common circular proxy $aE$ (grey dashed),
+    which would give $2\pi a$ as the perimeter — adequate near $e=0$, wildly wrong
+    at cometary eccentricities.  Try the high-eccentricity NEA option to see the
+    two curves diverge.
   </p>
 </div>
 
@@ -322,9 +345,11 @@ L = a[:, <span class="kw">None</span>] * E_inc         <span class="cm"># (N_bod
     <strong>Figure 7.</strong>
     Left: Keplerian ellipse (Sun at one focus) with the arc from perihelion traced
     in red up to the current eccentric anomaly $E$.  Right: cumulative arc
-    length $L(E) = a\,E(E\mid e^2)$ from <code>elliptic12</code>, with the
-    circular proxy $aE$ (gray, dashed) for comparison.  Relative error of the
-    proxy is reported below.
+    length $L(E) = a\,E(E\mid e^2)$ from <code>elliptic12</code> (red, solid),
+    with the circular proxy $aE$ (grey, dashed) for comparison.  The dotted
+    horizontal line marks the orbit perimeter $P = 4a\,E(e^2)$, which the exact
+    curve must reach at $E = 2\pi$.  Relative error of the proxy against the
+    exact value at the current $E$ is reported in the corner.
   </figcaption>
 </figure>
 
@@ -332,11 +357,12 @@ L = a[:, <span class="kw">None</span>] * E_inc         <span class="cm"># (N_bod
 <div class="l-body">
   <h2 id="validation">Validation — How Far Can Pure Kepler Take You?</h2>
   <p>
-    Over short horizons the osculating-ellipse solution tracks the true ephemeris
-    to within fractions of an AU.  Over decades, planetary perturbations
-    accumulate; over centuries they dominate.  The table below compares the
-    pure-Kepler prediction against JPL Horizons on a small set of named
-    asteroids for a single test date.
+    Before you use any of this, it's worth asking how far a pure-Kepler
+    propagator can be trusted.  Over short horizons the osculating-ellipse
+    solution tracks the true ephemeris to within fractions of an AU.
+    Over decades, planetary perturbations accumulate; over centuries they
+    dominate.  The table below compares the pure-Kepler prediction against
+    JPL Horizons on a small set of named asteroids for a single test date.
   </p>
 
   <table class="data-table" id="val-table">
@@ -365,43 +391,101 @@ L = a[:, <span class="kw">None</span>] * E_inc         <span class="cm"># (N_bod
 <div class="l-body">
   <h2 id="reproduce">Reproduce</h2>
   <p>
-    The full pipeline — raw MPC/SBDB download, full benchmark, Horizons
-    validation, browser subset — is scripted in this repository.
+    Every figure and table on this page is produced by scripts in the repository.
+    Pick the stack you already have — <strong>Python</strong> or
+    <strong>MATLAB&nbsp;/&nbsp;Octave</strong> — and follow the five steps in order.
+    Steps 1–2 are shared (they produce the JSON files the page reads);
+    steps 3–4 are where the two stacks diverge; step 5 just serves the page locally.
+  </p>
+  <p>
+    You need a recent Python 3 (for the data-preparation scripts, even in the MATLAB path)
+    and, for GPU timings, either a CUDA-capable PyTorch install (Python)
+    or MATLAB's Parallel Computing Toolbox with <code>gpuArray</code> support (MATLAB).
+    Everything also runs CPU-only — the GPU columns just become <code>—</code>.
   </p>
 
-  <div class="code-snippet">
-    <div class="code-snippet-header"><span class="lang-badge">Bash</span>End-to-end</div>
-<pre><span class="cm"># 1. Pull current catalog from JPL SBDB (or --max N for a capped fetch)</span>
-python3 scripts/prepare_asteroid_dataset.py --max <span class="nm">200000</span>
+  <div class="code-tabs">
+    <div class="tab-headers">
+      <button class="tab-btn active" type="button" data-tab="py">Python</button>
+      <button class="tab-btn" type="button" data-tab="ml">MATLAB / Octave</button>
+    </div>
 
-<span class="cm"># 2. Build a compact browser subset</span>
-python3 scripts/sample_asteroid_subset.py --n <span class="nm">10000</span>
-
-<span class="cm"># 3. GPU benchmark (NumPy + PyTorch + CUDA if available)</span>
-python3 python/examples/gpu_asteroid_benchmark.py \
+    <!-- Python panel -->
+    <div class="tab-panel active" data-tab="py">
+      <div class="step">
+        <h4><span class="step-num">1</span>Install the package and GPU deps</h4>
+        <p>Clone the repo, then install the Python package (editable) plus your preferred tensor backend.</p>
+<pre><span class="kw">git clone</span> https://github.com/moiseevigor/elliptic &amp;&amp; <span class="kw">cd</span> elliptic
+<span class="kw">pip install</span> -e .
+<span class="cm"># optional GPU backend — pick one that matches your CUDA version</span>
+<span class="kw">pip install</span> torch                       <span class="cm"># CUDA-enabled build from pytorch.org</span>
+<span class="kw">pip install</span> -U <span class="st">"jax[cuda12]"</span>             <span class="cm"># alternative: JAX</span></pre>
+      </div>
+      <div class="step">
+        <h4><span class="step-num">2</span>Fetch the catalog and build a browser subset</h4>
+        <p>Download real orbital elements from JPL SBDB and create the compact JSON the 3-D viewer on this page consumes.</p>
+<pre>python3 scripts/prepare_asteroid_dataset.py --max <span class="nm">200000</span>
+python3 scripts/sample_asteroid_subset.py    --n   <span class="nm">10000</span></pre>
+      </div>
+      <div class="step">
+        <h4><span class="step-num">3</span>Run the GPU benchmark</h4>
+        <p>Times NumPy CPU, PyTorch CPU and PyTorch CUDA on a sweep of body/epoch sizes; writes <code>benchmark_results.json</code>.</p>
+<pre>python3 python/examples/gpu_asteroid_benchmark.py \
     --bodies <span class="nm">10000</span>,<span class="nm">100000</span>,<span class="nm">1000000</span> \
-    --epochs <span class="nm">128</span>,<span class="nm">512</span>,<span class="nm">2048</span>
-
-<span class="cm"># 4. Horizons validation on a handful of named asteroids</span>
-python3 scripts/validate_against_horizons.py --date <span class="nm">2026-01-01</span>
-
-<span class="cm"># 5. Preview the website example locally</span>
-cd examples/gpu-asteroid-swarm &amp;&amp; python3 -m http.server <span class="nm">8080</span>
+    --epochs <span class="nm">128</span>,<span class="nm">512</span>,<span class="nm">2048</span></pre>
+      </div>
+      <div class="step">
+        <h4><span class="step-num">4</span>Validate against JPL Horizons</h4>
+        <p>Queries Horizons for a handful of named asteroids and compares them to the pure-Kepler prediction for the given date.</p>
+<pre>python3 python/examples/gpu_asteroid_validation.py --date <span class="nm">2026-01-01</span></pre>
+      </div>
+      <div class="step">
+        <h4><span class="step-num">5</span>Serve the page locally</h4>
+        <p>The page reads the JSON outputs from the previous steps. Any static web server will do.</p>
+<pre><span class="kw">cd</span> examples/gpu-asteroid-swarm &amp;&amp; python3 -m http.server <span class="nm">8080</span>
 <span class="cm"># then open http://localhost:8080/</span></pre>
-  </div>
+      </div>
+    </div>
 
-  <div class="code-snippet">
-    <div class="code-snippet-header"><span class="lang-badge">MATLAB</span>MATLAB gpuArray benchmark</div>
-<pre>addpath(<span class="st">'matlab/src'</span>);
-addpath(<span class="st">'matlab/examples'</span>);
+    <!-- MATLAB panel -->
+    <div class="tab-panel" data-tab="ml">
+      <div class="step">
+        <h4><span class="step-num">1</span>Clone and add the MATLAB paths</h4>
+        <p>The MATLAB sources live under <code>matlab/</code>. Add them once per session; the commands below also work on GNU Octave 8+.</p>
+<pre>% from a shell
+git clone https://github.com/moiseevigor/elliptic &amp;&amp; cd elliptic
 
-<span class="cm">% Benchmarks CPU vs gpuArray. Falls back to synthetic elements if the</span>
-<span class="cm">% SBDB-derived dataset is missing.</span>
-gpu_asteroid_benchmark(<span class="st">'bodies'</span>, [<span class="nm">1e4</span> <span class="nm">1e5</span> <span class="nm">1e6</span>], ...
-                       <span class="st">'epochs'</span>, [<span class="nm">128</span> <span class="nm">512</span> <span class="nm">2048</span>]);
-
-<span class="cm">% Horizons sanity check</span>
-gpu_asteroid_validation();</pre>
+% inside MATLAB / Octave
+addpath(<span class="st">'matlab/src'</span>);
+addpath(<span class="st">'matlab/examples'</span>);</pre>
+      </div>
+      <div class="step">
+        <h4><span class="step-num">2</span>Fetch the catalog (Python helper, one-off)</h4>
+        <p>The data scripts are Python. Run them once; MATLAB then reads the resulting <code>.npz</code> and the subset JSON.</p>
+<pre>% from a shell
+python3 scripts/prepare_asteroid_dataset.py --max 200000
+python3 scripts/sample_asteroid_subset.py    --n   10000</pre>
+      </div>
+      <div class="step">
+        <h4><span class="step-num">3</span>Run the CPU vs <code>gpuArray</code> benchmark</h4>
+        <p>Writes <code>benchmark_results_matlab.json</code> next to the Python output. Falls back to synthetic elements if the <code>.npz</code> is missing.</p>
+<pre>gpu_asteroid_benchmark(<span class="st">'bodies'</span>, [<span class="nm">1e4</span> <span class="nm">1e5</span> <span class="nm">1e6</span>], ...
+                       <span class="st">'epochs'</span>, [<span class="nm">128</span> <span class="nm">512</span> <span class="nm">2048</span>]);</pre>
+      </div>
+      <div class="step">
+        <h4><span class="step-num">4</span>Validate against JPL Horizons</h4>
+        <p>Same dataset, same comparison format as the Python validator.</p>
+<pre>gpu_asteroid_validation();</pre>
+      </div>
+      <div class="step">
+        <h4><span class="step-num">5</span>Serve the page locally</h4>
+        <p>The page itself is static HTML/JS and works the same regardless of which stack populated the JSON files.</p>
+<pre>% from a shell, inside the repo
+cd examples/gpu-asteroid-swarm
+python3 -m http.server 8080
+% then open http://localhost:8080/</pre>
+      </div>
+    </div>
   </div>
 
   <p style="font-family:var(--font-ui);font-size:13px;color:var(--text-muted)">

@@ -98,14 +98,25 @@ function carlsonRD(x, y, z) {
   const poly = 1 - 3*E2/14 + E3/6 + 9*E2*E2/88 - 3*E4/22 - 9*E2*E3/52 + 3*E5/26;
   return 3*S + pow4*poly/(A*Math.sqrt(A));
 }
-function ellipticE(phi, m) {
-  if (phi === 0) return 0;
-  const s=Math.sin(phi), c=Math.cos(phi), d2=1 - m*s*s;
-  return s*carlsonRF(c*c, d2, 1) - (m*s*s*s/3)*carlsonRD(c*c, d2, 1);
-}
 function ellipticE_complete(m) {
-  // E(m) = E(pi/2|m)
-  return ellipticE(Math.PI/2, m);
+  // Direct Carlson form for E(π/2 | m), independent of ellipticE to avoid recursion.
+  // E(m) = RF(0, 1-m, 1) - (m/3) RD(0, 1-m, 1)
+  if (m >= 1) return 1;
+  return carlsonRF(0, 1 - m, 1) - (m/3)*carlsonRD(0, 1 - m, 1);
+}
+function ellipticE(phi, m) {
+  // Incomplete E(φ | m) extended to all real φ via the identity
+  //   E(φ + kπ | m) = 2k E(m) + E(φ | m),   |φ| ≤ π/2.
+  // The Carlson-form below is only valid on [-π/2, π/2]; reducing first fixes
+  // the spurious negative / oscillating values we'd otherwise see for E > π/2.
+  if (phi === 0) return 0;
+  const sign = phi < 0 ? -1 : 1;
+  const absPhi = Math.abs(phi);
+  const k = Math.round(absPhi / Math.PI);
+  const phi0 = absPhi - k*Math.PI;     // phi0 ∈ (-π/2, π/2]
+  const s = Math.sin(phi0), c = Math.cos(phi0), d2 = 1 - m*s*s;
+  const E0 = s*carlsonRF(c*c, d2, 1) - (m*s*s*s/3)*carlsonRD(c*c, d2, 1);
+  return sign * (E0 + 2*k*ellipticE_complete(m));
 }
 
 // ───────────── data loading ─────────────────────────────────────────────
@@ -156,14 +167,27 @@ function randn() {
 // ───────────── responsive SVG width helper ──────────────────────────────
 function figW(el) { return el.parentElement.clientWidth - 48; }
 
+// clipPath helper — returns a <g> that clips to the plot rectangle
+let _clipSeq = 0;
+function clipGroup(g, m, W, H) {
+  const id = `clip-${++_clipSeq}`;
+  g.append('defs').append('clipPath').attr('id', id)
+    .append('rect')
+      .attr('x', m.l).attr('y', m.t)
+      .attr('width', Math.max(0, W - m.l - m.r))
+      .attr('height', Math.max(0, H - m.t - m.b));
+  return g.append('g').attr('clip-path', `url(#${id})`);
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // §1 Dataset — population scatter + histograms
 // ═══════════════════════════════════════════════════════════════════════
 function drawPopulation(bodies) {
   const svg = document.getElementById('fig-pop');
-  const W = figW(svg), H = 360;
+  const W = figW(svg), H = 380;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  const m = {t:18, r:16, b:44, l:54};
+  // extra top margin to carry the planet axis above the plot
+  const m = {t:48, r:16, b:44, l:54};
 
   const g = d3.select(svg); g.selectAll('*').remove();
 
@@ -186,15 +210,60 @@ function drawPopulation(bodies) {
    .attr('text-anchor','middle').attr('fill','#555')
    .text('eccentricity e');
 
+  // ── planet markers on a second axis above the plot ──
+  const PLANETS_AU = [
+    {n:'Mercury', a:0.387, c:'#9e9e9e'},
+    {n:'Venus',   a:0.723, c:'#d4a35a'},
+    {n:'Earth',   a:1.000, c:'#3d78b8'},
+    {n:'Mars',    a:1.524, c:'#c0602a'},
+    {n:'Jupiter', a:5.204, c:'#b98b5a'},
+  ];
+  const pg = g.append('g').attr('class','planet-axis');
+  // horizontal baseline above the plot
+  pg.append('line')
+    .attr('x1', m.l).attr('x2', W-m.r)
+    .attr('y1', m.t-6).attr('y2', m.t-6)
+    .attr('stroke', '#d0d0d0').attr('stroke-width', 0.8);
+  for (const p of PLANETS_AU) {
+    if (p.a < x.domain()[0] || p.a > x.domain()[1]) continue;
+    const xp = x(p.a);
+    // tick into the plot area
+    pg.append('line')
+      .attr('x1', xp).attr('x2', xp)
+      .attr('y1', m.t-6).attr('y2', H-m.b)
+      .attr('stroke', p.c).attr('stroke-width', 0.8)
+      .attr('stroke-dasharray', '2,3').attr('opacity', 0.55);
+    // dot on the planet axis
+    pg.append('circle')
+      .attr('cx', xp).attr('cy', m.t-6).attr('r', 3.2)
+      .attr('fill', p.c).attr('stroke', '#fff').attr('stroke-width', 1);
+    // label above, with AU value
+    pg.append('text')
+      .attr('x', xp).attr('y', m.t-14)
+      .attr('text-anchor','middle')
+      .attr('font-family','Source Sans 3').attr('font-size', 10.5)
+      .attr('font-weight', 600).attr('fill', '#444')
+      .text(p.n);
+    pg.append('text')
+      .attr('x', xp).attr('y', m.t-25)
+      .attr('text-anchor','middle')
+      .attr('font-family','JetBrains Mono').attr('font-size', 9.5)
+      .attr('fill', '#888')
+      .text(p.a.toFixed(2) + ' AU');
+  }
+
   const colorFn = colorMode === 'class'
     ? (b) => CLASS_COLOR[b.c] || '#666'
     : colorMode === 'e'
       ? d3.scaleSequential(d3.interpolateTurbo).domain([0, 0.7])
       : d3.scaleSequential(d3.interpolateTurbo).domain([0, 35*DEG]);
 
+  // all data drawn inside clip rectangle so nothing leaks past the axes
+  const plot = clipGroup(g, m, W, H);
+
   // draw all bodies — subsample if huge for responsiveness
   const stride = Math.max(1, Math.floor(bodies.length / 4000));
-  g.append('g').selectAll('circle')
+  plot.append('g').selectAll('circle')
     .data(bodies.filter((_, i) => i % stride === 0))
     .join('circle')
       .attr('cx', d => x(d.a))
@@ -207,11 +276,11 @@ function drawPopulation(bodies) {
   const gaps = [
     [2.50, '3:1'], [2.82, '5:2'], [2.95, '7:3'], [3.27, '2:1'],
   ];
-  g.append('g').selectAll('line').data(gaps).join('line')
+  plot.append('g').selectAll('line').data(gaps).join('line')
     .attr('x1', d => x(d[0])).attr('x2', d => x(d[0]))
     .attr('y1', m.t).attr('y2', H-m.b)
     .attr('stroke', '#888').attr('stroke-dasharray', '2,3').attr('stroke-width', 0.7);
-  g.append('g').selectAll('text').data(gaps).join('text')
+  plot.append('g').selectAll('text').data(gaps).join('text')
     .attr('x', d => x(d[0])+3).attr('y', m.t+11)
     .attr('font-family','Source Sans 3').attr('font-size', 10)
     .attr('fill', '#888').text(d => d[1]);
@@ -334,13 +403,14 @@ function drawThroughput(bm) {
     .attr('font-family','Source Sans 3').attr('font-size',12)
     .attr('text-anchor','middle').attr('fill','#555').text('throughput [M body-epochs / s]');
 
+  const plot = clipGroup(g, m, W, H);
   const byB = d3.group(rows, r => r.backend);
   for (const [backend, arr] of byB) {
     const sorted = arr.slice().sort((a,b)=>a.bodies-b.bodies);
     const color = BACKEND_COLOR[backend] || '#666';
-    g.append('path').attr('fill','none').attr('stroke',color).attr('stroke-width',2)
+    plot.append('path').attr('fill','none').attr('stroke',color).attr('stroke-width',2)
       .attr('d', d3.line().x(r=>x(r.bodies)).y(r=>y(r.throughput_meps))(sorted));
-    g.append('g').selectAll('circle').data(sorted).join('circle')
+    plot.append('g').selectAll('circle').data(sorted).join('circle')
       .attr('cx', r=>x(r.bodies)).attr('cy', r=>y(r.throughput_meps))
       .attr('r', 3.5).attr('fill', color);
   }
@@ -381,9 +451,10 @@ function drawSpeedup(bm) {
     .attr('text-anchor','middle').attr('fill','#555').text('GPU speedup vs NumPy');
 
   const sorted = rows.slice().sort((a,b) => a.bodies*a.epochs - b.bodies*b.epochs);
-  g.append('path').attr('fill','none').attr('stroke','#e65100').attr('stroke-width',2)
+  const plot = clipGroup(g, m, W, H);
+  plot.append('path').attr('fill','none').attr('stroke','#e65100').attr('stroke-width',2)
     .attr('d', d3.line().x(r=>x(r.bodies*r.epochs)).y(r=>y(r.speedup_vs_numpy))(sorted));
-  g.append('g').selectAll('circle').data(sorted).join('circle')
+  plot.append('g').selectAll('circle').data(sorted).join('circle')
     .attr('cx', r=>x(r.bodies*r.epochs)).attr('cy', r=>y(r.speedup_vs_numpy))
     .attr('r', 4).attr('fill', '#e65100');
 }
@@ -416,15 +487,20 @@ function drawBreakdown(bm) {
     .attr('text-anchor','middle').attr('fill','#555')
     .text(`runtime breakdown at ${nMax.toLocaleString()} bodies × ${pick[0].epochs} epochs`);
 
+  const plotB = clipGroup(g, m, W, H);
+  const xMin = m.l, xMax = W - m.r;
   for (const r of pick) {
-    const cx0 = x(Math.max(1, r.t_propagate_ms));
-    g.append('rect').attr('x',m.l).attr('y',y(r.backend))
-      .attr('width', cx0 - m.l).attr('height', y.bandwidth())
+    const cx0 = Math.max(xMin, Math.min(xMax, x(Math.max(1, r.t_propagate_ms))));
+    const cx1 = Math.max(xMin, Math.min(xMax, x(Math.max(1, r.t_total_ms))));
+    plotB.append('rect').attr('x', xMin).attr('y', y(r.backend))
+      .attr('width', Math.max(0, cx0 - xMin)).attr('height', y.bandwidth())
       .attr('fill','#1565c0').attr('fill-opacity',0.85);
-    g.append('rect').attr('x', cx0).attr('y', y(r.backend))
-      .attr('width', x(r.t_total_ms) - cx0).attr('height', y.bandwidth())
+    plotB.append('rect').attr('x', cx0).attr('y', y(r.backend))
+      .attr('width', Math.max(0, cx1 - cx0)).attr('height', y.bandwidth())
       .attr('fill','#e65100').attr('fill-opacity',0.85);
-    g.append('text').attr('x', x(r.t_total_ms)+6).attr('y', y(r.backend)+y.bandwidth()/2+3)
+    // label outside clipping so it's always visible, and kept inside the SVG
+    const tx = Math.min(cx1 + 6, W - m.r - 50);
+    g.append('text').attr('x', tx).attr('y', y(r.backend)+y.bandwidth()/2+3)
       .attr('font-family','JetBrains Mono').attr('font-size',11).attr('fill','#333')
       .text(`${r.t_total_ms.toFixed(0)} ms`);
   }
@@ -491,21 +567,52 @@ function initSwarm(subset) {
   grid.rotation.x = Math.PI/2; grid.material.opacity = 0.4; grid.material.transparent = true;
   scene.add(grid);
 
-  // Planets — quick J2000 values for scale
+  // Planets — J2000 mean elements (JPL, ecliptic / equinox of J2000).
+  // Om = Ω (longitude of ascending node), ob = ϖ (longitude of perihelion),
+  // L = mean longitude at J2000 epoch.
   const PLANETS = [
-    {name:'Mercury', a:0.387, e:0.206, i:7.0, Om:48.3, ob:77.5, L:252.3, color:'#9e9e9e'},
-    {name:'Venus',   a:0.723, e:0.007, i:3.4, Om:76.7, ob:131.8,L:181.9, color:'#e8c97a'},
-    {name:'Earth',   a:1.000, e:0.017, i:0.0, Om:-5.1, ob:102.9,L:100.5, color:'#4fa0e8'},
-    {name:'Mars',    a:1.524, e:0.093, i:1.9, Om:49.7, ob:336.0,L:355.4, color:'#c0602a'},
-    {name:'Jupiter', a:5.204, e:0.049, i:1.3, Om:100.3,ob:14.3, L:34.3,  color:'#c4956a'},
+    {name:'Mercury', a:0.38710, e:0.20564, i:7.005, Om:48.331, ob:77.457, L:252.251, color:'#9e9e9e'},
+    {name:'Venus',   a:0.72333, e:0.00678, i:3.395, Om:76.680, ob:131.602, L:181.979, color:'#e8c97a'},
+    {name:'Earth',   a:1.00000, e:0.01671, i:0.000, Om:0.0,    ob:102.938, L:100.465, color:'#4fa0e8'},
+    {name:'Mars',    a:1.52371, e:0.09339, i:1.850, Om:49.560, ob:336.056, L:355.453, color:'#c0602a'},
+    {name:'Jupiter', a:5.20289, e:0.04839, i:1.304, Om:100.474,ob:14.728,  L:34.396,  color:'#c4956a'},
   ];
+  // Two groups so the controls can toggle planets (spheres+labels) and
+  // reference orbit rings independently.
   const planetsGroup = new THREE.Group(); scene.add(planetsGroup);
+  const orbitsGroup  = new THREE.Group(); scene.add(orbitsGroup);
+
+  function makeLabelSprite(text, color) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.font = '600 40px "Source Sans 3", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // soft dark halo so white text stays readable against bright planets
+    ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,10,0.85)';
+    ctx.strokeText(text, 128, 32);
+    ctx.fillStyle = color;
+    ctx.fillText(text, 128, 32);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.anisotropy = 4;
+    const mat = new THREE.SpriteMaterial({map: tex, transparent: true, depthTest: false});
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(0.55, 0.14, 1);   // world units
+    sprite.position.set(0, 0, 0.12);   // slight z-offset above the planet
+    return sprite;
+  }
+
   const planetMeshes = PLANETS.map(p => {
     const g = new THREE.Group();
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(0.045, 18, 12),
       new THREE.MeshBasicMaterial({color:p.color}));
     g.add(mesh);
+    const label = makeLabelSprite(p.name, '#ffffff');
+    label.visible = false;          // fades in when the camera is close
+    g.add(label);
+    planetsGroup.add(g);
     // reference orbit ring
     const N = 180, pts = [];
     for (let k = 0; k <= N; k++) {
@@ -521,10 +628,9 @@ function initSwarm(subset) {
     }
     const ring = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(pts),
-      new THREE.LineBasicMaterial({color: p.color, transparent:true, opacity:0.4}));
-    planetsGroup.add(ring);
-    planetsGroup.add(g);
-    return {p, g};
+      new THREE.LineBasicMaterial({color: p.color, transparent:true, opacity:0.45}));
+    orbitsGroup.add(ring);
+    return {p, g, label};
   });
 
   // Instanced asteroid points
@@ -562,6 +668,12 @@ function initSwarm(subset) {
   const sizeInput  = document.getElementById('sw-size');
   const sizeOut    = document.getElementById('sw-size-v');
   const planetsChk = document.getElementById('sw-planets');
+  const orbitsChk  = document.getElementById('sw-orbits');
+
+  // initial values reflect the current control states so the UI matches what is drawn
+  speedOut.textContent = `${speedInput.value} d/s`;
+  orbitsGroup.visible  = orbitsChk.checked;
+  planetsGroup.visible = planetsChk.checked;
 
   speedInput.addEventListener('input', ()=>{ speedOut.textContent = `${speedInput.value} d/s`; });
   colorInput.addEventListener('change', ()=> refreshColors(colorInput.value));
@@ -570,6 +682,7 @@ function initSwarm(subset) {
     mat.size = +sizeInput.value;
   });
   planetsChk.addEventListener('change', ()=>{ planetsGroup.visible = planetsChk.checked; });
+  orbitsChk .addEventListener('change', ()=>{ orbitsGroup.visible  = orbitsChk.checked;  });
 
   // Time state
   let simTime = 0;   // days
@@ -588,8 +701,12 @@ function initSwarm(subset) {
     }
     geom.attributes.position.needsUpdate = true;
 
-    // propagate planets (approximate: uniform mean motion per day)
-    for (const {p, g} of planetMeshes) {
+    // propagate planets (Kepler: M = L - ϖ + n·t)
+    const camDist = camera.position.length();
+    // show planet name labels only when the camera is close enough that they
+    // don't clutter the wide-field view
+    const showLabels = camDist < 3.2;
+    for (const {p, g, label} of planetMeshes) {
       const n = Math.sqrt(GM_SUN / (p.a*p.a*p.a));
       const M = ((p.L*DEG - p.ob*DEG) + n*simTime);
       const E = solveKepler(M, p.e);
@@ -602,6 +719,7 @@ function initSwarm(subset) {
         r*(cO*Math.cos(u) - sO*Math.sin(u)*ci),
         r*(sO*Math.cos(u) + cO*Math.sin(u)*ci),
         r*si*Math.sin(u));
+      label.visible = showLabels && planetsGroup.visible;
     }
 
     controls.update();
@@ -668,20 +786,24 @@ function initArcPanel(subset) {
     const cxPix = (sx(0));
     const cyPix = (sy(0));
 
+    // clip the left panel drawing area so arc/planet can't leak past the box
+    const leftM = {t:m1.t, b:m1.b, l:m1.l, r:W - panelW + m1.r};
+    const plotL = clipGroup(g, leftM, W, H);
+
     // draw full ellipse (centred at origin in orbital plane; x_op from -a(1+e) to a(1-e))
     const ORBIT = [];
     for (let k2 = 0; k2 <= 240; k2++) {
       const th = (k2/240)*2*Math.PI;
       ORBIT.push([a*(Math.cos(th)-e), b*Math.sin(th)]);
     }
-    g.append('path')
+    plotL.append('path')
       .attr('d', d3.line().x(p=>sx(p[0])).y(p=>sy(p[1]))(ORBIT))
       .attr('fill','none').attr('stroke','#1565c0').attr('stroke-width',1.5);
 
     // focus / Sun
     const focusX = -a*e;
-    g.append('circle').attr('cx',sx(focusX)).attr('cy',sy(0)).attr('r',4).attr('fill','#ffa000');
-    g.append('text').attr('x',sx(focusX)+7).attr('y',sy(0)-7)
+    plotL.append('circle').attr('cx',sx(focusX)).attr('cy',sy(0)).attr('r',4).attr('fill','#ffa000');
+    plotL.append('text').attr('x',sx(focusX)+7).attr('y',sy(0)-7)
       .attr('font-family','Source Sans 3').attr('font-size',11).attr('fill','#555').text('Sun');
 
     // Arc up to E (red)
@@ -691,12 +813,12 @@ function initArcPanel(subset) {
       const th = (k2/steps)*E;
       ARC.push([a*(Math.cos(th)-e), b*Math.sin(th)]);
     }
-    g.append('path').attr('d', d3.line().x(p=>sx(p[0])).y(p=>sy(p[1]))(ARC))
+    plotL.append('path').attr('d', d3.line().x(p=>sx(p[0])).y(p=>sy(p[1]))(ARC))
       .attr('fill','none').attr('stroke','#c62828').attr('stroke-width',3);
 
     // planet position at E
     const px = a*(Math.cos(E)-e), py = b*Math.sin(E);
-    g.append('circle').attr('cx', sx(px)).attr('cy', sy(py)).attr('r',5).attr('fill','#c62828');
+    plotL.append('circle').attr('cx', sx(px)).attr('cy', sy(py)).attr('r',5).attr('fill','#c62828');
 
     g.append('text').attr('x', m1.l).attr('y', H-10)
       .attr('font-family','Source Sans 3').attr('font-size',11).attr('fill','#555')
@@ -707,9 +829,13 @@ function initArcPanel(subset) {
     const x0 = panelW + 30;
     const xE = d3.scaleLinear().domain([0, 2*Math.PI]).range([x0+m2.l, W-m2.r]);
     const perim = 4*a*ellipticE_complete(e*e);
-    const yL = d3.scaleLinear().domain([0, perim*1.05]).range([H-m2.b, m2.t]);
+    // domain must cover BOTH the exact curve (→ perim) and the circular proxy (→ 2πa),
+    // otherwise the proxy line slips above the top of the plot for e > 0.
+    const yMax = Math.max(perim, 2*Math.PI*a) * 1.05;
+    const yL = d3.scaleLinear().domain([0, yMax]).range([H-m2.b, m2.t]);
 
-    // exact L(E) curve
+    // exact L(E) curve — ellipticE is now extended via E(φ+kπ|m)=2k·E(m)+E(φ|m)
+    // so the curve is monotone on [0, 2π] and terminates at the orbit perimeter.
     const Epts = d3.range(0, 2*Math.PI*1.0001, 2*Math.PI/120);
     const Lexact = Epts.map(x => [x, a * ellipticE(x, e*e)]);
     const Lproxy = Epts.map(x => [x, a * x]);   // circular proxy 2πa at E=2π
@@ -727,16 +853,27 @@ function initArcPanel(subset) {
       .attr('font-family','Source Sans 3').attr('font-size',12).attr('text-anchor','middle').attr('fill','#555')
       .text('arc length L(E) [AU]');
 
-    g.append('path').attr('d', d3.line().x(p=>xE(p[0])).y(p=>yL(p[1]))(Lproxy))
+    // clip data to the right-panel rectangle so neither curve can escape
+    const rightM = {t:m2.t, b:m2.b, l:x0+m2.l, r:m2.r};
+    const plotR = clipGroup(g, rightM, W, H);
+
+    plotR.append('path').attr('d', d3.line().x(p=>xE(p[0])).y(p=>yL(p[1]))(Lproxy))
       .attr('fill','none').attr('stroke','#9e9e9e').attr('stroke-dasharray','4,3');
-    g.append('path').attr('d', d3.line().x(p=>xE(p[0])).y(p=>yL(p[1]))(Lexact))
+    plotR.append('path').attr('d', d3.line().x(p=>xE(p[0])).y(p=>yL(p[1]))(Lexact))
       .attr('fill','none').attr('stroke','#c62828').attr('stroke-width',2);
+
+    // perimeter reference line
+    plotR.append('line')
+      .attr('x1', x0+m2.l).attr('x2', W-m2.r)
+      .attr('y1', yL(perim)).attr('y2', yL(perim))
+      .attr('stroke','#c62828').attr('stroke-width',0.8)
+      .attr('stroke-dasharray','2,3').attr('opacity',0.55);
 
     // current E marker
     const Lcur = a*ellipticE(E, e*e);
     const Lpr  = a*E;
-    g.append('circle').attr('cx', xE(E)).attr('cy', yL(Lcur)).attr('r',4).attr('fill','#c62828');
-    g.append('line').attr('x1', xE(E)).attr('x2', xE(E)).attr('y1', yL(Lcur)).attr('y2', yL(Lpr))
+    plotR.append('circle').attr('cx', xE(E)).attr('cy', yL(Lcur)).attr('r',4).attr('fill','#c62828');
+    plotR.append('line').attr('x1', xE(E)).attr('x2', xE(E)).attr('y1', yL(Lcur)).attr('y2', yL(Lpr))
       .attr('stroke','#9e9e9e').attr('stroke-width',1);
     const relErr = Math.abs(Lcur - Lpr) / (Lcur || 1e-12);
     g.append('text').attr('x', x0+m2.l+10).attr('y', m2.t+14)
@@ -783,6 +920,63 @@ function drawValidation(val) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// Figure fullscreen toggle — adds a small ⛶ button to every .fig-box
+// ═══════════════════════════════════════════════════════════════════════
+function installFigureFullscreen() {
+  document.querySelectorAll('.fig-box').forEach(box => {
+    if (box.querySelector('.fig-expand-btn')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'fig-expand-btn';
+    btn.title = 'Expand to fullscreen';
+    btn.setAttribute('aria-label', 'Expand to fullscreen');
+    btn.textContent = '⛶';
+    btn.addEventListener('click', () => {
+      const inFs = document.fullscreenElement === box;
+      if (!document.fullscreenElement) {
+        const req = box.requestFullscreen?.bind(box);
+        if (req) {
+          req().catch(() => box.classList.add('fig-expanded'));
+        } else {
+          box.classList.toggle('fig-expanded');
+          window.dispatchEvent(new Event('resize'));
+        }
+      } else if (inFs) {
+        document.exitFullscreen?.();
+      } else {
+        box.classList.toggle('fig-expanded');
+        window.dispatchEvent(new Event('resize'));
+      }
+    });
+    box.appendChild(btn);
+  });
+  // on fullscreen enter/exit we fire a resize so every draw() re-fits
+  document.addEventListener('fullscreenchange', () => {
+    window.dispatchEvent(new Event('resize'));
+  });
+  // Esc key exits the CSS fallback
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') {
+      document.querySelectorAll('.fig-box.fig-expanded').forEach(el => el.classList.remove('fig-expanded'));
+      window.dispatchEvent(new Event('resize'));
+    }
+  });
+}
+
+// Reproduce-section language tabs (Python ↔ MATLAB/Octave)
+function installCodeTabs() {
+  document.querySelectorAll('.code-tabs').forEach(wrap => {
+    const btns = wrap.querySelectorAll('.tab-btn');
+    const pans = wrap.querySelectorAll('.tab-panel');
+    btns.forEach(btn => btn.addEventListener('click', () => {
+      const key = btn.dataset.tab;
+      btns.forEach(b => b.classList.toggle('active', b.dataset.tab === key));
+      pans.forEach(p => p.classList.toggle('active', p.dataset.tab === key));
+    }));
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // Main
 // ═══════════════════════════════════════════════════════════════════════
 (async () => {
@@ -816,4 +1010,8 @@ function drawValidation(val) {
 
   // Validation
   drawValidation(val);
+
+  // UI chrome: fullscreen buttons, tabbed code panels
+  installFigureFullscreen();
+  installCodeTabs();
 })();

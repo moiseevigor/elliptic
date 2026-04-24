@@ -1,0 +1,137 @@
+{
+  "ellipj": {
+    "python": "import elliptic\nsn, cn, dn, am = elliptic.ellipj(0.5, 0.3)",
+    "matlab": "[sn, cn, dn, am] = ellipj(0.5, 0.3);",
+    "output": "sn = 0.4742    cn = 0.8804    dn = 0.9657    am = 0.4941"
+  },
+  "ellipji": {
+    "python": "import elliptic\nsni, cni, dni = elliptic.ellipji(0.4 + 0.3j, 0.7)",
+    "matlab": "[sni, cni, dni] = ellipji(0.4 + 0.3i, 0.7);",
+    "output": "sni = 0.4096+0.2669i\ncni = 0.9573-0.1142i\ndni = 0.9688-0.0790i"
+  },
+  "jacobiThetaEta": {
+    "python": "import elliptic\nTh, H = elliptic.jacobiThetaEta(0.3, 0.5)",
+    "matlab": "[Th, H] = jacobiThetaEta(0.3, 0.5);",
+    "output": "Th = 0.9245    H = 0.2281"
+  },
+  "theta": {
+    "python": "import elliptic\nTh3 = elliptic.theta(3, 0.3, 0.5)   # type=3",
+    "matlab": "Th3 = theta(3, 0.3, 0.5);   % type=3",
+    "output": "Th3 = 1.0713"
+  },
+  "elliptic12": {
+    "python": "import numpy as np, elliptic\nF, E, Z = elliptic.elliptic12(np.pi/4, 0.5)",
+    "matlab": "[F, E, Z] = elliptic12(pi/4, 0.5);",
+    "output": "F = 0.8260    E = 0.7482    Z = 0.1465"
+  },
+  "elliptic12i": {
+    "python": "import elliptic\nFi, Ei, Zi = elliptic.elliptic12i(0.4 + 0.3j, 0.7)",
+    "matlab": "[Fi, Ei, Zi] = elliptic12i(0.4 + 0.3i, 0.7);",
+    "output": "Fi = 0.3944+0.3136i\nEi = 0.4048+0.2863i\nZi = 0.1688+0.0987i"
+  },
+  "elliptic3": {
+    "python": "import numpy as np, elliptic\nPi = elliptic.elliptic3(np.pi/4, 0.5, 0.3)   # Pi(phi,m,n)",
+    "matlab": "Pi = elliptic3(pi/4, 0.5, 0.3);   % Pi(phi,m,n)",
+    "output": "Pi = 0.8777"
+  },
+  "inverselliptic2": {
+    "python": "import elliptic\n# Given E(phi=0.6, m=0.4), recover phi:\n_, E_val, _ = elliptic.elliptic12(0.6, 0.4)\nphi_back = elliptic.inverselliptic2(E_val, 0.4)",
+    "matlab": "% Given E(phi=0.6, m=0.4), recover phi:\n[~, E_val, ~] = elliptic12(0.6, 0.4);\nphi_back = inverselliptic2(E_val, 0.4);",
+    "output": "E_val = 0.5863    phi_back = 0.6000   (= 0.6)"
+  },
+  "carlsonRF": {
+    "python": "import elliptic\n# R_F(0, 1-m, 1) equals the complete K(m).\nRF = elliptic.carlsonRF(0.0, 0.5, 1.0)   # m = 0.5",
+    "matlab": "% R_F(0, 1-m, 1) equals the complete K(m).\nRF = carlsonRF(0.0, 0.5, 1.0);   % m = 0.5",
+    "output": "RF = 1.854075   (= K(0.5))"
+  },
+  "carlsonRD": {
+    "python": "import elliptic\nRD = elliptic.carlsonRD(0.0, 0.5, 1.0)   # m = 0.5",
+    "matlab": "RD = carlsonRD(0.0, 0.5, 1.0);   % m = 0.5",
+    "output": "RD = 3.020585   (= 3·D(0.5))"
+  },
+  "carlsonRJ": {
+    "python": "import elliptic\nRJ = elliptic.carlsonRJ(0.0, 0.5, 1.0, 0.7)",
+    "matlab": "RJ = carlsonRJ(0.0, 0.5, 1.0, 0.7);",
+    "output": "RJ = 3.963021"
+  },
+  "carlsonRC": {
+    "python": "import elliptic\n# R_C(0, 1/4) = pi  (closed-form identity)\nRC = elliptic.carlsonRC(0.0, 0.25)",
+    "matlab": "% R_C(0, 1/4) = pi  (closed-form identity)\nRC = carlsonRC(0.0, 0.25);",
+    "output": "RC = 3.1415926536   (= pi)"
+  },
+  "weierstrassInvariants": {
+    "python": "import elliptic\ng2, g3, Delta = elliptic.weierstrassInvariants(2.0, 0.5, -2.5)",
+    "matlab": "[g2, g3, Delta] = weierstrassInvariants(2.0, 0.5, -2.5);",
+    "output": "g2 = 21.0000    g3 = -10.0000    Delta = 6561.0000"
+  },
+  "weierstrassP": {
+    "python": "import elliptic\nP = elliptic.weierstrassP(0.4, 2.0, 0.5, -2.5)",
+    "matlab": "P = weierstrassP(0.4, 2.0, 0.5, -2.5);",
+    "output": "P = 6.4103"
+  },
+  "weierstrassPPrime": {
+    "python": "import elliptic\ndP = elliptic.weierstrassPPrime(0.4, 2.0, 0.5, -2.5)",
+    "matlab": "dP = weierstrassPPrime(0.4, 2.0, 0.5, -2.5);",
+    "output": "dP = -30.4800"
+  },
+  "weierstrassZeta": {
+    "python": "import elliptic\nZw = elliptic.weierstrassZeta(0.4, 2.0, 0.5, -2.5)",
+    "matlab": "Zw = weierstrassZeta(0.4, 2.0, 0.5, -2.5);",
+    "output": "Zw = 2.4782"
+  },
+  "weierstrassSigma": {
+    "python": "import elliptic\nSw = elliptic.weierstrassSigma(0.4, 2.0, 0.5, -2.5)",
+    "matlab": "Sw = weierstrassSigma(0.4, 2.0, 0.5, -2.5);",
+    "output": "Sw = 0.3991"
+  },
+  "ellipticBDJ": {
+    "python": "import numpy as np, elliptic\nB, D, J = elliptic.ellipticBDJ(np.pi/4, 0.5, 0.3)",
+    "matlab": "[B, D, J] = ellipticBDJ(pi/4, 0.5, 0.3);",
+    "output": "B = 0.6704    D = 0.1557    J = 0.1723"
+  },
+  "ellipticBD": {
+    "python": "import elliptic, numpy as np\nB, D, S = elliptic.ellipticBD(np.array([0.5]))   # complete at m=0.5",
+    "matlab": "[B, D, S] = ellipticBD(0.5);   % complete at m=0.5",
+    "output": "B = 0.8472    D = 1.0069    S = 0.3193"
+  },
+  "jacobiEDJ": {
+    "python": "import elliptic\nEu, Du, Ju = elliptic.jacobiEDJ(0.5, 0.3, 0.2)",
+    "matlab": "[Eu, Du, Ju] = jacobiEDJ(0.5, 0.3, 0.2);",
+    "output": "Eu = 0.4883    Du = 0.0391    Ju = 0.0402"
+  },
+  "cel": {
+    "python": "import numpy as np, elliptic\nkc = np.sqrt(1 - 0.5)   # m = 0.5\nC = elliptic.cel(kc, 1.0, 1.0, 1.0)   # collapses to K(m)",
+    "matlab": "kc = sqrt(1 - 0.5);   % m = 0.5\nC = cel(kc, 1.0, 1.0, 1.0);   % collapses to K(m)",
+    "output": "C = 1.854075   (= K(0.5))"
+  },
+  "cel1": {
+    "python": "import numpy as np, elliptic\nK = elliptic.cel1(np.sqrt(1 - 0.5))   # = K(0.5)",
+    "matlab": "K = cel1(sqrt(1 - 0.5));   % = K(0.5)",
+    "output": "K = 1.854075"
+  },
+  "cel2": {
+    "python": "import numpy as np, elliptic\nE = elliptic.cel2(np.sqrt(1 - 0.5), 1.0, 1 - 0.5)   # = E(0.5)",
+    "matlab": "E = cel2(sqrt(1 - 0.5), 1.0, 1 - 0.5);   % = E(0.5)",
+    "output": "E = 1.350644"
+  },
+  "cel3": {
+    "python": "import numpy as np, elliptic\nPi = elliptic.cel3(np.sqrt(1 - 0.5), 1 - 0.3)   # = Pi(0.3 | 0.5)",
+    "matlab": "Pi = cel3(sqrt(1 - 0.5), 1 - 0.3);   % = Pi(0.3 | 0.5)",
+    "output": "Pi = 2.250377"
+  },
+  "agm": {
+    "python": "import numpy as np, elliptic\na = elliptic.agm(1.0, np.sqrt(1 - 0.5))   # = pi / (2 K(0.5))",
+    "matlab": "a = agm(1.0, sqrt(1 - 0.5));   % = pi / (2 K(0.5))",
+    "output": "a = 0.847213"
+  },
+  "nomeq": {
+    "python": "import elliptic\nq = elliptic.nomeq(0.5)   # nome q(m)",
+    "matlab": "q = nomeq(0.5);   % nome q(m)",
+    "output": "q = 0.043214"
+  },
+  "inversenomeq": {
+    "python": "import elliptic\nm = elliptic.inversenomeq(0.1)   # valid for q ≤ 0.6",
+    "matlab": "m = inversenomeq(0.1);   % valid for q ≤ 0.6",
+    "output": "m = 0.802403"
+  }
+}

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "elliptic-functions"
-version = "4.0.2"
+version = "4.1.0"
 description = "Elliptic integrals and functions — NumPy, PyTorch, JAX"
 readme = "README.md"
 requires-python = ">=3.10"

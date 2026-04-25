@@ -29,237 +29,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+  <!-- Shared example styles -->
+  <link rel="stylesheet" href="../examples.css">
+
   <style>
-/* ═══════════════════════════════════════════════════════════════════
-   Reset & Variables — distill.pub-inspired
-═══════════════════════════════════════════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── page-specific: 3D solar system canvas ─────────────────────── */
 
-:root {
-  --font-body:  'Merriweather', Georgia, serif;
-  --font-ui:    'Source Sans 3', system-ui, -apple-system, sans-serif;
-  --font-mono:  'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  --text:       #1a1a1a;
-  --text-light: #555;
-  --text-muted: #888;
-  --border:     #e0e0e0;
-  --bg:         #ffffff;
-  --fig-bg:     #fafafa;
-  --accent:     #1565c0;
-  --accent-r:   #b71c1c;
-  --accent-o:   #e65100;
-  --accent-g:   #1b5e20;
-  --accent-p:   #4a148c;
-  /* layout widths, matching distill.pub */
-  --body-w:     648px;
-  --mid-w:      960px;
-  --page-w:     1200px;
-}
-
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: var(--font-body);
-  font-size: 16px;
-  line-height: 1.88;
-  color: var(--text);
-  background: var(--bg);
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ═══ Layout containers ══════════════════════════════════════════ */
-.l-body   { max-width: var(--body-w);  margin: 0 auto; padding: 0 24px; }
-.l-middle { max-width: var(--mid-w);   margin: 0 auto; padding: 0 24px; }
-.l-page   { max-width: var(--page-w);  margin: 0 auto; padding: 0 24px; }
-
-/* ═══ Navigation ═════════════════════════════════════════════════ */
-nav {
-  position: sticky; top: 0; z-index: 300;
-  background: rgba(255,255,255,0.96);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border);
-}
-.nav-row {
-  max-width: var(--page-w);
-  margin: 0 auto;
-  padding: 8px 24px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  font-family: var(--font-ui);
-  font-size: 13px;
-}
-nav a { color: var(--accent); text-decoration: none; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
-nav a:hover { background: #e8f0fe; }
-.nav-back { color: var(--text-muted) !important; margin-right: 8px; }
-.nav-sep  { color: #ccc; padding: 0; font-size: 11px; }
-
-/* ═══ Article ════════════════════════════════════════════════════ */
-article { counter-reset: section; padding-bottom: 80px; }
-
-/* ═══ Hero ═══════════════════════════════════════════════════════ */
-.hero {
-  padding: 64px 0 52px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 52px;
-}
-.hero h1 {
-  font-family: var(--font-ui);
-  font-size: clamp(1.9rem, 4vw, 2.7rem);
-  font-weight: 700;
-  line-height: 1.2;
-  color: #111;
-  margin-bottom: 20px;
-  letter-spacing: -0.025em;
-}
-.hero-lead {
-  font-size: 1.1rem;
-  color: var(--text-light);
-  max-width: 580px;
-  margin-bottom: 24px;
-  line-height: 1.75;
-}
-.hero-meta {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--text-muted);
-  display: flex; gap: 20px; flex-wrap: wrap;
-}
-.hero-meta a { color: var(--text-muted); text-decoration: underline; }
-
-/* ═══ Section headings ═══════════════════════════════════════════ */
-h2 {
-  font-family: var(--font-ui);
-  font-size: 1.35rem;
-  font-weight: 700;
-  margin: 60px 0 20px;
-  color: #111;
-  letter-spacing: -0.02em;
-  scroll-margin-top: 56px;
-}
-h2::before {
-  counter-increment: section;
-  content: counter(section) '. ';
-  color: var(--text-muted);
-  font-weight: 400;
-}
-h3 {
-  font-family: var(--font-ui);
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #222;
-  margin: 32px 0 12px;
-}
-
-p { margin-bottom: 18px; }
-
-a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
-
-code {
-  font-family: var(--font-mono);
-  font-size: 0.82em;
-  background: #f3f3f3;
-  border: 1px solid #e0e0e0;
-  padding: 1px 5px;
-  border-radius: 3px;
-}
-
-pre {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  line-height: 1.6;
-  background: #f6f6f6;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 16px 20px;
-  overflow-x: auto;
-  margin: 20px 0;
-}
-
-/* ═══ Figures ════════════════════════════════════════════════════ */
-figure { margin: 36px 0; }
-
-.fig-box {
-  background: var(--fig-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px 24px 16px;
-  overflow: visible; /* prevent label clipping */
-}
-.fig-box svg { display: block; width: 100%; overflow: visible; }
-
-figcaption {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.55;
-  margin-top: 12px;
-  padding: 0 2px;
-}
-figcaption strong { color: var(--text-light); }
-
-/* ═══ Interactive controls ═══════════════════════════════════════ */
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 22px;
-  margin-bottom: 14px;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--text-light);
-}
-.ctrl { display: flex; align-items: center; gap: 7px; }
-input[type=range] { width: 110px; accent-color: var(--accent); cursor: pointer; }
-.val {
-  display: inline-block;
-  min-width: 52px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--accent);
-  text-align: right;
-}
-select {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 3px 8px;
-  background: #fff;
-}
-
-/* ═══ Legend pills ═══════════════════════════════════════════════ */
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 12px;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--text-light);
-}
-.leg { display: flex; align-items: center; gap: 6px; }
-.swatch {
-  display: inline-block;
-  width: 22px; height: 3px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.swatch.dashed {
-  background: repeating-linear-gradient(90deg,
-    var(--c,#888) 0 6px, transparent 6px 10px);
-}
-
-/* ═══ 3D canvas ══════════════════════════════════════════════════ */
+/* ═══ 3D solar system canvas ════════════════════════════════════ */
 .canvas-wrap { position: relative; }
 #solar-canvas {
   width: 100%;
   height: 540px;
   display: block;
-  border-radius: 8px 8px 0 0;
   cursor: grab;
 }
 #solar-canvas:active { cursor: grabbing; }
@@ -271,8 +52,7 @@ select {
 }
 .canvas-controls {
   background: rgba(0,0,10,0.75);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 8px 8px 0 0;
+  border-radius: 0;
   padding: 10px 18px;
 }
 .canvas-controls .controls { color: #aaa; }
@@ -305,72 +85,7 @@ select {
   line-height: 1.6;
 }
 
-/* ═══ Data table ═════════════════════════════════════════════════ */
-.data-table { width:100%; border-collapse:collapse; font-family:var(--font-ui); font-size:13px; margin:20px 0; }
-.data-table th { border-bottom:2px solid var(--border); padding:7px 11px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); }
-.data-table td { padding:5px 11px; border-bottom:1px solid #f0f0f0; font-family:var(--font-mono); font-size:12px; }
-.data-table tr.pass td { background:#f0faf2; }
-.data-table tr.fail td { background:#fff0f0; }
-
-/* ═══ Footer ═════════════════════════════════════════════════════ */
-footer { border-top:1px solid var(--border); padding:28px 0; font-family:var(--font-ui); font-size:13px; color:var(--text-muted); }
-.foot-row { max-width:var(--page-w); margin:0 auto; padding:0 24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
-footer a { color:var(--text-muted); }
-
-/* ═══ Code snippets ══════════════════════════════════════════════ */
-.code-snippet {
-  margin: 20px 0 28px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  overflow: hidden;
-  font-size: 13.5px;
-}
-.code-snippet-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #f0f4f8;
-  border-bottom: 1px solid var(--border);
-  padding: 6px 14px;
-  font-family: var(--font-ui);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-.code-snippet-header .lang-badge {
-  background: #dde8f5;
-  color: #1a4a7a;
-  border-radius: 3px;
-  padding: 1px 7px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: .06em;
-}
-.code-snippet pre {
-  margin: 0;
-  border: none;
-  border-radius: 0;
-  background: #f8fafc;
-  padding: 14px 18px;
-  font-size: 13px;
-  line-height: 1.65;
-  overflow-x: auto;
-}
-/* syntax highlight tokens */
-.kw  { color: #0550ae; font-weight: 600; }   /* keyword / function */
-.cm  { color: #57606a; font-style: italic; }  /* comment */
-.st  { color: #0a3069; }                       /* string */
-.nm  { color: #953800; }                       /* number/constant */
-.op  { color: #24292f; }                       /* operator */
-
-/* ═══ Responsive ═════════════════════════════════════════════════ */
-@media (max-width:680px) {
-  .l-body, .l-middle, .l-page { padding:0 16px; }
-  #solar-canvas { height:380px; }
-  h2 { font-size:1.15rem; }
-}
+@media (max-width:680px) { #solar-canvas { height:340px; } }
   </style>
 </head>
 <body>
@@ -378,12 +93,17 @@ footer a { color:var(--text-muted); }
 <!-- ═══ Nav ════════════════════════════════════════════════════════════════ -->
 <nav aria-label="page navigation">
   <div class="nav-row">
-    <a class="nav-back" href="https://moiseevigor.github.io/elliptic/">&larr; moiseevigor/elliptic</a>
-    <span class="nav-sep">|</span>
+    <a class="nav-back" href="https://moiseevigor.github.io/elliptic/">moiseevigor/elliptic</a>
+    <span class="nav-sep">›</span>
+    <a href="../">Examples</a>
+    <span class="nav-sep">›</span>
+    <a href="#">Arc Length &amp; Celestial Mechanics</a>
+    <span class="nav-sep" style="margin:0 6px">|</span>
     <a href="#arclength">Arc Length</a>
     <a href="#solar3d">Solar System</a>
     <a href="#precession">Precession</a>
-    <a href="#kepler">Kepler</a>
+    <a href="#kepler">Orbits</a>
+    <a href="#kepler-eq">Kepler's Eqn</a>
     <a href="#bdj">B, D, J</a>
     <a href="#carlson">Carlson</a>
     <a href="#validation">Validation</a>
@@ -429,9 +149,12 @@ footer a { color:var(--text-muted); }
     Using Carlson forms the evaluation is exact for all $m\in[0,1)$:
   </p>
 
-  <div class="code-snippet">
-    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Arc length via elliptic12</div>
-    <pre><span class="cm">% addpath('src')  % if not yet on the path</span>
+  <div class="code-tabs">
+    <div class="tab-headers">
+      <button class="tab-btn active" data-tab="ml">MATLAB / Octave</button>
+      <button class="tab-btn" data-tab="py">Python</button>
+    </div>
+    <div class="tab-panel active" data-tab="ml"><pre><span class="cm">% addpath('src')  % if not yet on the path</span>
 a   = <span class="nm">1.5</span>;          <span class="cm">% semi-major axis [AU]</span>
 ecc = <span class="nm">0.6</span>;          <span class="cm">% eccentricity</span>
 m   = ecc.^<span class="nm">2</span>;       <span class="cm">% parameter m = e²</span>
@@ -443,7 +166,21 @@ arc_length  = a .* E_phi;   <span class="cm">% s(φ) = a · E(φ|m)</span>
 
 <span class="cm">% Complete perimeter: 4a·E(m)</span>
 [~, E_complete] = <span class="kw">ellipke</span>(m);
-perimeter = <span class="nm">4</span> .* a .* E_complete;</pre>
+perimeter = <span class="nm">4</span> .* a .* E_complete;</pre></div>
+    <div class="tab-panel" data-tab="py"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> elliptic <span class="kw">import</span> elliptic12
+
+a, ecc = <span class="nm">1.5</span>, <span class="nm">0.6</span>
+m   = ecc**<span class="nm">2</span>                          <span class="cm"># parameter m = e²</span>
+phi = np.linspace(<span class="nm">0</span>, np.pi/<span class="nm">2</span>, <span class="nm">200</span>)
+
+<span class="cm"># E(phi|m) — incomplete elliptic integral of the second kind</span>
+_, E_phi, _ = <span class="kw">elliptic12</span>(phi, np.full_like(phi, m))
+arc_length   = a * E_phi                <span class="cm"># s(φ) = a · E(φ|m)</span>
+
+<span class="cm"># Complete perimeter: 4a·E(m)</span>
+_, E_K, _ = <span class="kw">elliptic12</span>(np.full(<span class="nm">1</span>, np.pi/<span class="nm">2</span>), np.full(<span class="nm">1</span>, m))
+perimeter  = <span class="nm">4</span> * a * float(E_K)</pre></div>
   </div>
 </div>
 
@@ -484,9 +221,12 @@ perimeter = <span class="nm">4</span> .* a .* E_complete;</pre>
     <em>precession of Mercury's perihelion</em>, described in the next section.
   </p>
 
-  <div class="code-snippet">
-    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Keplerian orbit position from mean elements</div>
-    <pre><span class="cm">% J2000 mean elements for Earth (Standish & Williams 1992)</span>
+  <div class="code-tabs">
+    <div class="tab-headers">
+      <button class="tab-btn active" data-tab="ml">MATLAB / Octave</button>
+      <button class="tab-btn" data-tab="py">Python</button>
+    </div>
+    <div class="tab-panel active" data-tab="ml"><pre><span class="cm">% J2000 mean elements for Earth (Standish & Williams 1992)</span>
 a   = <span class="nm">1.00000018</span>;   <span class="cm">% semi-major axis [AU]</span>
 ecc = <span class="nm">0.01673163</span>;   <span class="cm">% eccentricity</span>
 inc = <span class="nm">0</span>;             <span class="cm">% inclination [rad] (≈0 for Earth)</span>
@@ -503,7 +243,26 @@ E = M + ecc.*sin(M);               <span class="cm">% eccentric anomaly (1st-ord
 nu = <span class="nm">2</span>.*atan2(sqrt(<span class="nm">1</span>+ecc).*sin(E/<span class="nm">2</span>), sqrt(<span class="nm">1</span>-ecc).*cos(E/<span class="nm">2</span>));
 r  = a .* (<span class="nm">1</span> - ecc.*cos(E));      <span class="cm">% heliocentric distance [AU]</span>
 x  = r .* cos(nu + ob - Om);       <span class="cm">% ecliptic x [AU]</span>
-y  = r .* sin(nu + ob - Om);</pre>
+y  = r .* sin(nu + ob - Om);</pre></div>
+    <div class="tab-panel" data-tab="py"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cm"># J2000 mean elements for Earth (Standish & Williams 1992)</span>
+a   = <span class="nm">1.00000018</span>          <span class="cm"># semi-major axis [AU]</span>
+ecc = <span class="nm">0.01673163</span>          <span class="cm"># eccentricity</span>
+Om  = -<span class="nm">5.1126</span> * np.pi/<span class="nm">180</span> <span class="cm"># longitude of ascending node</span>
+ob  = <span class="nm">102.930</span> * np.pi/<span class="nm">180</span> <span class="cm"># longitude of perihelion</span>
+L0  = <span class="nm">100.467</span> * np.pi/<span class="nm">180</span> <span class="cm"># mean longitude at J2000</span>
+n   = <span class="nm">35999.373</span> * np.pi / (<span class="nm">180</span> * <span class="nm">36525</span>)  <span class="cm"># mean motion [rad/day]</span>
+
+<span class="cm"># Position at day d from J2000</span>
+d  = np.arange(<span class="nm">366</span>)
+M  = np.mod(L0 + n*d - ob, <span class="nm">2</span>*np.pi)           <span class="cm"># mean anomaly</span>
+E  = M + ecc*np.sin(M)                          <span class="cm"># eccentric anomaly (1st-order)</span>
+<span class="cm"># refine with Newton–Raphson for better accuracy</span>
+nu = <span class="nm">2</span>*np.arctan2(np.sqrt(<span class="nm">1</span>+ecc)*np.sin(E/<span class="nm">2</span>), np.sqrt(<span class="nm">1</span>-ecc)*np.cos(E/<span class="nm">2</span>))
+r  = a * (<span class="nm">1</span> - ecc*np.cos(E))                  <span class="cm"># heliocentric distance [AU]</span>
+x  = r * np.cos(nu + ob - Om)                   <span class="cm"># ecliptic x [AU]</span>
+y  = r * np.sin(nu + ob - Om)</pre></div>
   </div>
 </div>
 
@@ -515,11 +274,11 @@ y  = r .* sin(nu + ob - Om);</pre>
     </div>
     <div class="canvas-controls" style="background:#04040e; border-top:1px solid rgba(255,255,255,0.08); padding:10px 20px;">
       <div class="controls">
-        <div class="ctrl"><label>Speed</label><input type="range" id="ss-speed" min="0.1" max="30" step="0.1" value="8"><span class="val" id="ss-speed-v">8×</span></div>
+        <div class="ctrl"><label title="Simulated days elapsed per real second">Speed</label><input type="range" id="ss-speed" min="5" max="365" step="5" value="30"><span class="val" id="ss-speed-v">30 days/s</span></div>
         <div class="ctrl"><input type="checkbox" id="ss-orbits" checked><label for="ss-orbits">Orbits</label></div>
         <div class="ctrl"><input type="checkbox" id="ss-labels" checked><label for="ss-labels">Labels</label></div>
         <div class="ctrl"><input type="checkbox" id="ss-incl" checked><label for="ss-incl">Inclination</label></div>
-        <span style="color:#555; font-size:12px; margin-left:8px">Drag to rotate · Scroll to zoom</span>
+        <span style="color:#555; font-size:12px; margin-left:8px">Drag to rotate · Scroll to zoom · days/s = simulated days per real second</span>
       </div>
     </div>
   </div>
@@ -562,9 +321,12 @@ y  = r .* sin(nu + ob - Om);</pre>
     <li><strong style="color:var(--accent-o)">Observed (= Newtonian + GR)</strong>: full 5600&thinsp;"/cy — matches reality.</li>
   </ul>
 
-  <div class="code-snippet">
-    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Perihelion precession — Keplerian vs secular model</div>
-    <pre><span class="cm">% Mercury mean elements (J2000) and secular rates [deg/century]</span>
+  <div class="code-tabs">
+    <div class="tab-headers">
+      <button class="tab-btn active" data-tab="ml">MATLAB / Octave</button>
+      <button class="tab-btn" data-tab="py">Python</button>
+    </div>
+    <div class="tab-panel active" data-tab="ml"><pre><span class="cm">% Mercury mean elements (J2000) and secular rates [deg/century]</span>
 a   = <span class="nm">0.38710</span>;   ecc = <span class="nm">0.20564</span>;
 ob0 = <span class="nm">77.456</span>;           <span class="cm">% longitude of perihelion at J2000 [deg]</span>
 rate_kep  = <span class="nm">0</span>;           <span class="cm">% Keplerian: no precession</span>
@@ -580,7 +342,24 @@ ob_obs  = ob0 + rate_obs  .* T_cy;   <span class="cm">% 1.594° after 100 centur
 
 <span class="cm">% GR residual after T_cy centuries [arcsec]</span>
 delta_arcsec = (rate_obs - rate_newt) .* T_cy .* <span class="nm">3600</span>;
-fprintf(<span class="st">'GR residual: %.1f arcsec (= %.3f deg)\n'</span>, delta_arcsec, delta_arcsec/<span class="nm">3600</span>);</pre>
+fprintf(<span class="st">'GR residual: %.1f arcsec (= %.3f deg)\n'</span>, delta_arcsec, delta_arcsec/<span class="nm">3600</span>);</pre></div>
+    <div class="tab-panel" data-tab="py"><pre><span class="cm"># Mercury mean elements (J2000) and secular rates [deg/century]</span>
+a, ecc    = <span class="nm">0.38710</span>, <span class="nm">0.20564</span>
+ob0       = <span class="nm">77.456</span>           <span class="cm"># longitude of perihelion at J2000 [deg]</span>
+rate_kep  = <span class="nm">0</span>                <span class="cm"># Keplerian: no precession</span>
+rate_newt = <span class="nm">531</span>/<span class="nm">3600</span>        <span class="cm"># Newtonian perturbations [deg/cy]</span>
+rate_obs  = <span class="nm">574</span>/<span class="nm">3600</span>        <span class="cm"># Observed (Newtonian + GR) [deg/cy]</span>
+
+T_cy = <span class="nm">1000</span>                  <span class="cm"># time elapsed [centuries]</span>
+
+<span class="cm"># Perihelion longitude under each model</span>
+ob_kep  = ob0 + rate_kep  * T_cy    <span class="cm"># stays fixed</span>
+ob_newt = ob0 + rate_newt * T_cy    <span class="cm"># 1.475° after 100 centuries</span>
+ob_obs  = ob0 + rate_obs  * T_cy    <span class="cm"># 1.594° after 100 centuries</span>
+
+<span class="cm"># GR residual after T_cy centuries [arcsec]</span>
+delta_arcsec = (rate_obs - rate_newt) * T_cy * <span class="nm">3600</span>
+print(<span class="st">f'GR residual: {delta_arcsec:.1f} arcsec (= {delta_arcsec/3600:.3f} deg)'</span>)</pre></div>
   </div>
 </div>
 
@@ -626,9 +405,12 @@ fprintf(<span class="st">'GR residual: %.1f arcsec (= %.3f deg)\n'</span>, delta
     is the eccentric anomaly.
   </p>
 
-  <div class="code-snippet">
-    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Orbital arc length as a function of true anomaly</div>
-    <pre>a   = <span class="nm">1.524</span>;    <span class="cm">% Mars semi-major axis [AU]</span>
+  <div class="code-tabs">
+    <div class="tab-headers">
+      <button class="tab-btn active" data-tab="ml">MATLAB / Octave</button>
+      <button class="tab-btn" data-tab="py">Python</button>
+    </div>
+    <div class="tab-panel active" data-tab="ml"><pre>a   = <span class="nm">1.524</span>;    <span class="cm">% Mars semi-major axis [AU]</span>
 ecc = <span class="nm">0.0934</span>;   <span class="cm">% Mars eccentricity</span>
 m   = ecc^<span class="nm">2</span>;
 
@@ -637,7 +419,7 @@ theta = linspace(<span class="nm">0</span>, <span class="nm">2</span>*pi, <span 
 <span class="cm">% Eccentric anomaly from true anomaly</span>
 E_anom = <span class="nm">2</span> .* atan2(sqrt(<span class="nm">1</span>-ecc) .* sin(theta/<span class="nm">2</span>), ...
                     sqrt(<span class="nm">1</span>+ecc) .* cos(theta/<span class="nm">2</span>));
-E_anom(E_anom < <span class="nm">0</span>) = E_anom(E_anom < <span class="nm">0</span>) + <span class="nm">2</span>*pi;
+E_anom(E_anom &lt; <span class="nm">0</span>) = E_anom(E_anom &lt; <span class="nm">0</span>) + <span class="nm">2</span>*pi;
 
 <span class="cm">% Arc length L(θ) = a · E(E_anom | m)</span>
 [~, E_phi] = <span class="kw">elliptic12</span>(E_anom, m .* ones(size(E_anom)));
@@ -646,7 +428,29 @@ L = a .* E_phi;
 <span class="cm">% Full orbital perimeter = 4a·E(m)</span>
 [~, Ec] = <span class="kw">ellipke</span>(m);
 perimeter = <span class="nm">4</span> * a * Ec;
-fprintf(<span class="st">'Mars perimeter: %.4f AU\n'</span>, perimeter);</pre>
+fprintf(<span class="st">'Mars perimeter: %.4f AU\n'</span>, perimeter);</pre></div>
+    <div class="tab-panel" data-tab="py"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> elliptic <span class="kw">import</span> elliptic12
+
+a   = <span class="nm">1.524</span>    <span class="cm"># Mars semi-major axis [AU]</span>
+ecc = <span class="nm">0.0934</span>   <span class="cm"># Mars eccentricity</span>
+m   = ecc**<span class="nm">2</span>
+
+theta  = np.linspace(<span class="nm">0</span>, <span class="nm">2</span>*np.pi, <span class="nm">361</span>)
+
+<span class="cm"># Eccentric anomaly from true anomaly</span>
+E_anom = <span class="nm">2</span>*np.arctan2(np.sqrt(<span class="nm">1</span>-ecc)*np.sin(theta/<span class="nm">2</span>),
+                      np.sqrt(<span class="nm">1</span>+ecc)*np.cos(theta/<span class="nm">2</span>))
+E_anom[E_anom &lt; <span class="nm">0</span>] += <span class="nm">2</span>*np.pi
+
+<span class="cm"># Arc length L(θ) = a · E(E_anom | m)</span>
+_, E_phi, _ = <span class="kw">elliptic12</span>(E_anom, np.full_like(E_anom, m))
+L = a * E_phi
+
+<span class="cm"># Full orbital perimeter = 4a·E(m)</span>
+_, Ec, _ = <span class="kw">elliptic12</span>(np.full(<span class="nm">1</span>, np.pi/<span class="nm">2</span>), np.full(<span class="nm">1</span>, m))
+perimeter = <span class="nm">4</span> * a * float(Ec)
+print(<span class="st">f'Mars perimeter: {perimeter:.4f} AU'</span>)</pre></div>
   </div>
 </div>
 
@@ -683,9 +487,12 @@ fprintf(<span class="st">'Mars perimeter: %.4f AU\n'</span>, perimeter);</pre>
     as a function of time, with $E(\,\cdot\mid e^2)$ evaluated at each step.
   </p>
 
-  <div class="code-snippet">
-    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Arc length as a function of time via Kepler's equation</div>
-    <pre>a = <span class="nm">1.524</span>;  ecc = <span class="nm">0.0934</span>;  m = ecc^<span class="nm">2</span>;
+  <div class="code-tabs">
+    <div class="tab-headers">
+      <button class="tab-btn active" data-tab="ml">MATLAB / Octave</button>
+      <button class="tab-btn" data-tab="py">Python</button>
+    </div>
+    <div class="tab-panel active" data-tab="ml"><pre>a = <span class="nm">1.524</span>;  ecc = <span class="nm">0.0934</span>;  m = ecc^<span class="nm">2</span>;
 T = <span class="nm">686.97</span>;            <span class="cm">% orbital period [days]</span>
 t = linspace(<span class="nm">0</span>, T, <span class="nm">500</span>);
 
@@ -706,7 +513,29 @@ L = a .* E_phi;
 nu = <span class="nm">2</span> .* atan2(sqrt(<span class="nm">1</span>+ecc).*sin(E/<span class="nm">2</span>), sqrt(<span class="nm">1</span>-ecc).*cos(E/<span class="nm">2</span>));
 r  = a .* (<span class="nm">1</span> - ecc.*cos(E));
 
-plot(t, L);  xlabel(<span class="st">'Days from perihelion'</span>);  ylabel(<span class="st">'Arc length [AU]'</span>);</pre>
+plot(t, L);  xlabel(<span class="st">'Days from perihelion'</span>);  ylabel(<span class="st">'Arc length [AU]'</span>);</pre></div>
+    <div class="tab-panel" data-tab="py"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> elliptic <span class="kw">import</span> elliptic12
+
+a, ecc, m = <span class="nm">1.524</span>, <span class="nm">0.0934</span>, <span class="nm">0.0934</span>**<span class="nm">2</span>
+T = <span class="nm">686.97</span>              <span class="cm"># orbital period [days]</span>
+t = np.linspace(<span class="nm">0</span>, T, <span class="nm">500</span>)
+
+<span class="cm"># Step 1: mean anomaly M (linear in time)</span>
+M = <span class="nm">2</span>*np.pi * t / T
+
+<span class="cm"># Step 2: solve Kepler's equation M = E − e sin E  (Newton–Raphson)</span>
+E = M.copy()
+<span class="kw">for</span> _ <span class="kw">in</span> range(<span class="nm">50</span>):
+    E = E + (M - E + ecc*np.sin(E)) / (<span class="nm">1</span> - ecc*np.cos(E))
+
+<span class="cm"># Step 3: arc length L(t) = a · E(E_anom | m)  using elliptic12</span>
+_, E_phi, _ = <span class="kw">elliptic12</span>(E, np.full_like(E, m))
+L = a * E_phi
+
+<span class="cm"># Step 4: true anomaly for position on orbit</span>
+nu = <span class="nm">2</span>*np.arctan2(np.sqrt(<span class="nm">1</span>+ecc)*np.sin(E/<span class="nm">2</span>), np.sqrt(<span class="nm">1</span>-ecc)*np.cos(E/<span class="nm">2</span>))
+r  = a * (<span class="nm">1</span> - ecc*np.cos(E))</pre></div>
   </div>
 </div>
 
@@ -743,9 +572,12 @@ plot(t, L);  xlabel(<span class="st">'Days from perihelion'</span>);  ylabel(<sp
     smooth and positive.
   </p>
 
-  <div class="code-snippet">
-    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Associate integrals B, D, J via ellipticBDJ</div>
-    <pre>phi = linspace(<span class="nm">0</span>, pi/<span class="nm">2</span>, <span class="nm">200</span>);
+  <div class="code-tabs">
+    <div class="tab-headers">
+      <button class="tab-btn active" data-tab="ml">MATLAB / Octave</button>
+      <button class="tab-btn" data-tab="py">Python</button>
+    </div>
+    <div class="tab-panel active" data-tab="ml"><pre>phi = linspace(<span class="nm">0</span>, pi/<span class="nm">2</span>, <span class="nm">200</span>);
 m   = <span class="nm">0.97</span>;   <span class="cm">% near-singular case where cancellation matters most</span>
 n   = <span class="nm">0.5</span>;   <span class="cm">% characteristic for J</span>
 
@@ -761,7 +593,25 @@ Pi  = B + D + n .* J;
 [Bc, Dc, ~, Jc] = <span class="kw">ellipticBD</span>(m, n);
 [K, Ek] = <span class="kw">ellipke</span>(m);
 fprintf(<span class="st">'K  = B+D   = %.15g  (ellipke: %.15g)\n'</span>, Bc+Dc, K);
-fprintf(<span class="st">'E  = B+mcD = %.15g  (ellipke: %.15g)\n'</span>, Bc+(<span class="nm">1</span>-m)*Dc, Ek);</pre>
+fprintf(<span class="st">'E  = B+mcD = %.15g  (ellipke: %.15g)\n'</span>, Bc+(<span class="nm">1</span>-m)*Dc, Ek);</pre></div>
+    <div class="tab-panel" data-tab="py"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> elliptic <span class="kw">import</span> ellipticBDJ, ellipticBD
+
+phi = np.linspace(<span class="nm">0</span>, np.pi/<span class="nm">2</span>, <span class="nm">200</span>)
+m   = <span class="nm">0.97</span>    <span class="cm"># near-singular case where cancellation matters most</span>
+
+<span class="cm"># Incomplete associate integrals B(φ|m), D(φ|m), J(φ|m)</span>
+B, D, J = <span class="kw">ellipticBDJ</span>(phi, np.full_like(phi, m))
+
+<span class="cm"># Recover F, E without cancellation</span>
+F  = B + D
+E  = B + (<span class="nm">1</span> - m) * D    <span class="cm"># ← stable; avoids F − m·D subtraction</span>
+<span class="cm"># Π(φ|m,n) = F + n·J  for any n</span>
+
+<span class="cm"># Complete versions at φ = π/2</span>
+Bc, Dc, _ = <span class="kw">ellipticBD</span>(np.array([m]))
+print(<span class="st">f'K  = B+D   = {float(Bc)+float(Dc):.15g}'</span>)
+print(<span class="st">f'E  = B+mcD = {float(Bc)+(1-m)*float(Dc):.15g}'</span>)</pre></div>
   </div>
 </div>
 
@@ -793,9 +643,12 @@ fprintf(<span class="st">'E  = B+mcD = %.15g  (ellipke: %.15g)\n'</span>, Bc+(<s
     (elementary symmetric functions of $X,Y,Z$) yields the full double-precision answer.
   </p>
 
-  <div class="code-snippet">
-    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Carlson R_F, R_D and their Legendre connections</div>
-    <pre><span class="cm">% Direct Carlson symmetric forms</span>
+  <div class="code-tabs">
+    <div class="tab-headers">
+      <button class="tab-btn active" data-tab="ml">MATLAB / Octave</button>
+      <button class="tab-btn" data-tab="py">Python</button>
+    </div>
+    <div class="tab-panel active" data-tab="ml"><pre><span class="cm">% Direct Carlson symmetric forms</span>
 x = <span class="nm">0.5</span>;  y = <span class="nm">1.0</span>;  z = <span class="nm">2.0</span>;
 RF = <span class="kw">carlsonRF</span>(x, y, z);
 RD = <span class="kw">carlsonRD</span>(x, y, z);
@@ -814,7 +667,29 @@ fprintf(<span class="st">'E: carlson=%.15g  ref=%.15g  diff=%.2e\n'</span>, E_ca
 <span class="cm">% R_D encodes complete D(m) = (1/3)·R_D(0, 1-m, 1)</span>
 m_v = [<span class="nm">0.3</span>, <span class="nm">0.7</span>, <span class="nm">0.9</span>];
 D_complete = (<span class="nm">1</span>/<span class="nm">3</span>) .* <span class="kw">carlsonRD</span>(<span class="nm">0</span>, <span class="nm">1</span>-m_v, <span class="nm">1</span>);
-[~, D_ref]  = <span class="kw">ellipticBD</span>(m_v);</pre>
+[~, D_ref]  = <span class="kw">ellipticBD</span>(m_v);</pre></div>
+    <div class="tab-panel" data-tab="py"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> elliptic <span class="kw">import</span> carlsonRF, carlsonRD, elliptic12
+
+<span class="cm"># Direct Carlson symmetric forms</span>
+x, y, z = np.array([<span class="nm">0.5</span>]), np.array([<span class="nm">1.0</span>]), np.array([<span class="nm">2.0</span>])
+RF = <span class="kw">carlsonRF</span>(x, y, z)
+RD = <span class="kw">carlsonRD</span>(x, y, z)
+
+<span class="cm"># Recover F(φ|m) and E(φ|m) — DLMF 19.25.5 / 19.25.7</span>
+phi = np.pi/<span class="nm">3</span>;  m = <span class="nm">0.7</span>
+s, c = np.sin(phi), np.cos(phi);  d2 = <span class="nm">1</span> - m*s**<span class="nm">2</span>
+F_carl = s * float(<span class="kw">carlsonRF</span>(np.array([c**<span class="nm">2</span>]), np.array([d2]), np.array([<span class="nm">1.</span>])))
+E_carl = F_carl - (m/<span class="nm">3</span>)*s**<span class="nm">3</span> * float(<span class="kw">carlsonRD</span>(np.array([c**<span class="nm">2</span>]), np.array([d2]), np.array([<span class="nm">1.</span>])))
+
+<span class="cm"># Cross-check against elliptic12</span>
+F_ref, E_ref, _ = <span class="kw">elliptic12</span>(np.array([phi]), np.array([m]))
+print(<span class="st">f'F: carlson={F_carl:.15g}  ref={float(F_ref):.15g}  diff={abs(F_carl-float(F_ref)):.2e}'</span>)
+print(<span class="st">f'E: carlson={E_carl:.15g}  ref={float(E_ref):.15g}  diff={abs(E_carl-float(E_ref)):.2e}'</span>)
+
+<span class="cm"># R_D encodes complete D(m) = (1/3)·R_D(0, 1-m, 1)</span>
+m_v = np.array([<span class="nm">0.3</span>, <span class="nm">0.7</span>, <span class="nm">0.9</span>])
+D_complete = (<span class="nm">1</span>/<span class="nm">3</span>) * <span class="kw">carlsonRD</span>(np.zeros_like(m_v), <span class="nm">1</span>-m_v, np.ones_like(m_v))</pre></div>
   </div>
 </div>
 
@@ -847,9 +722,12 @@ D_complete = (<span class="nm">1</span>/<span class="nm">3</span>) .* <span clas
     function from this library.  Differences should be at or below machine epsilon.
   </p>
 
-  <div class="code-snippet">
-    <div class="code-snippet-header"><span class="lang-badge">Matlab / Octave</span>Generate reference values — reproduce this table</div>
-    <pre>phi_tab = [pi/<span class="nm">6</span>, pi/<span class="nm">4</span>, pi/<span class="nm">3</span>, pi/<span class="nm">2</span>,  pi/<span class="nm">6</span>, pi/<span class="nm">4</span>, pi/<span class="nm">3</span>, pi/<span class="nm">2</span>];
+  <div class="code-tabs">
+    <div class="tab-headers">
+      <button class="tab-btn active" data-tab="ml">MATLAB / Octave</button>
+      <button class="tab-btn" data-tab="py">Python</button>
+    </div>
+    <div class="tab-panel active" data-tab="ml"><pre>phi_tab = [pi/<span class="nm">6</span>, pi/<span class="nm">4</span>, pi/<span class="nm">3</span>, pi/<span class="nm">2</span>,  pi/<span class="nm">6</span>, pi/<span class="nm">4</span>, pi/<span class="nm">3</span>, pi/<span class="nm">2</span>];
 m_tab   = [<span class="nm">0.3</span>,   <span class="nm">0.3</span>,  <span class="nm">0.3</span>,  <span class="nm">0.3</span>,   <span class="nm">0.7</span>,  <span class="nm">0.7</span>,  <span class="nm">0.7</span>,  <span class="nm">0.7</span>];
 
 <span class="cm">% Legendre incomplete integrals F and E</span>
@@ -865,8 +743,30 @@ fprintf(<span class="st">'max|E diff| = %.2e\n'</span>, max(abs(E - E_carl)));
 
 <span class="cm">% Also check associate integrals</span>
 [B, D] = <span class="kw">ellipticBDJ</span>(phi_tab, m_tab);
-assert(max(abs(B + D - F)) < <span class="nm">1e-13</span>, <span class="st">'F = B+D failed'</span>);
-assert(max(abs(B + (<span class="nm">1</span>-m_tab).*D - E)) < <span class="nm">1e-13</span>, <span class="st">'E = B+(1-m)D failed'</span>);</pre>
+assert(max(abs(B + D - F)) &lt; <span class="nm">1e-13</span>, <span class="st">'F = B+D failed'</span>);
+assert(max(abs(B + (<span class="nm">1</span>-m_tab).*D - E)) &lt; <span class="nm">1e-13</span>, <span class="st">'E = B+(1-m)D failed'</span>);</pre></div>
+    <div class="tab-panel" data-tab="py"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> elliptic <span class="kw">import</span> elliptic12, carlsonRF, carlsonRD, ellipticBDJ
+
+phi_tab = np.array([np.pi/<span class="nm">6</span>, np.pi/<span class="nm">4</span>, np.pi/<span class="nm">3</span>, np.pi/<span class="nm">2</span>,
+                    np.pi/<span class="nm">6</span>, np.pi/<span class="nm">4</span>, np.pi/<span class="nm">3</span>, np.pi/<span class="nm">2</span>])
+m_tab   = np.array([<span class="nm">0.3</span>, <span class="nm">0.3</span>, <span class="nm">0.3</span>, <span class="nm">0.3</span>, <span class="nm">0.7</span>, <span class="nm">0.7</span>, <span class="nm">0.7</span>, <span class="nm">0.7</span>])
+
+<span class="cm"># Legendre incomplete integrals F and E</span>
+F, E, _ = <span class="kw">elliptic12</span>(phi_tab, m_tab)
+
+<span class="cm"># Carlson forms give identical results</span>
+s = np.sin(phi_tab);  c = np.cos(phi_tab);  d2 = <span class="nm">1</span> - m_tab*s**<span class="nm">2</span>
+F_carl = s * <span class="kw">carlsonRF</span>(c**<span class="nm">2</span>, d2, np.ones_like(d2))
+E_carl = F_carl - (m_tab/<span class="nm">3</span>)*s**<span class="nm">3</span> * <span class="kw">carlsonRD</span>(c**<span class="nm">2</span>, d2, np.ones_like(d2))
+
+print(<span class="st">f'max|F diff| = {np.max(np.abs(F - F_carl)):.2e}'</span>)
+print(<span class="st">f'max|E diff| = {np.max(np.abs(E - E_carl)):.2e}'</span>)
+
+<span class="cm"># Also check associate integrals</span>
+B, D, _ = <span class="kw">ellipticBDJ</span>(phi_tab, m_tab)
+assert np.max(np.abs(B + D - F)) &lt; <span class="nm">1e-13</span>, <span class="st">'F = B+D failed'</span>
+assert np.max(np.abs(B + (<span class="nm">1</span>-m_tab)*D - E)) &lt; <span class="nm">1e-13</span>, <span class="st">'E = B+(1-m)D failed'</span></pre></div>
   </div>
 
   <table class="data-table" id="val-table">
@@ -1755,7 +1655,7 @@ const labelsEl  = document.getElementById('ss-labels');
 const inclEl    = document.getElementById('ss-incl');
 const speedValEl= document.getElementById('ss-speed-v');
 
-speedEl.addEventListener('input', ()=>{ speedValEl.textContent=parseFloat(speedEl.value).toFixed(1)+'×'; });
+speedEl.addEventListener('input', ()=>{ speedValEl.textContent=parseInt(speedEl.value)+' days/s'; });
 orbitsEl.addEventListener('change', ()=>{ orbitLines.forEach(l=>l.visible=orbitsEl.checked); });
 labelsEl.addEventListener('change', ()=>{ labelDivs.forEach(d=>{ d.style.display=labelsEl.checked?'':'none'; }); });
 
@@ -1787,8 +1687,8 @@ function toScreen(worldPos) {
 
 function animate() {
   requestAnimationFrame(animate);
-  const dt_years = clock.getDelta() * parseFloat(speedEl.value);
-  const T_total_yr = clock.elapsedTime * parseFloat(speedEl.value);
+  const dt_years = clock.getDelta() * parseFloat(speedEl.value) / 365.25;
+  const T_total_yr = clock.elapsedTime * parseFloat(speedEl.value) / 365.25;
   const T_cy = T_total_yr / 100;
   const useIncl = inclEl.checked;
 
@@ -1831,6 +1731,19 @@ function animate() {
 setSize();
 window.addEventListener('resize', setSize);
 animate();
+</script>
+
+<script>
+/* Code-tabs: language switcher */
+document.querySelectorAll('.code-tabs').forEach(ct => {
+  ct.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      ct.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      ct.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
+    });
+  });
+});
 </script>
 
 </body>

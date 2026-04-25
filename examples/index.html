@@ -14,314 +14,389 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
     onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
 
+  <link rel="stylesheet" href="examples.css">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ── page-specific: article list index ── */
+    .page-wrap { max-width: 860px; margin: 0 auto; padding: 52px 24px 80px; }
 
-    :root {
-      --font-body:  'Merriweather', Georgia, serif;
-      --font-ui:    'Source Sans 3', system-ui, sans-serif;
-      --font-mono:  'JetBrains Mono', monospace;
-      --text:       #1a1a1a;
-      --text-light: #555;
-      --text-muted: #888;
-      --border:     #e0e0e0;
-      --bg:         #ffffff;
-      --fig-bg:     #fafafa;
-      --accent:     #1565c0;
-      --accent-r:   #b71c1c;
-      --accent-g:   #1b5e20;
-      --accent-o:   #e65100;
-      --max-w:      720px;
-    }
-
-    body {
-      font-family: var(--font-body);
-      font-size: 17px;
-      line-height: 1.75;
-      color: var(--text);
-      background: var(--bg);
-    }
-
-    /* ── nav ── */
-    .nav-back {
-      display: block;
-      font-family: var(--font-ui);
-      font-size: 13px;
-      color: var(--accent);
-      text-decoration: none;
-      padding: 14px 24px;
-      border-bottom: 1px solid var(--border);
-      background: var(--fig-bg);
-    }
-    .nav-back:hover { text-decoration: underline; }
-
-    /* ── layout ── */
-    .page {
-      max-width: var(--max-w);
-      margin: 0 auto;
-      padding: 48px 24px 80px;
-    }
-
-    /* ── header ── */
-    .page-header { margin-bottom: 48px; }
-    .page-header h1 {
-      font-family: var(--font-ui);
-      font-size: 2rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text);
-      margin-bottom: 12px;
-    }
-    .page-header p {
-      font-family: var(--font-ui);
-      font-size: 1rem;
-      color: var(--text-light);
-      line-height: 1.6;
-      max-width: 600px;
-    }
-
-    /* ── section headings ── */
-    .section-label {
-      font-family: var(--font-ui);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 16px;
-      padding-bottom: 8px;
+    .page-header {
+      padding-bottom: 40px;
+      margin-bottom: 0;
       border-bottom: 1px solid var(--border);
     }
-
-    /* ── example cards ── */
-    .examples-grid {
-      display: grid;
-      gap: 20px;
-      margin-bottom: 56px;
+    .page-eyebrow {
+      font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);
+      margin-bottom: 14px; letter-spacing: 0.02em;
     }
-
-    .card {
-      display: block;
+    .page-eyebrow a { color: var(--text-muted); text-decoration: none; }
+    .page-eyebrow a:hover { color: var(--accent); }
+    .page-title {
+      font-family: var(--font-ui);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 700; letter-spacing: -0.028em; color: #111;
+      margin-bottom: 18px; line-height: 1.15;
+    }
+    .page-lead {
+      font-family: var(--font-body); font-size: 1.05rem; color: var(--text-light);
+      line-height: 1.8; max-width: 600px; margin-bottom: 20px;
+      font-weight: 300;
+    }
+    .page-meta {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+      font-family: var(--font-ui); font-size: 12px; color: var(--text-muted);
+    }
+    .page-meta-sep { color: var(--border); }
+    .meta-tag {
+      font-family: var(--font-mono); font-size: 11px;
+      background: var(--fig-bg); border: 1px solid var(--border);
+      border-radius: 3px; padding: 2px 7px; color: var(--text-light);
       text-decoration: none;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 24px 28px;
-      background: var(--bg);
-      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .card:hover {
-      border-color: var(--accent);
-      box-shadow: 0 2px 12px rgba(21,101,192,0.10);
-    }
+    .meta-tag:hover { border-color: var(--accent); color: var(--accent); }
 
-    .card-eyebrow {
-      font-family: var(--font-ui);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.10em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 6px;
+    /* Topic section dividers */
+    .topic-label {
+      font-family: var(--font-ui); font-size: 10.5px; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted);
+      padding-top: 32px; padding-bottom: 10px;
     }
+    .topic-section:first-of-type .topic-label { border-top: none; }
 
-    .card h2 {
-      font-family: var(--font-ui);
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: var(--text);
+    /* Article row — distill.pub style */
+    .article-row {
+      display: flex; align-items: flex-start; gap: 32px;
+      padding: 28px 0; border-bottom: 1px solid var(--border);
+      text-decoration: none; color: inherit;
+      transition: background 0.12s;
+      margin: 0 -12px; padding-left: 12px; padding-right: 12px;
+      border-radius: 4px;
+    }
+    .article-row:hover { background: #f5f8ff; }
+    .article-row:hover .article-title { color: var(--accent); }
+
+    .article-body { flex: 1; min-width: 0; }
+
+    time.article-date {
+      display: block; font-family: var(--font-ui); font-size: 12px;
+      color: var(--text-muted); margin-bottom: 5px;
+    }
+    .article-title {
+      font-family: var(--font-ui); font-size: 1.2rem; font-weight: 700;
+      color: var(--text); line-height: 1.3; letter-spacing: -0.018em;
+      margin-bottom: 5px; transition: color 0.12s;
+    }
+    .article-eyebrow {
+      font-family: var(--font-ui); font-size: 11.5px; color: var(--text-muted);
       margin-bottom: 8px;
-      line-height: 1.3;
     }
-
-    .card p {
-      font-family: var(--font-ui);
-      font-size: 0.93rem;
-      color: var(--text-light);
-      line-height: 1.55;
-      margin-bottom: 14px;
+    .article-abstract {
+      font-family: var(--font-ui); font-size: 0.925rem; color: var(--text-light);
+      line-height: 1.6; margin-bottom: 12px;
     }
-
-    .card-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
+    .article-tags { display: flex; flex-wrap: wrap; gap: 5px; }
     .tag {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      background: var(--fig-bg);
+      font-family: var(--font-mono); font-size: 10.5px;
+      background: var(--fig-bg); border: 1px solid var(--border);
+      border-radius: 3px; padding: 2px 6px; color: var(--text-light);
+    }
+
+    /* Thumbnail */
+    .article-thumb {
+      width: 200px; flex-shrink: 0;
+      border-radius: 6px; overflow: hidden;
       border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 2px 7px;
-      color: var(--text-light);
+      background: oklch(96.5% 0.008 245);
+      align-self: center;
     }
+    .article-thumb svg { display: block; width: 100%; height: auto; }
 
-    /* ── coming-soon card variant ── */
-    .card.soon {
-      opacity: 0.55;
-      cursor: default;
-      pointer-events: none;
-    }
-    .card.soon .card-eyebrow { color: var(--text-muted); }
+    /* Coming soon */
+    .article-row.soon { opacity: 0.48; cursor: default; pointer-events: none; }
     .badge-soon {
-      display: inline-block;
-      font-family: var(--font-ui);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #fff;
-      background: var(--text-muted);
-      border-radius: 3px;
-      padding: 1px 6px;
-      margin-left: 8px;
-      vertical-align: middle;
+      display: inline-block; font-family: var(--font-ui); font-size: 10px;
+      font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+      color: #fff; background: var(--text-muted); border-radius: 3px;
+      padding: 1px 6px; margin-left: 8px; vertical-align: middle;
     }
 
-    /* ── footer ── */
-    footer {
-      border-top: 1px solid var(--border);
-      padding-top: 24px;
-      font-family: var(--font-ui);
-      font-size: 13px;
-      color: var(--text-muted);
+    .page-footer {
+      margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px;
+      font-family: var(--font-ui); font-size: 13px; color: var(--text-muted);
     }
-    footer a { color: var(--accent); text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
+    .page-footer a { color: var(--accent); text-decoration: none; }
+    .page-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .article-row { flex-direction: column; gap: 16px; }
+      .article-thumb { width: 100%; }
+      .page-wrap { padding: 32px 16px 60px; }
+    }
   </style>
 </head>
 <body>
 
-<a class="nav-back" href="https://moiseevigor.github.io/elliptic/">&larr; moiseevigor/elliptic</a>
+<nav aria-label="page navigation">
+  <div class="nav-row">
+    <a class="nav-back" href="https://moiseevigor.github.io/elliptic/">moiseevigor/elliptic</a>
+    <span class="nav-sep">›</span>
+    <a href="#">Examples</a>
+  </div>
+</nav>
 
-<div class="page">
+<div class="page-wrap">
 
   <header class="page-header">
-    <h1>Interactive Examples</h1>
-    <p>
-      Live, browser-based visualisations of elliptic integrals and functions.
-      All computations run client-side.
-      Built with <a href="https://threejs.org" style="color:var(--accent)">Three.js</a>,
-      <a href="https://d3js.org" style="color:var(--accent)">D3</a>, and
-      <a href="https://katex.org" style="color:var(--accent)">KaTeX</a>.
+    <p class="page-eyebrow"><a href="https://moiseevigor.github.io/elliptic/">moiseevigor / elliptic</a></p>
+    <h1 class="page-title">Interactive Examples</h1>
+    <p class="page-lead">
+      Each example takes a physical or mathematical problem and shows how an elliptic
+      integral or Jacobi function gives its exact solution — formula, derivation, and
+      interactive figure together, running entirely in the browser.
+      Topics span <em>celestial mechanics and orbital geometry</em>,
+      <em>sub-Riemannian geodesics and optimal control</em>,
+      <em>nonlinear pendulum dynamics</em>,
+      <em>GPU-scale Keplerian propagation</em>,
+      <em>cnoidal waves</em>, and <em>Weierstrass modular forms</em>.
     </p>
+    <div class="page-meta">
+      <span>Rendered with</span>
+      <a class="meta-tag" href="https://threejs.org">Three.js</a>
+      <a class="meta-tag" href="https://d3js.org">D3</a>
+      <a class="meta-tag" href="https://katex.org">KaTeX</a>
+      <span class="page-meta-sep">·</span>
+      <span>client-side&thinsp;·&thinsp;no server</span>
+    </div>
   </header>
 
-  <!-- ── Celestial mechanics ── -->
-  <p class="section-label">Celestial mechanics &amp; orbital dynamics</p>
-  <div class="examples-grid">
+  <!-- ── Celestial mechanics ─────────────────────────────────────── -->
+  <section class="topic-section">
+    <p class="topic-label">Celestial mechanics &amp; orbital dynamics</p>
 
-    <a class="card" href="arclength-celestial-mechanics/">
-      <p class="card-eyebrow">Elliptic integrals · 3D visualisation</p>
-      <h2>Arc Length &amp; Celestial Mechanics</h2>
-      <p>
-        Derive the arc length of an ellipse via $E(\varphi|m)$, trace Keplerian orbits in 3D,
-        solve Kepler's equation numerically, and watch the Carlson duplication algorithm converge.
-        Includes a live Mercury perihelion precession demo.
-      </p>
-      <div class="card-tags">
-        <span class="tag">elliptic12</span>
-        <span class="tag">ellipticBDJ</span>
-        <span class="tag">carlsonRF</span>
-        <span class="tag">arclength_ellipse</span>
+    <a class="article-row" href="arclength-celestial-mechanics/">
+      <div class="article-body">
+        <time class="article-date">April 2026</time>
+        <div class="article-title">Arc Length &amp; Celestial Mechanics</div>
+        <div class="article-eyebrow">Elliptic integrals · orbital mechanics · 3D</div>
+        <p class="article-abstract">
+          Derive the arc length of an ellipse via $E(\varphi|m)$, trace Keplerian orbits in 3D,
+          solve Kepler's equation, and watch the Carlson duplication algorithm converge step-by-step.
+        </p>
+        <div class="article-tags">
+          <span class="tag">elliptic12</span>
+          <span class="tag">ellipticBDJ</span>
+          <span class="tag">carlsonRF</span>
+        </div>
+      </div>
+      <div class="article-thumb">
+        <svg viewBox="0 0 200 110" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="110" fill="oklch(96.5% 0.008 245)"/>
+          <ellipse cx="100" cy="55" rx="80" ry="36" fill="none" stroke="oklch(78% 0.06 255)" stroke-width="1.1" stroke-dasharray="5 3"/>
+          <path d="M 180 55 A 80 36 0 0 0 100 19" fill="none" stroke="oklch(44% 0.14 255)" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="74" cy="55" r="5.5" fill="oklch(68% 0.145 68)" opacity=".85"/>
+          <circle cx="100" cy="19" r="3.5" fill="oklch(44% 0.14 255)"/>
+          <line x1="74" y1="55" x2="100" y2="19" stroke="oklch(44% 0.14 255)" stroke-width="1" stroke-dasharray="3 2" opacity=".5"/>
+          <text x="73" y="69" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="oklch(68% 0.145 68)">☉</text>
+          <rect x="36" y="88" width="128" height="15" rx="2" fill="white" opacity=".75"/>
+          <text x="100" y="99" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="oklch(44% 0.14 255)">L(E) = a · E(E | e²)</text>
+        </svg>
       </div>
     </a>
 
-    <a class="card" href="gpu-asteroid-swarm/">
-      <p class="card-eyebrow">Batched propagation · GPU · 1.5 M asteroids</p>
-      <h2>GPU Asteroid Swarm</h2>
-      <p>
-        Real JPL SBDB orbital elements propagated in parallel on GPU.
-        Per-body arc length $L(E) = a\,E(E|e^2)$ from <code>elliptic12</code>,
-        Kepler's equation solved via vectorised Newton, throughput compared
-        across NumPy, PyTorch CPU/CUDA and JAX.  Validated against
-        JPL Horizons on named asteroids.
-      </p>
-      <div class="card-tags">
-        <span class="tag">elliptic12</span>
-        <span class="tag">ellipticBD</span>
-        <span class="tag">carlsonRF</span>
-        <span class="tag">carlsonRD</span>
+    <a class="article-row" href="gpu-asteroid-swarm/">
+      <div class="article-body">
+        <time class="article-date">April 2026</time>
+        <div class="article-title">GPU Asteroid Swarm</div>
+        <div class="article-eyebrow">GPU · 1.5 M asteroids · batched propagation</div>
+        <p class="article-abstract">
+          Real JPL orbital elements propagated on GPU. Throughput benchmarked across
+          NumPy, PyTorch CUDA, and JAX. Position accuracy validated against JPL Horizons.
+        </p>
+        <div class="article-tags">
+          <span class="tag">elliptic12</span>
+          <span class="tag">ellipticBD</span>
+          <span class="tag">carlsonRD</span>
+        </div>
+      </div>
+      <div class="article-thumb">
+        <svg viewBox="0 0 200 110" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="110" fill="oklch(96.5% 0.008 245)"/>
+          <g opacity=".5">
+            <circle cx="28" cy="26" r="1" fill="oklch(44% 0.14 255)"/><circle cx="48" cy="44" r="1.3" fill="oklch(56% 0.13 255)"/>
+            <circle cx="68" cy="17" r="1" fill="oklch(44% 0.14 255)"/><circle cx="88" cy="38" r="1" fill="oklch(68% 0.145 68)"/>
+            <circle cx="108" cy="21" r="1.3" fill="oklch(44% 0.14 255)"/><circle cx="128" cy="43" r="1" fill="oklch(44% 0.14 255)"/>
+            <circle cx="38" cy="68" r="1" fill="oklch(68% 0.145 68)"/><circle cx="58" cy="78" r="1.3" fill="oklch(44% 0.14 255)"/>
+            <circle cx="78" cy="62" r="1" fill="oklch(56% 0.13 255)"/><circle cx="98" cy="84" r="1" fill="oklch(44% 0.14 255)"/>
+            <circle cx="118" cy="66" r="1.3" fill="oklch(68% 0.145 68)"/><circle cx="138" cy="55" r="1" fill="oklch(44% 0.14 255)"/>
+            <circle cx="158" cy="32" r="1" fill="oklch(44% 0.14 255)"/><circle cx="168" cy="76" r="1.3" fill="oklch(56% 0.13 255)"/>
+            <circle cx="178" cy="48" r="1" fill="oklch(44% 0.14 255)"/><circle cx="20" cy="92" r="1" fill="oklch(68% 0.145 68)"/>
+            <circle cx="145" cy="90" r="1.3" fill="oklch(44% 0.14 255)"/><circle cx="186" cy="86" r="1" fill="oklch(44% 0.14 255)"/>
+          </g>
+          <path d="M 0 42 Q 100 30 200 46" fill="none" stroke="oklch(44% 0.14 255)" stroke-width="16" opacity=".07"/>
+          <circle cx="100" cy="55" r="6.5" fill="oklch(68% 0.145 68)" opacity=".9"/>
+          <circle cx="100" cy="55" r="11" fill="none" stroke="oklch(68% 0.145 68)" stroke-width="1" opacity=".3"/>
+          <ellipse cx="100" cy="55" rx="22" ry="9" fill="none" stroke="oklch(78% 0.06 255)" stroke-width=".8" opacity=".6"/>
+          <ellipse cx="100" cy="55" rx="40" ry="17" fill="none" stroke="oklch(78% 0.06 255)" stroke-width=".8" opacity=".5"/>
+          <ellipse cx="100" cy="55" rx="65" ry="27" fill="none" stroke="oklch(78% 0.06 255)" stroke-width=".8" opacity=".4"/>
+          <rect x="5" y="6" width="90" height="22" rx="3" fill="white" opacity=".72"/>
+          <text x="10" y="16" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="oklch(44% 0.14 255)">1.5 M asteroids</text>
+          <text x="10" y="25" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="oklch(55% 0.012 255)">JPL SBDB catalog</text>
+        </svg>
+      </div>
+    </a>
+  </section>
+
+  <!-- ── Sub-Riemannian / geometry ─────────────────────────────── -->
+  <section class="topic-section">
+    <p class="topic-label">Sub-Riemannian geometry &amp; optimal control</p>
+
+    <a class="article-row" href="dubins-visual-cortex/">
+      <div class="article-body">
+        <time class="article-date">April 2026</time>
+        <div class="article-title">Dubins Car, Euler's Elastica &amp; the Visual Cortex</div>
+        <div class="article-eyebrow">SE(2) geodesics · Jacobi sn/dn · Petitot model</div>
+        <p class="article-abstract">
+          Optimal contour completion in V1 is a shortest-path problem on SE(2).
+          The solution curves are Euler's elastica; their curvature is $\kappa(s) = 2k\,\mathrm{sn}(s\mid k^2)$
+          and their spatial period is $4K(k^2)$.  Motivation for the original <code>elliptic</code> package.
+        </p>
+        <div class="article-tags">
+          <span class="tag">ellipj</span>
+          <span class="tag">elliptic12</span>
+          <span class="tag">ellipticK</span>
+        </div>
+      </div>
+      <div class="article-thumb">
+        <svg viewBox="0 0 200 110" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="110" fill="oklch(96.5% 0.008 245)"/>
+          <!-- Cornu/Euler spiral schematic -->
+          <path d="M 40 55 Q 60 55 75 45 Q 90 35 95 50 Q 100 65 110 65 Q 120 65 130 58 Q 145 48 155 55 Q 165 62 170 55" fill="none" stroke="oklch(44% 0.14 255)" stroke-width="2" opacity=".7"/>
+          <path d="M 40 55 Q 60 55 75 65 Q 90 75 95 60 Q 100 45 110 45 Q 120 45 130 52 Q 145 62 155 55" fill="none" stroke="oklch(56% 0.13 255)" stroke-width="1.5" opacity=".5"/>
+          <circle cx="100" cy="55" r="3.5" fill="oklch(68% 0.145 68)"/>
+          <rect x="5" y="6" width="88" height="13" rx="2" fill="white" opacity=".75"/>
+          <text x="7" y="15" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="oklch(44% 0.14 255)">κ(s) = 2k sn(s|k²)</text>
+          <rect x="105" y="90" width="90" height="13" rx="2" fill="white" opacity=".75"/>
+          <text x="107" y="99" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="oklch(44% 0.14 255)">T = 4K(k²)</text>
+        </svg>
       </div>
     </a>
 
-  </div>
+    <div class="article-row soon">
+      <div class="article-body">
+        <div class="article-title">Resonance Stability Survey — Asteroid Belt <span class="badge-soon">draft</span></div>
+        <div class="article-eyebrow">SE(2) pendulum · Maxwell strata · Kirkwood gaps</div>
+        <p class="article-abstract">
+          Semi-analytical stability index $S = 1 - k^2$ for each asteroid computed from
+          osculating elements alone.  The libration period $T = 4K(k^2)/\omega_0$ diverges
+          at the separatrix — same $K(k^2)$ as the elastica problem.
+        </p>
+        <div class="article-tags">
+          <span class="tag">ellipticK</span>
+          <span class="tag">ellipj</span>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <!-- ── Jacobi functions ── -->
-  <p class="section-label">Jacobi elliptic functions</p>
-  <div class="examples-grid">
+  <!-- ── Jacobi functions ────────────────────────────────────────── -->
+  <section class="topic-section">
+    <p class="topic-label">Jacobi elliptic functions</p>
 
-    <a class="card" href="physical-pendulum/">
-      <p class="card-eyebrow">Nonlinear dynamics · Jacobi sn/cn/dn</p>
-      <h2>Physical Pendulum &amp; Exact Trajectories</h2>
-      <p>
-        Exact period for large-amplitude oscillations via $K(k^2)$,
-        live pendulum animation using $\mathrm{sn}(t|m)$, phase-portrait with separatrix,
-        and period divergence as $\theta_0 \to \pi$. Extends to compound pendula.
-      </p>
-      <div class="card-tags">
-        <span class="tag">ellipj</span>
-        <span class="tag">elliptic12</span>
-        <span class="tag">carlsonRF</span>
-        <span class="tag">cel1</span>
+    <a class="article-row" href="physical-pendulum/">
+      <div class="article-body">
+        <time class="article-date">April 2026</time>
+        <div class="article-title">Physical Pendulum &amp; Exact Trajectories</div>
+        <div class="article-eyebrow">Nonlinear dynamics · Jacobi sn/cn/dn</div>
+        <p class="article-abstract">
+          Exact period via $K(k^2)$, live $\mathrm{sn}(t|m)$ animation,
+          phase portrait with separatrix, and period divergence as $\theta_0 \to \pi$.
+        </p>
+        <div class="article-tags">
+          <span class="tag">ellipj</span>
+          <span class="tag">elliptic12</span>
+          <span class="tag">carlsonRF</span>
+        </div>
+      </div>
+      <div class="article-thumb">
+        <svg viewBox="0 0 200 110" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="110" fill="oklch(96.5% 0.008 245)"/>
+          <line x1="20" y1="55" x2="120" y2="55" stroke="oklch(88% 0.012 245)" stroke-width="1"/>
+          <line x1="70" y1="10" x2="70" y2="100" stroke="oklch(88% 0.012 245)" stroke-width="1"/>
+          <path d="M 20 55 Q 40 10 70 55 Q 100 100 120 55" fill="none" stroke="oklch(44% 0.14 255)" stroke-width="1.4" stroke-dasharray="4 2" opacity=".6"/>
+          <ellipse cx="70" cy="55" rx="34" ry="21" fill="none" stroke="oklch(44% 0.14 255)" stroke-width="1.7"/>
+          <ellipse cx="70" cy="55" rx="16" ry="10" fill="none" stroke="oklch(56% 0.13 255)" stroke-width="1.2" opacity=".7"/>
+          <circle cx="104" cy="55" r="3.5" fill="oklch(44% 0.14 255)"/>
+          <!-- pendulum -->
+          <line x1="158" y1="10" x2="158" y2="18" stroke="oklch(78% 0.06 255)" stroke-width="2"/>
+          <line x1="158" y1="18" x2="141" y2="64" stroke="oklch(55% 0.12 255)" stroke-width="1.5"/>
+          <circle cx="141" cy="67" r="5" fill="oklch(44% 0.14 255)" opacity=".8"/>
+          <path d="M 158 36 A 18 18 0 0 1 146 29" fill="none" stroke="oklch(68% 0.145 68)" stroke-width="1.2"/>
+          <text x="148" y="28" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="oklch(68% 0.145 68)">θ₀</text>
+          <rect x="6" y="6" width="56" height="13" rx="2" fill="white" opacity=".72"/>
+          <text x="8" y="15" font-family="'JetBrains Mono',monospace" font-size="7" fill="oklch(55% 0.012 255)">phase portrait</text>
+          <rect x="125" y="96" width="48" height="12" rx="2" fill="white" opacity=".72"/>
+          <text x="127" y="105" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="oklch(44% 0.14 255)">sn(t | m)</text>
+        </svg>
       </div>
     </a>
 
-    <div class="card soon">
-      <p class="card-eyebrow">Rigid body rotation <span class="badge-soon">coming soon</span></p>
-      <h2>Euler–Poinsot Motion</h2>
-      <p>
-        Torque-free rotation of an asymmetric top: $\omega_1 = \omega_0\,\mathrm{cn}(t|m)$,
-        polhode animation, and Euler angle integration.
-      </p>
-      <div class="card-tags">
-        <span class="tag">ellipj</span>
-        <span class="tag">jacobiEDJ</span>
-        <span class="tag">elliptic12</span>
+    <div class="article-row soon">
+      <div class="article-body">
+        <div class="article-title">Euler–Poinsot Motion <span class="badge-soon">coming soon</span></div>
+        <div class="article-eyebrow">Rigid body rotation</div>
+        <p class="article-abstract">
+          Torque-free rotation of an asymmetric top: $\omega_1 = \omega_0\,\mathrm{cn}(t|m)$,
+          polhode animation, and Euler angle integration.
+        </p>
+        <div class="article-tags">
+          <span class="tag">ellipj</span>
+          <span class="tag">jacobiEDJ</span>
+          <span class="tag">elliptic12</span>
+        </div>
       </div>
     </div>
+  </section>
 
-  </div>
+  <!-- ── Nonlinear waves ─────────────────────────────────────────── -->
+  <section class="topic-section">
+    <p class="topic-label">Nonlinear waves &amp; signal processing</p>
 
-  <!-- ── Waves ── -->
-  <p class="section-label">Nonlinear waves &amp; signal processing</p>
-  <div class="examples-grid">
-
-    <div class="card soon">
-      <p class="card-eyebrow">KdV equation <span class="badge-soon">coming soon</span></p>
-      <h2>Cnoidal Waves</h2>
-      <p>
-        Exact KdV cnoidal wave solution $u(x,t) = A\,\mathrm{cn}^2(\kappa(x-vt)|m)$
-        animated across the soliton limit $m \to 1$.
-      </p>
-      <div class="card-tags">
-        <span class="tag">ellipj</span>
+    <div class="article-row soon">
+      <div class="article-body">
+        <div class="article-title">Cnoidal Waves <span class="badge-soon">coming soon</span></div>
+        <div class="article-eyebrow">KdV equation</div>
+        <p class="article-abstract">
+          Exact KdV cnoidal wave solution $u(x,t) = A\,\mathrm{cn}^2(\kappa(x-vt)|m)$
+          animated across the soliton limit $m \to 1$.
+        </p>
+        <div class="article-tags">
+          <span class="tag">ellipj</span>
+        </div>
       </div>
     </div>
+  </section>
 
-  </div>
+  <!-- ── Weierstrass ─────────────────────────────────────────────── -->
+  <section class="topic-section">
+    <p class="topic-label">Weierstrass &amp; modular forms</p>
 
-  <!-- ── Weierstrass ── -->
-  <p class="section-label">Weierstrass &amp; modular forms</p>
-  <div class="examples-grid">
-
-    <div class="card soon">
-      <p class="card-eyebrow">Complex analysis <span class="badge-soon">coming soon</span></p>
-      <h2>Weierstrass ℘ Function &amp; Elliptic Curves</h2>
-      <p>
-        Domain-colouring of $\wp(z)$ over the complex plane,
-        lattice geometry from invariants $g_2, g_3$, and the group law on $y^2 = 4x^3 - g_2 x - g_3$.
-      </p>
-      <div class="card-tags">
-        <span class="tag">weierstrassP</span>
-        <span class="tag">weierstrassZeta</span>
-        <span class="tag">weierstrassInvariants</span>
+    <div class="article-row soon">
+      <div class="article-body">
+        <div class="article-title">Weierstrass ℘ Function &amp; Elliptic Curves <span class="badge-soon">coming soon</span></div>
+        <div class="article-eyebrow">Complex analysis</div>
+        <p class="article-abstract">
+          Domain-colouring of $\wp(z)$ over the complex plane,
+          lattice geometry from invariants $g_2, g_3$, and the group law on $y^2 = 4x^3 - g_2\,x - g_3$.
+        </p>
+        <div class="article-tags">
+          <span class="tag">weierstrassP</span>
+          <span class="tag">weierstrassZeta</span>
+          <span class="tag">weierstrassInvariants</span>
+        </div>
       </div>
     </div>
+  </section>
 
-  </div>
-
-  <footer>
+  <footer class="page-footer">
     Source: <a href="https://github.com/moiseevigor/elliptic">github.com/moiseevigor/elliptic</a>
     &nbsp;·&nbsp;
     MATLAB/Octave &amp; Python implementations of elliptic integrals and functions.

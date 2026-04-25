@@ -387,14 +387,19 @@ function drawThroughput(bm) {
   const T = +select.value;
 
   const rows = bm.results.filter(r => r.epochs === T);
-  const x = d3.scaleLog().domain([d3.min(rows,r=>r.bodies)/1.3, d3.max(rows,r=>r.bodies)*1.3]).range([m.l, W-m.r]);
-  const y = d3.scaleLog().domain([0.5, d3.max(rows,r=>r.throughput_meps)*1.3]).range([H-m.b, m.t]);
+  const allBodies = Array.from(new Set(bm.results.map(r=>r.bodies))).sort((a,b)=>a-b);
+  const x = d3.scaleLog()
+    .domain([allBodies[0]/1.3, allBodies[allBodies.length-1]*1.3])
+    .range([m.l, W-m.r]);
+  const yMin = d3.min(rows, r=>r.throughput_meps);
+  const yMax = d3.max(rows, r=>r.throughput_meps);
+  const y = d3.scaleLog().domain([yMin/1.5, yMax*1.5]).range([H-m.b, m.t]);
 
   g.append('g').attr('transform', `translate(0,${H-m.b})`)
-    .call(d3.axisBottom(x).ticks(5, d=>d>=1e6?d/1e6+'M':d>=1e3?d/1e3+'k':d))
+    .call(d3.axisBottom(x).tickValues(allBodies).tickFormat(d=>d>=1e6?d/1e6+'M':d>=1e3?d/1e3+'k':d))
     .call(s=>s.selectAll('text').attr('font-family','Source Sans 3').attr('font-size',11));
   g.append('g').attr('transform', `translate(${m.l},0)`)
-    .call(d3.axisLeft(y).ticks(5))
+    .call(d3.axisLeft(y).ticks(6, '.2~g'))
     .call(s=>s.selectAll('text').attr('font-family','Source Sans 3').attr('font-size',11));
   g.append('text').attr('x',(W+m.l)/2).attr('y',H-8)
     .attr('font-family','Source Sans 3').attr('font-size',12)
@@ -408,11 +413,26 @@ function drawThroughput(bm) {
   for (const [backend, arr] of byB) {
     const sorted = arr.slice().sort((a,b)=>a.bodies-b.bodies);
     const color = BACKEND_COLOR[backend] || '#666';
-    plot.append('path').attr('fill','none').attr('stroke',color).attr('stroke-width',2)
-      .attr('d', d3.line().x(r=>x(r.bodies)).y(r=>y(r.throughput_meps))(sorted));
+    if (sorted.length > 1) {
+      plot.append('path').attr('fill','none').attr('stroke',color).attr('stroke-width',2)
+        .attr('d', d3.line().x(r=>x(r.bodies)).y(r=>y(r.throughput_meps))(sorted));
+    }
     plot.append('g').selectAll('circle').data(sorted).join('circle')
       .attr('cx', r=>x(r.bodies)).attr('cy', r=>y(r.throughput_meps))
-      .attr('r', 3.5).attr('fill', color);
+      .attr('r', 4).attr('fill', color);
+  }
+
+  // Mark body-count/epoch combos that were skipped (OOM or not run)
+  const present = new Set(rows.map(r=>`${r.backend}:${r.bodies}`));
+  const oomBodies = allBodies.filter(n => !present.has(`torch_cuda:${n}`));
+  for (const n of oomBodies) {
+    const cx = x(n), cy = m.t + (H-m.b-m.t)/2;
+    plot.append('text').attr('x', cx).attr('y', cy)
+      .attr('text-anchor','middle').attr('font-family','Source Sans 3')
+      .attr('font-size',10).attr('fill','#aaa').text('OOM');
+    plot.append('line')
+      .attr('x1',cx).attr('y1',cy+12).attr('x2',cx).attr('y2',H-m.b)
+      .attr('stroke','#ddd').attr('stroke-width',1).attr('stroke-dasharray','3 2');
   }
 }
 
@@ -824,69 +844,79 @@ function initArcPanel(subset) {
       .attr('font-family','Source Sans 3').attr('font-size',11).attr('fill','#555')
       .text(`a=${a.toFixed(3)} AU, e=${e.toFixed(3)}  ·  E=${E.toFixed(3)} rad`);
 
-    // -------- right: L(E) curve --------
-    const m2 = {t:16, b:40, l:52, r:16};
+    // -------- right: L(E)/a curve — normalised by a so shape depends only on e --------
+    const m2 = {t:16, b:40, l:48, r:16};
     const x0 = panelW + 30;
     const xE = d3.scaleLinear().domain([0, 2*Math.PI]).range([x0+m2.l, W-m2.r]);
-    const perim = 4*a*ellipticE_complete(e*e);
-    // domain must cover BOTH the exact curve (→ perim) and the circular proxy (→ 2πa),
-    // otherwise the proxy line slips above the top of the plot for e > 0.
-    const yMax = Math.max(perim, 2*Math.PI*a) * 1.05;
+    // Normalise by a: proxy = E (straight line), exact = E(E|e²).
+    // y-axis fixed at [0, 2π·1.04] so switching asteroids changes curve SHAPE, not scale.
+    const perim    = 4*a*ellipticE_complete(e*e);       // AU — for annotation only
+    const perimNorm = 4*ellipticE_complete(e*e);        // = P/a, < 2π for e>0
+    const yMax  = 2*Math.PI * 1.04;
     const yL = d3.scaleLinear().domain([0, yMax]).range([H-m2.b, m2.t]);
 
-    // exact L(E) curve — ellipticE is now extended via E(φ+kπ|m)=2k·E(m)+E(φ|m)
-    // so the curve is monotone on [0, 2π] and terminates at the orbit perimeter.
-    const Epts = d3.range(0, 2*Math.PI*1.0001, 2*Math.PI/120);
-    const Lexact = Epts.map(x => [x, a * ellipticE(x, e*e)]);
-    const Lproxy = Epts.map(x => [x, a * x]);   // circular proxy 2πa at E=2π
+    const Epts   = d3.range(0, 2*Math.PI*1.0001, 2*Math.PI/120);
+    const Lexact = Epts.map(t => [t, ellipticE(t, e*e)]);   // L/a exact
+    const Lproxy = Epts.map(t => [t, t]);                   // L/a circular proxy
 
     g.append('g').attr('transform',`translate(0,${H-m2.b})`)
-      .call(d3.axisBottom(xE).ticks(5).tickFormat(d => (d/Math.PI).toFixed(1)+'π'))
+      .call(d3.axisBottom(xE).tickValues([0,Math.PI/2,Math.PI,3*Math.PI/2,2*Math.PI])
+        .tickFormat(d => d===0?'0π':(d/Math.PI).toFixed(1)+'π'))
       .call(s=>s.selectAll('text').attr('font-family','Source Sans 3').attr('font-size',11));
     g.append('g').attr('transform',`translate(${x0+m2.l},0)`)
-      .call(d3.axisLeft(yL).ticks(5))
+      .call(d3.axisLeft(yL).tickValues([0,Math.PI/2,Math.PI,3*Math.PI/2,2*Math.PI])
+        .tickFormat(d => d===0?'0':(d/Math.PI).toFixed(1)+'π'))
       .call(s=>s.selectAll('text').attr('font-family','Source Sans 3').attr('font-size',11));
-    g.append('text').attr('x', (W+x0+m2.l)/2).attr('y', H-12)
+    g.append('text').attr('x', (W+x0+m2.l)/2).attr('y', H-10)
       .attr('font-family','Source Sans 3').attr('font-size',12).attr('text-anchor','middle').attr('fill','#555')
       .text('eccentric anomaly E');
-    g.append('text').attr('transform',`translate(${x0+16},${(H+m2.t)/2})rotate(-90)`)
+    g.append('text').attr('transform',`translate(${x0+14},${(H+m2.t)/2})rotate(-90)`)
       .attr('font-family','Source Sans 3').attr('font-size',12).attr('text-anchor','middle').attr('fill','#555')
-      .text('arc length L(E) [AU]');
+      .text('arc length L(E) / a');
 
-    // clip data to the right-panel rectangle so neither curve can escape
     const rightM = {t:m2.t, b:m2.b, l:x0+m2.l, r:m2.r};
     const plotR = clipGroup(g, rightM, W, H);
 
+    // fill gap between proxy and exact so eccentricity effect is visible
+    const fillPts = Lexact.map(([t,v],i) => ({t, exact:v, proxy:Lproxy[i][1]}));
+    plotR.append('path')
+      .datum(fillPts)
+      .attr('fill','#c62828').attr('fill-opacity',0.08)
+      .attr('d', d3.area().x(d=>xE(d.t)).y0(d=>yL(d.proxy)).y1(d=>yL(d.exact)));
+
     plotR.append('path').attr('d', d3.line().x(p=>xE(p[0])).y(p=>yL(p[1]))(Lproxy))
-      .attr('fill','none').attr('stroke','#9e9e9e').attr('stroke-dasharray','4,3');
+      .attr('fill','none').attr('stroke','#9e9e9e').attr('stroke-width',1.5).attr('stroke-dasharray','4,3');
     plotR.append('path').attr('d', d3.line().x(p=>xE(p[0])).y(p=>yL(p[1]))(Lexact))
       .attr('fill','none').attr('stroke','#c62828').attr('stroke-width',2);
 
-    // perimeter reference line
+    // perimeter reference line (P/a < 2π)
     plotR.append('line')
       .attr('x1', x0+m2.l).attr('x2', W-m2.r)
-      .attr('y1', yL(perim)).attr('y2', yL(perim))
+      .attr('y1', yL(perimNorm)).attr('y2', yL(perimNorm))
       .attr('stroke','#c62828').attr('stroke-width',0.8)
-      .attr('stroke-dasharray','2,3').attr('opacity',0.55);
+      .attr('stroke-dasharray','2,3').attr('opacity',0.5);
 
     // current E marker
-    const Lcur = a*ellipticE(E, e*e);
-    const Lpr  = a*E;
-    plotR.append('circle').attr('cx', xE(E)).attr('cy', yL(Lcur)).attr('r',4).attr('fill','#c62828');
-    plotR.append('line').attr('x1', xE(E)).attr('x2', xE(E)).attr('y1', yL(Lcur)).attr('y2', yL(Lpr))
+    const LcurN = ellipticE(E, e*e);   // L/a exact
+    const LprN  = E;                   // L/a proxy
+    plotR.append('circle').attr('cx', xE(E)).attr('cy', yL(LcurN)).attr('r',4).attr('fill','#c62828');
+    plotR.append('line').attr('x1', xE(E)).attr('x2', xE(E))
+      .attr('y1', yL(LcurN)).attr('y2', yL(LprN))
       .attr('stroke','#9e9e9e').attr('stroke-width',1);
+
+    const Lcur = a*LcurN, Lpr = a*LprN;
     const relErr = Math.abs(Lcur - Lpr) / (Lcur || 1e-12);
-    g.append('text').attr('x', x0+m2.l+10).attr('y', m2.t+14)
-      .attr('font-family','JetBrains Mono').attr('font-size',11).attr('fill','#333')
+    g.append('text').attr('x', x0+m2.l+8).attr('y', m2.t+14)
+      .attr('font-family','JetBrains Mono').attr('font-size',10.5).attr('fill','#333')
       .text(`exact L = ${Lcur.toFixed(4)} AU`);
-    g.append('text').attr('x', x0+m2.l+10).attr('y', m2.t+28)
-      .attr('font-family','JetBrains Mono').attr('font-size',11).attr('fill','#666')
+    g.append('text').attr('x', x0+m2.l+8).attr('y', m2.t+27)
+      .attr('font-family','JetBrains Mono').attr('font-size',10.5).attr('fill','#666')
       .text(`circular ≈ ${Lpr.toFixed(4)} AU`);
-    g.append('text').attr('x', x0+m2.l+10).attr('y', m2.t+42)
-      .attr('font-family','JetBrains Mono').attr('font-size',11).attr('fill', relErr>0.01?'#c62828':'#555')
+    g.append('text').attr('x', x0+m2.l+8).attr('y', m2.t+40)
+      .attr('font-family','JetBrains Mono').attr('font-size',10.5).attr('fill', relErr>0.01?'#c62828':'#555')
       .text(`rel err = ${(100*relErr).toFixed(2)}%`);
-    g.append('text').attr('x', x0+m2.l+10).attr('y', m2.t+58)
-      .attr('font-family','JetBrains Mono').attr('font-size',11).attr('fill','#333')
+    g.append('text').attr('x', x0+m2.l+8).attr('y', m2.t+53)
+      .attr('font-family','JetBrains Mono').attr('font-size',10.5).attr('fill','#333')
       .text(`perim P = ${perim.toFixed(4)} AU`);
   }
 

@@ -39,6 +39,14 @@
     <a href="../">Examples</a>
     <span class="nav-sep">›</span>
     <a href="#">Physical Pendulum</a>
+    <span class="nav-sep" style="margin:0 6px">|</span>
+    <a href="#eom">Equation</a>
+    <a href="#period">Period</a>
+    <a href="#trajectory">Trajectory</a>
+    <a href="#phase">Phase Portrait</a>
+    <a href="#jacobi">Jacobi sn/cn/dn</a>
+    <a href="#separatrix">Separatrix</a>
+    <a href="#physical">Compound</a>
   </div>
 </nav>
 
@@ -466,31 +474,32 @@ $$T = 4\sqrt{\frac{I}{mgd}}\,K(k^2), \quad k = \sin\!\left(\frac{\theta_0}{2}\ri
 
 <h3>Code</h3>
 
-<p>Using the <code>elliptic-functions</code> Python package:</p>
+<div class="code-tabs">
+  <div class="tab-headers">
+    <button class="tab-btn active" data-tab="py">Python</button>
+    <button class="tab-btn" data-tab="ml">MATLAB / Octave</button>
+  </div>
+  <div class="tab-panel active" data-tab="py"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np, elliptic
 
-<pre>import numpy as np, elliptic
+g, L, theta0 = <span class="nm">9.81</span>, <span class="nm">1.0</span>, <span class="nm">2.5</span>         <span class="cm"># near separatrix: 143°</span>
+k  = np.sin(theta0 / <span class="nm">2</span>)
+K  = float(elliptic.<span class="kw">cel1</span>(np.sqrt(<span class="nm">1</span> - k**<span class="nm">2</span>)))   <span class="cm"># K(k²)</span>
+T  = <span class="nm">4</span> * K * np.sqrt(L / g)           <span class="cm"># exact period</span>
 
-g, L, theta0 = 9.81, 1.0, 2.5          # near separatrix: 143°
-k  = np.sin(theta0 / 2)
-K  = float(elliptic.cel1(np.sqrt(1 - k**2)))   # K(k²)
-T  = 4 * K * np.sqrt(L / g)            # exact period
+t  = np.linspace(<span class="nm">0</span>, T, <span class="nm">500</span>)
+sn, cn, dn, _ = elliptic.<span class="kw">ellipj</span>(K - t * np.sqrt(g / L), k**<span class="nm">2</span>)
+theta     = <span class="nm">2</span> * np.arcsin(k * np.asarray(sn))
+theta_dot = -<span class="nm">2</span> * k * np.sqrt(g / L) * np.asarray(cn)</pre></div>
+  <div class="tab-panel" data-tab="ml"><pre>g = <span class="nm">9.81</span>; L = <span class="nm">1.0</span>; theta0 = <span class="nm">2.5</span>;
+k  = sin(theta0/<span class="nm">2</span>);
+K  = <span class="kw">cel1</span>(sqrt(<span class="nm">1</span> - k^<span class="nm">2</span>));              <span class="cm">% K(k²)</span>
+T  = <span class="nm">4</span> * K * sqrt(L/g);
 
-t  = np.linspace(0, T, 500)
-sn, cn, dn, _ = elliptic.ellipj(K - t * np.sqrt(g / L), k**2)
-theta     = 2 * np.arcsin(k * np.asarray(sn))
-theta_dot = -2 * k * np.sqrt(g / L) * np.asarray(cn)</pre>
-
-<p>In MATLAB/Octave:</p>
-
-<pre>g = 9.81; L = 1.0; theta0 = 2.5;
-k  = sin(theta0/2);
-K  = cel1(sqrt(1 - k^2));              % K(k²)
-T  = 4 * K * sqrt(L/g);
-
-t  = linspace(0, T, 500);
-[sn, cn] = ellipj(K - t * sqrt(g/L), k^2);
-theta     = 2 * asin(k * sn);
-theta_dot = -2 * k * sqrt(g/L) * cn;</pre>
+t  = linspace(<span class="nm">0</span>, T, <span class="nm">500</span>);
+[sn, cn] = <span class="kw">ellipj</span>(K - t * sqrt(g/L), k^<span class="nm">2</span>);
+theta     = <span class="nm">2</span> * asin(k * sn);
+theta_dot = -<span class="nm">2</span> * k * sqrt(g/L) * cn;</pre></div>
+</div>
 
 </div>
 
@@ -1179,6 +1188,17 @@ function jacobi(u, m) {
   });
   document.getElementById('sel-shape').addEventListener('change', update);
 })();
+
+/* Code-tabs: language switcher */
+document.querySelectorAll('.code-tabs').forEach(ct => {
+  ct.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      ct.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      ct.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
+    });
+  });
+});
 
 </script>
 </body>

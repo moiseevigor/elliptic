@@ -23,16 +23,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+  <link rel="stylesheet" href="../examples.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <nav aria-label="page navigation">
   <div class="nav-row">
-    <a class="nav-back" href="https://moiseevigor.github.io/elliptic/">&larr; moiseevigor/elliptic</a>
-    <span class="nav-sep">|</span>
+    <a class="nav-back" href="https://moiseevigor.github.io/elliptic/">moiseevigor/elliptic</a>
+    <span class="nav-sep">›</span>
+    <a href="../">Examples</a>
+    <span class="nav-sep">›</span>
+    <a href="#">GPU Asteroid Swarm</a>
+    <span class="nav-sep" style="margin:0 6px">|</span>
     <a href="#dataset">Dataset</a>
-    <a href="#benchmark">GPU Benchmark</a>
+    <a href="#benchmark">Benchmark</a>
     <a href="#swarm">3D Swarm</a>
     <a href="#arclength">Arc Length</a>
     <a href="#validation">Validation</a>
@@ -344,12 +349,14 @@ L = a[:, <span class="kw">None</span>] * E_inc         <span class="cm"># (N_bod
   <figcaption>
     <strong>Figure 7.</strong>
     Left: Keplerian ellipse (Sun at one focus) with the arc from perihelion traced
-    in red up to the current eccentric anomaly $E$.  Right: cumulative arc
-    length $L(E) = a\,E(E\mid e^2)$ from <code>elliptic12</code> (red, solid),
-    with the circular proxy $aE$ (grey, dashed) for comparison.  The dotted
-    horizontal line marks the orbit perimeter $P = 4a\,E(e^2)$, which the exact
-    curve must reach at $E = 2\pi$.  Relative error of the proxy against the
-    exact value at the current $E$ is reported in the corner.
+    in red up to the current eccentric anomaly $E$.
+    Right: normalised arc length $L(E)/a = E(E\mid e^2)$ (red, solid) versus
+    the circular proxy $E$ (grey, dashed); the y-axis is fixed at $[0,\,2\pi]$
+    so the curve <em>shape</em> — controlled entirely by $e$ — is directly
+    comparable across asteroids.  The dashed horizontal marks the orbit perimeter
+    $P/a = 4E(e^2) < 2\pi$, which falls further below $2\pi$ as eccentricity grows.
+    Exact arc length $L$, circular approximation, and relative error at the current
+    $E$ are shown in AU in the corner.
   </figcaption>
 </figure>
 

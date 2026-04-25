@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resonance Stability Survey — Asteroid Belt &amp; Elliptic Integrals</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../examples.css">
+</head>
+<body>
+
+<nav aria-label="page navigation">
+  <div class="nav-row">
+    <a class="nav-back" href="https://moiseevigor.github.io/elliptic/">moiseevigor/elliptic</a>
+    <span class="nav-sep">›</span>
+    <a href="../">Examples</a>
+    <span class="nav-sep">›</span>
+    <a href="#">Resonance Stability</a>
+    <span class="nav-sep" style="margin:0 6px">|</span>
+    <a href="#pendulum">Pendulum</a>
+    <a href="#stability-index">Stability Index</a>
+    <a href="#phase-portrait">Phase Portrait</a>
+    <a href="#belt-survey">Belt Survey</a>
+    <a href="#code">Code</a>
+    <a href="#references">References</a>
+  </div>
+</nav>
+
+<div class="l-body">
+  <div class="hero">
+    <h1>Resonance Stability Survey<br>
+        <span style="font-weight:300;font-size:.72em;letter-spacing:-.01em">of the Asteroid Belt via Elliptic Integrals</span></h1>
+    <p class="hero-lead">
+      The Kirkwood gaps — conspicuous voids in the asteroid belt at 2.50, 2.82, 2.95, and
+      3.27&thinsp;AU — are not random.  They fall exactly where Jupiter's gravity resonates
+      with an asteroid's orbital period and flings it onto a planet-crossing orbit on
+      million-year timescales.  The simplest model that captures this dynamics is a
+      nonlinear <em>resonance pendulum</em>: the eccentricity-driven restoring force, the
+      action–angle separatrix, and the divergence of the libration period at the boundary
+      between order and chaos are all governed by the complete elliptic integral $K(k^2)$.
+      This page computes a semi-analytical stability index for every body in the main belt
+      from its osculating elements alone — no numerical integration required.
+    </p>
+    <div class="hero-meta">
+      <span>Part of <a href="https://github.com/moiseevigor/elliptic">moiseevigor/elliptic</a></span>
+      <span>Theory: Murray &amp; Dermott (1999), Wisdom (1982), Laskar (1990)</span>
+      <span>Data: <a href="https://ssd-api.jpl.nasa.gov/doc/sbdb_query.html">JPL SBDB</a></span>
+    </div>
+  </div>
+</div>
+
+<article>
+
+<!-- §1  Why resonances shape the belt ========================================= -->
+<div class="l-body">
+  <div class="callout">
+    <strong>What this page is.</strong> A semi-analytical resonance survey: for each
+    asteroid we measure how far its semi-major axis lies from the nearest first-order
+    mean-motion resonance with Jupiter, express that distance in units of the separatrix
+    half-width, and compute the exact libration period from $K(k^2)$ without integrating
+    any orbit.
+    <strong>What it is not.</strong> A chaos-detection tool or a substitute for
+    symplectic long-term integrators such as
+    <a href="https://rebound.readthedocs.io">REBOUND</a>; chaos is caused by overlapping
+    resonances and manifests only after $\gtrsim 10^5\,\text{yr}$ of perturbation.
+  </div>
+</div>
+
+<div class="l-body">
+  <h2 id="resonances">Kirkwood Gaps and Mean-Motion Resonances</h2>
+
+  <p>
+    A mean-motion resonance (MMR) with Jupiter occurs when the ratio of orbital periods
+    is a ratio of small integers: $T_\text{ast}/T_J = q/p$.  By Kepler's third law this
+    fixes the asteroid's semi-major axis at
+  </p>
+  $$a_\text{res} = a_J \left(\frac{q}{p}\right)^{2/3}.$$
+  <p>
+    The dominant first-order resonances ($p - q = 1$) are the 4:1 (2.06&thinsp;AU),
+    3:1 (2.50&thinsp;AU), 5:2 (2.82&thinsp;AU), 7:3 (2.95&thinsp;AU), and 2:1
+    (3.27&thinsp;AU).  Wisdom (1982) showed by surface-of-section analysis that the 3:1
+    resonance sweeps an asteroid to $e \approx 0.3$–0.4 in less than $10^6\,\text{yr}$,
+    clearing the gap.  The 3:2 Hilda resonance at 3.96&thinsp;AU is an exception: the
+    libration is stable and hosts a population of ~5,000 known bodies.
+  </p>
+  <p>
+    The governing dynamics near any first-order resonance collapses — after a
+    canonical transformation — to a single-degree-of-freedom pendulum, with the
+    resonance angle $\sigma = p\lambda - q\lambda_J - \varpi$ playing the role of the
+    pendulum angle.
+  </p>
+</div>
+
+<!-- §2  Resonance pendulum =================================================== -->
+<div class="l-body">
+  <h2 id="pendulum">The Resonance Pendulum</h2>
+
+  <p>
+    Averaging the gravitational potential of Jupiter over the fast angles and keeping
+    only the resonant term yields a second-order Hamiltonian
+    (Murray &amp; Dermott 1999, §8.4):
+  </p>
+  $$H = \frac{\alpha}{2}(\delta a)^2 - \beta\, e\cos\sigma,$$
+  <p>
+    where $\delta a = a - a_\text{res}$ is the distance from the resonance centre,
+    $\sigma$ the resonance angle, and the coefficients are
+  </p>
+  $$\alpha = \frac{3 p^2 n_\text{res}^2}{2 a_\text{res}^2}, \qquad
+    \beta  = -n_\text{res}^2 \mu_J\, f_d.$$
+  <p>
+    Here $\mu_J = M_J/M_\odot \approx 9.55 \times 10^{-4}$, and $f_d$ is the
+    resonant coefficient from the disturbing function — a combination of Laplace
+    coefficients $b_{1/2}^{(j)}(\alpha_\text{res})$ evaluated at the resonance location:
+  </p>
+  $$f_d = -\frac{1}{2}\Bigl[(2j+1)\,b_{1/2}^{(j)}(\alpha) + \alpha\,\tfrac{d}{d\alpha}b_{1/2}^{(j)}(\alpha)\Bigr]
+         + \frac{\alpha}{2}\,\delta_{j,1}.$$
+  <p>
+    The Laplace coefficient is computed by trapezoidal quadrature over its integral
+    representation (Murray &amp; Dermott Appendix A):
+  </p>
+  $$b_{s}^{(j)}(\alpha) = \frac{2}{\pi}\int_0^\pi \frac{\cos(j\psi)}{(1 - 2\alpha\cos\psi + \alpha^2)^s}\,d\psi.$$
+  <p>
+    The pendulum has a separatrix at energy $H = \beta e \cdot 2k^2 - \beta e$ that
+    divides libration ($\sigma$ oscillates around 0) from circulation ($\sigma$ advances
+    without bound).  Introducing the amplitude parameter
+  </p>
+  $$k^2 = \frac{1}{2}\left(1 + \frac{H}{\beta e}\right)$$
+  <p>
+    puts $k = 0$ at the resonance centre, $k = 1$ at the separatrix, and $k > 1$ in the
+    circulating region.
+  </p>
+  <p>
+    The separatrix half-width in semi-major axis is (M&amp;D eq. 8.76):
+  </p>
+  $$\delta a_\text{sep} = a_\text{res}\sqrt{\frac{16\,\mu_J\,|f_d|\,e}{3p^2}},$$
+  <p>
+    so for a body at distance $\delta a$ from the resonance the amplitude is simply
+    $k = |\delta a| / \delta a_\text{sep}$.
+  </p>
+</div>
+
+<!-- §3  Stability index from K(k²) =========================================== -->
+<div class="l-body">
+  <h2 id="stability-index">Stability Index from $K(k^2)$</h2>
+
+  <p>
+    The libration period of a pendulum with amplitude parameter $k$ is:
+  </p>
+  $$T_\text{lib} = \frac{4\,K(k^2)}{\omega_0}, \qquad
+    \omega_0 = n_\text{res}\sqrt{\tfrac{3}{2}\,p^2\,\mu_J\,|f_d|\,e}.$$
+  <p>
+    $K(k^2)$ is the complete elliptic integral of the first kind.  It equals
+    $\pi/2$ at the resonance centre ($k = 0$) and diverges logarithmically as
+    $k \to 1^-$:
+  </p>
+  $$K(k^2) \;\xrightarrow{k\to 1^-}\; \ln\frac{4}{\sqrt{1-k^2}} + O\!\left((1-k^2)\ln(1-k^2)\right).$$
+  <p>
+    This divergence is the signature of chaos onset: as the libration amplitude approaches
+    the separatrix the period grows without bound, the orbit slows near the homoclinic
+    point, and phase-space diffusion driven by higher-order resonances takes over.
+  </p>
+  <p>
+    We define a <em>stability index</em>
+  </p>
+  $$S = 1 - k^2 = 1 - \left(\frac{\delta a}{\delta a_\text{sep}}\right)^2.$$
+  <p>
+    $S = 1$ at the resonance centre, $S = 0$ at the separatrix, and $S < 0$ in the
+    circulating region.  This is a Poincaré-map quantity — it answers "how far is this
+    body's phase-space position from the chaotic boundary?" without integrating a single
+    orbit.  The index is evaluated here for every body using the GPU-vectorised
+    elliptic-integral routines from the <code>elliptic</code> package
+    (see the <a href="../gpu-asteroid-swarm/">GPU Asteroid Swarm</a> example).
+  </p>
+</div>
+
+<!-- Figure 1 — phase portrait ================================================ -->
+<div class="l-body">
+  <h2 id="phase-portrait">Pendulum Phase Portrait</h2>
+  <p>
+    Figure&nbsp;1 shows the phase portrait of the normalised resonance pendulum
+    $\ddot\sigma = -\sin\sigma$.  Each coloured curve is a constant-energy contour;
+    the dashed red curve is the separatrix ($k = 1$).  Blue curves are libration orbits
+    ($k &lt; 1$, $S > 0$); grey dashed curves are circulation orbits ($k > 1$, $S &lt; 0$).
+  </p>
+</div>
+
+<figure class="l-middle" id="fig1">
+  <div class="fig-box">
+    <svg id="fig-phase" style="width:100%;height:320px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 1.</strong>
+    Phase portrait of the resonance pendulum.  The horizontal axis is the resonance angle
+    $\sigma \in [-\pi, \pi]$; the vertical axis is $d\sigma/dt$ in normalised units.
+    Blue curves librate around $\sigma = 0$ (inside the resonance); the red dashed
+    separatrix ($k = 1$, $S = 0$) is the boundary beyond which orbits circulate (grey,
+    dashed).  A real asteroid sits somewhere on this portrait — its $k$ value is the
+    ratio of its distance from $a_\text{res}$ to the separatrix half-width
+    $\delta a_\text{sep}$.
+  </figcaption>
+</figure>
+
+<!-- Figure 2 — K(k²) divergence ============================================== -->
+<div class="l-body">
+  <h2 id="kplot">Libration Period Divergence</h2>
+  <p>
+    Figure&nbsp;2 shows how the libration period (relative to the small-oscillation
+    period $T_0 = 2\pi/\omega_0$) grows as the orbit approaches the separatrix.
+    The ratio is $(2/\pi)\,K(k^2)$, which diverges as $k \to 1$.  The shaded red band
+    ($k > 0.9$) marks the regime where the period has already doubled; orbits here are
+    near the chaotic layer and susceptible to Arnold diffusion driven by higher-order
+    resonances.
+  </p>
+</div>
+
+<figure class="l-middle" id="fig2">
+  <div class="fig-box">
+    <svg id="fig-kplot" style="width:100%;height:260px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 2.</strong>
+    Normalised libration period $T_\text{lib}/T_0 = (2/\pi)\,K(k^2)$ as a function of
+    amplitude parameter $k$.  At $k = 0$ the period equals $T_0$ (harmonic limit).
+    At $k = 0.9$ it has already doubled; it diverges logarithmically at $k = 1$
+    (the separatrix).  The shaded red band marks the chaotic layer where the
+    pendulum approximation breaks down.
+  </figcaption>
+</figure>
+
+<!-- §4  Belt survey =========================================================== -->
+<div class="l-body">
+  <h2 id="belt-survey">Stability Survey of the Main Belt</h2>
+  <p>
+    Applying the index to the full catalog subset gives the maps in
+    Figures&nbsp;3–4.  Each point is one asteroid from the SBDB dataset loaded in
+    the <a href="../gpu-asteroid-swarm/">GPU Asteroid Swarm</a> example; only bodies
+    with $1.6 \le a \le 5.5\,\text{AU}$ and $e &lt; 0.5$ are shown.
+  </p>
+  <p>
+    The computation assigns each body to the nearest first-order Jupiter resonance
+    (4:1, 3:1, 2:1, 3:2 Hilda, 4:3) and evaluates $k^2$ from the analytic separatrix
+    formula.  For bodies with $k &lt; 1$ it also computes $T_\text{lib}$ via
+    $K(k^2)$; this is shown in Figure&nbsp;4.
+  </p>
+</div>
+
+<figure class="l-middle" id="fig3">
+  <div class="fig-box">
+    <svg id="fig-stability" style="width:100%;height:380px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 3.</strong>
+    Stability map in the $(a,\,e)$ plane.  Colour encodes $S = 1 - k^2$:
+    green marks librating bodies near the resonance centre ($S \approx 1$),
+    red marks bodies near the separatrix ($S \approx 0$), and blue-grey marks
+    circulating bodies ($S &lt; 0$).  Vertical dashed lines mark the resonance
+    centres; the Kirkwood gap positions (3:1 at 2.50&thinsp;AU, 2:1 at 3.27&thinsp;AU)
+    show up as depopulated columns.  The Hilda cluster at the 3:2 resonance
+    (3.96&thinsp;AU) appears as a green–red concentration: bodies librating
+    with varying amplitudes.
+  </figcaption>
+</figure>
+
+<figure class="l-middle" id="fig4">
+  <div class="fig-box">
+    <svg id="fig-tlib" style="width:100%;height:300px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 4.</strong>
+    Libration period (in units of the body's own orbital period) for resonant bodies
+    ($k &lt; 1$) only.  Colour tracks $T_\text{lib}/T_\text{orb}$ on the Plasma scale.
+    Near the resonance centre $T_\text{lib}/T_\text{orb}$ is 10–100; near the separatrix
+    it can reach several hundred — reflecting the logarithmic divergence of $K(k^2)$.
+  </figcaption>
+</figure>
+
+<!-- §5  Code tabs ============================================================= -->
+<div class="l-body">
+  <h2 id="code">GPU Survey — Code</h2>
+  <p>
+    The computation below runs the same stability survey entirely on the GPU using
+    <code>elliptic</code>'s vectorised $K(k^2)$ and $E(k^2)$ routines.
+    For a catalog of $N$ asteroids it replaces a loop of $N$ calls with a single
+    batched call whose latency is essentially independent of $N$ on a modern GPU.
+  </p>
+
+  <div class="code-tabs">
+    <div class="tab-bar">
+      <button class="tab-btn active" type="button" data-tab="py">Python</button>
+      <button class="tab-btn" type="button" data-tab="matlab">MATLAB</button>
+    </div>
+
+    <div class="tab-panel active" data-tab="py">
+<pre><code class="language-python">import numpy as np
+from elliptic import elliptic12   # GPU-backed K(m) and E(m) via elliptic12
+
+# ── Constants ──────────────────────────────────────────────────────────────────
+GM_SUN = 4 * np.pi**2          # AU³ yr⁻²
+A_J    = 5.2026                 # Jupiter semi-major axis [AU]
+MU_J   = 9.5474e-4              # M_Jupiter / M_Sun
+
+# ── Resonance table (first-order, p − q = 1) ──────────────────────────────────
+# Each row: (p, q, |f_d|)  — |f_d| from Laplace-coefficient quadrature
+RESONANCES = [
+    (4, 1, 0.3300),   # 4:1  a ≈ 2.06 AU  — Kirkwood gap
+    (3, 1, 0.4977),   # 3:1  a ≈ 2.50 AU  — Kirkwood gap
+    (2, 1, 0.7489),   # 2:1  a ≈ 3.27 AU  — Hecuba gap
+    (3, 2, 0.1652),   # 3:2  a ≈ 3.97 AU  — Hilda (stable)
+    (4, 3, 0.0884),   # 4:3  a ≈ 4.29 AU
+]
+
+# ── Resonance geometry ─────────────────────────────────────────────────────────
+def a_res(p, q):   return A_J * (q / p) ** (2/3)
+def n_res(p, q):   return np.sqrt(GM_SUN / a_res(p, q)**3)
+
+def half_width(p, q, fd, e):
+    """Separatrix half-width in semi-major axis [AU]."""
+    return a_res(p, q) * np.sqrt(16 * MU_J * fd * np.maximum(e, 1e-4) / (3 * p**2))
+
+def omega0(p, q, fd, e):
+    """Small-oscillation frequency [rad yr⁻¹]."""
+    return n_res(p, q) * np.sqrt(1.5 * p**2 * MU_J * fd * np.maximum(e, 1e-4))
+
+# ── Vectorised stability survey ────────────────────────────────────────────────
+def survey(a: np.ndarray, e: np.ndarray) -> dict:
+    """
+    Returns stability index S = 1 − k² for N asteroids.
+    S = 1  → resonance centre
+    S = 0  → separatrix (chaos onset)
+    S < 0  → circulating (outside resonance)
+    """
+    N = len(a)
+    best_k2  = np.full(N, np.inf)
+    best_om0 = np.ones(N)
+
+    for p, q, fd in RESONANCES:
+        ar  = a_res(p, q)
+        dw  = half_width(p, q, fd, e)
+        k2  = ((a - ar) / (dw + 1e-12))**2
+        om  = omega0(p, q, fd, e)
+        # Take the resonance that gives the smallest k²
+        closer = k2 &lt; best_k2
+        best_k2  = np.where(closer, k2, best_k2)
+        best_om0 = np.where(closer, om, best_om0)
+
+    # ── GPU call: K(m) for all N bodies in one shot ────────────────────────────
+    # elliptic12(phi, m) returns (F, E, Z);  phi = π/2 → complete integrals
+    librating = best_k2 &lt; 1.0
+    m_vec     = np.where(librating, best_k2, 0.0)        # K(m) undefined for m≥1
+    K_vals, _, _ = elliptic12(np.full(N, np.pi / 2), m_vec)
+
+    T_lib   = np.where(librating, 4 * K_vals / best_om0, np.inf)
+    T_orb   = 2 * np.pi * np.sqrt(a**3 / GM_SUN)
+
+    return {
+        'S':       1.0 - best_k2,
+        'k_sq':    best_k2,
+        'K':       np.where(librating, K_vals, np.inf),
+        'T_lib':   T_lib,
+        'T_ratio': T_lib / T_orb,
+    }
+
+# ── Example usage ─────────────────────────────────────────────────────────────
+if __name__ == '__main__':
+    import json
+
+    with open('asteroids_subset.json') as f:
+        data = json.load(f)
+
+    bodies = data['bodies']
+    a = np.array([b['a'] for b in bodies])
+    e = np.array([b['e'] for b in bodies])
+
+    res = survey(a, e)
+
+    librating = res['k_sq'] &lt; 1
+    print(f"Bodies surveyed   : {len(a):,}")
+    print(f"Librating (S > 0) : {librating.sum():,}  ({100*librating.mean():.1f}%)")
+    print(f"Near separatrix   : {((res['k_sq'] &gt; 0.81) &amp; librating).sum():,}  (k &gt; 0.9)")
+    print(f"Median T_lib/T_orb: {np.nanmedian(res['T_ratio'][librating]):.1f}×")
+</code></pre>
+    </div>
+
+    <div class="tab-panel" data-tab="matlab">
+<pre><code class="language-matlab">% Resonance Stability Survey — MATLAB implementation
+% Requires the elliptic toolbox: https://github.com/moiseevigor/elliptic
+
+GM_SUN = 4 * pi^2;      % AU^3 yr^-2
+A_J    = 5.2026;         % Jupiter semi-major axis [AU]
+MU_J   = 9.5474e-4;      % M_Jupiter / M_Sun
+
+% First-order resonances: [p, q, |f_d|]
+resonances = [
+    4, 1, 0.3300;
+    3, 1, 0.4977;
+    2, 1, 0.7489;
+    3, 2, 0.1652;
+    4, 3, 0.0884;
+];
+
+% Load asteroid catalog (SBDB subset)
+data    = jsondecode(fileread('asteroids_subset.json'));
+a_vec   = [data.bodies.a]';
+e_vec   = [data.bodies.e]';
+N       = numel(a_vec);
+
+% ── Vectorised stability computation ──────────────────────────────────────────
+best_k2  = inf(N, 1);
+best_om0 = ones(N, 1);
+
+for idx = 1:size(resonances, 1)
+    p  = resonances(idx, 1);
+    q  = resonances(idx, 2);
+    fd = resonances(idx, 3);
+
+    ar  = A_J * (q/p)^(2/3);
+    nr  = sqrt(GM_SUN / ar^3);
+    e_c = max(e_vec, 1e-4);
+
+    dw  = ar * sqrt(16 * MU_J * fd * e_c / (3 * p^2));   % separatrix width
+    k2  = ((a_vec - ar) ./ (dw + 1e-12)).^2;
+    om  = nr * sqrt(1.5 * p^2 * MU_J * fd * e_c);        % ω₀
+
+    closer   = k2 &lt; best_k2;
+    best_k2  = best_k2  .* ~closer + k2  .* closer;
+    best_om0 = best_om0 .* ~closer + om  .* closer;
+end
+
+% ── GPU call: K(m) for all N bodies (elliptic toolbox) ────────────────────────
+librating = best_k2 &lt; 1;
+m_vec     = best_k2 .* librating;       % set circulating bodies to 0
+
+% ellipticK(m) is vectorised — one call for the whole catalog
+K_vals = ellipticK(m_vec);
+
+T_lib  = 4 * K_vals ./ best_om0;
+T_lib(~librating) = inf;
+T_orb  = 2 * pi * sqrt(a_vec.^3 / GM_SUN);
+
+S      = 1 - best_k2;
+T_ratio = T_lib ./ T_orb;
+
+% ── Summary statistics ────────────────────────────────────────────────────────
+fprintf('Bodies surveyed   : %d\n',   N);
+fprintf('Librating (S > 0) : %d  (%.1f%%)\n', sum(librating), 100*mean(librating));
+fprintf('Near separatrix   : %d  (k > 0.9)\n', sum(best_k2 > 0.81 &amp; librating));
+fprintf('Median T_lib/T_orb: %.1fx\n', median(T_ratio(librating)));
+</code></pre>
+    </div>
+  </div><!-- .code-tabs -->
+</div><!-- .l-body -->
+
+<!-- §6  References ============================================================ -->
+<div class="l-body">
+  <h2 id="references">References</h2>
+  <ol class="references-list">
+    <li>
+      J. Wisdom (1982). "The origin of the Kirkwood gaps: A mapping for asteroidal
+      motion near the 3/1 commensurability." <em>Astronomical Journal</em>, 87,
+      577–593. <a href="https://doi.org/10.1086/113132">doi:10.1086/113132</a>
+    </li>
+    <li>
+      C.D. Murray &amp; S.F. Dermott (1999). <em>Solar System Dynamics.</em>
+      Cambridge University Press.  Chapters 7–8 (resonances and chaos);
+      Appendix A (Laplace coefficients); eq.&nbsp;8.76 (separatrix half-width).
+    </li>
+    <li>
+      J. Laskar (1990). "The chaotic motion of the solar system: A numerical
+      estimate of the size of the chaotic zones." <em>Icarus</em>, 88, 266–291.
+      <a href="https://doi.org/10.1016/0019-1035(90)90084-M">doi:10.1016/…</a>
+    </li>
+    <li>
+      J. Laskar (1994). "Large scale chaos in the solar system."
+      <em>Astronomy &amp; Astrophysics</em>, 287, L9–L12.
+    </li>
+    <li>
+      B.V. Chirikov (1979). "A universal instability of many-dimensional oscillator
+      systems." <em>Physics Reports</em>, 52, 263–379.
+      The overlap criterion for stochastic layers near separatrices.
+    </li>
+    <li>
+      M. Abramowitz &amp; I.A. Stegun (1972). <em>Handbook of Mathematical Functions.</em>
+      §17.4–17.6: complete elliptic integrals and the AGM algorithm.
+    </li>
+  </ol>
+</div>
+
+</article>
+
+<footer>
+  <p>
+    <a href="https://github.com/moiseevigor/elliptic">moiseevigor/elliptic</a>
+    &thinsp;·&thinsp; examples run client-side, no server &thinsp;·&thinsp;
+    data from <a href="https://ssd-api.jpl.nasa.gov/doc/sbdb_query.html">JPL SBDB</a>
+  </p>
+</footer>
+
+<style>
+/* page-specific only — all tokens, typography, figures come from ../examples.css */
+.references-list {
+  font-size: .92em;
+  line-height: 1.7;
+  color: var(--text-muted, #555);
+  padding-left: 1.4em;
+}
+.references-list li { margin-bottom: .55em; }
+.references-list a  { color: var(--accent); }
+</style>
+
+<script>
+document.querySelectorAll('.code-tabs').forEach(wrap => {
+  const btns = wrap.querySelectorAll('.tab-btn');
+  const pans = wrap.querySelectorAll('.tab-panel');
+  btns.forEach(btn => btn.addEventListener('click', () => {
+    const key = btn.dataset.tab;
+    btns.forEach(b => b.classList.toggle('active', b.dataset.tab === key));
+    pans.forEach(p => p.classList.toggle('active', p.dataset.tab === key));
+  }));
+});
+</script>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -6,6 +6,9 @@
 <title>Elliptic — Elliptic integrals &amp; functions for MATLAB, Octave and Python</title>
 <meta name="description" content="Full-precision elliptic integrals, Jacobi elliptic and theta functions, Carlson symmetric forms and Weierstrass's ℘ for MATLAB/Octave and Python (NumPy · PyTorch · JAX).">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"
+        onload="window._katexReady=true;window.dispatchEvent(new Event('katex-ready'))"></script>
 <style>
 /* ── Hero ──────────────────────────────────────────────────── */
 .hero {
@@ -213,8 +216,14 @@
 
 /* ── Modal (dialog) ────────────────────────────────────────── */
 dialog#fnModal {
+  /* explicit centering — Safari sometimes top-left-aligns <dialog>
+     when the CSS resets padding/max-width without also setting these. */
+  position: fixed;
+  inset: 0;
+  margin: auto;
   border: none; border-radius: var(--r-lg); padding: 0;
-  max-width: 620px; width: calc(100% - 40px);
+  max-width: 720px; width: calc(100% - 40px);
+  max-height: calc(100vh - 40px);
   background: white; color: var(--text);
   box-shadow: 0 20px 50px oklch(0% 0 0 / .18), 0 6px 16px oklch(0% 0 0 / .10);
 }
@@ -255,7 +264,7 @@ dialog#fnModal::backdrop { background: oklch(15% 0.02 255 / .35); backdrop-filte
 .modal-lang-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 .modal-lang-tab:hover:not(.active):not([data-disabled]) { color: var(--text); }
 .modal-lang-tab[data-disabled] { opacity: .45; cursor: not-allowed; }
-.modal-body { padding: 20px 28px; max-height: 55vh; overflow-y: auto; }
+.modal-body { padding: 20px 28px; max-height: 62vh; overflow-y: auto; }
 .modal-sig-label {
   font-family: var(--sans); font-size: .6rem; font-weight: 600;
   letter-spacing: .1em; text-transform: uppercase;
@@ -276,6 +285,43 @@ dialog#fnModal::backdrop { background: oklch(15% 0.02 255 / .35); backdrop-filte
 .modal-formula {
   color: var(--text); background: white;
   border-style: dashed; font-size: .72rem;
+}
+/* KaTeX rendered definition block */
+.modal-math {
+  background: var(--accent-xlt);
+  border: 1px solid var(--accent-light);
+  border-radius: var(--r);
+  padding: 16px 20px;
+  text-align: center;
+  overflow-x: auto;
+  font-size: .92rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+.modal-math .katex-display { margin: 0; }
+/* Relations list */
+.modal-relations {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.modal-rel-item {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 7px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--r);
+  font-size: .8rem;
+}
+.modal-rel-btn {
+  font-family: var(--mono); font-size: .75rem; font-weight: 500;
+  color: var(--accent); background: var(--accent-xlt);
+  border: 1px solid var(--accent-light); border-radius: var(--r);
+  padding: 2px 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: background .13s, color .13s;
+}
+.modal-rel-btn:hover { background: var(--accent-light); color: white; }
+.modal-rel-note {
+  color: var(--text-muted); line-height: 1.4; font-family: var(--sans);
 }
 .modal-example-wrap { position: relative; }
 .modal-example-wrap .btn-code-sm {
@@ -370,7 +416,28 @@ dialog#fnModal::backdrop { background: oklch(15% 0.02 255 / .35); backdrop-filte
   .examples-grid { grid-template-columns: 1fr; }
   .section-wrap, .feature-pills, .lang-strip { padding: 0 20px; }
   .lang-strip { grid-template-columns: 1fr; }
-  .nav-links { display: none; }
+
+  /* Show nav links as a horizontally scrollable strip */
+  .nav-links { display: flex; flex: 1; min-width: 0; overflow-x: auto; }
+  .nav-spacer { display: none; }
+
+  /* Touch-friendly category filter tabs */
+  .cat-tab { padding: 7px 14px; min-height: 36px; }
+
+  /* Keyboard shortcut is useless on touchscreens */
+  .finder-hint { display: none; }
+
+  /* Smooth momentum scroll in the function detail modal on iOS */
+  .modal-body { -webkit-overflow-scrolling: touch; }
+
+  /* Use full available width for the modal */
+  dialog#fnModal { width: calc(100% - 24px); }
+
+  /* Slightly smaller minimum so cards fit on 320 px phones */
+  .fn-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+
+  /* Prevent long install-command text from overflowing on very narrow screens */
+  .btn-code-text { max-width: min(200px, 55vw); overflow: hidden; text-overflow: ellipsis; }
 }
 </style>
 </head>
@@ -418,9 +485,28 @@ dialog#fnModal::backdrop { background: oklch(15% 0.02 255 / .35); backdrop-filte
         <span class="copy-hint">copy</span>
       </button>
     </div>
-    <div class="badge-row">
-      <span class="badge badge-default">Gitter · Join Chat</span>
-      <span class="badge badge-doi">DOI 10.5281/zenodo.19653751</span>
+    <div class="badge-row hero-badges">
+      <a href="https://github.com/moiseevigor/elliptic/actions/workflows/python.yml" target="_blank" rel="noopener">
+        <img src="https://github.com/moiseevigor/elliptic/actions/workflows/python.yml/badge.svg" alt="Python tests">
+      </a>
+      <a href="https://dl.circleci.com/status-badge/redirect/gh/moiseevigor/elliptic/tree/master" target="_blank" rel="noopener">
+        <img src="https://dl.circleci.com/status-badge/img/gh/moiseevigor/elliptic/tree/master.svg?style=svg" alt="CircleCI">
+      </a>
+      <a href="https://pypi.org/project/elliptic-functions/" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/pypi/v/elliptic-functions?logo=pypi&amp;logoColor=white&amp;label=PyPI" alt="PyPI">
+      </a>
+      <a href="https://pypi.org/project/elliptic-functions/" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/pypi/pyversions/elliptic-functions?logo=python&amp;logoColor=white" alt="Python versions">
+      </a>
+      <a href="https://github.com/moiseevigor/elliptic/tree/master/matlab" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/badge/MATLAB-R2019b%2B-0076A8?logo=mathworks&amp;logoColor=white" alt="MATLAB R2019b+">
+      </a>
+      <a href="https://github.com/moiseevigor/elliptic/tree/master/matlab" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/badge/Octave-6.0%2B-0790c0?logo=octave&amp;logoColor=white" alt="Octave 6.0+">
+      </a>
+      <a href="https://doi.org/10.5281/zenodo.48264" target="_blank" rel="noopener">
+        <img src="https://zenodo.org/badge/5762/moiseevigor/elliptic.svg" alt="DOI">
+      </a>
     </div>
   </div>
 
@@ -494,8 +580,9 @@ dialog#fnModal::backdrop { background: oklch(15% 0.02 255 / .35); backdrop-filte
           <circle cx="108" cy="65" r="6" fill="oklch(68% 0.145 68)" opacity=".85"/>
           <circle cx="150" cy="15" r="4" fill="oklch(44% 0.14 255)"/>
           <line x1="108" y1="65" x2="150" y2="15" stroke="oklch(44% 0.14 255)" stroke-width="1" stroke-dasharray="3 2" opacity=".5"/>
-          <text x="170" y="24" font-family="'JetBrains Mono',monospace" font-size="9" fill="oklch(44% 0.14 255)">L(E) = a·E(E|e²)</text>
           <text x="114" y="83" font-family="'JetBrains Mono',monospace" font-size="8" fill="oklch(68% 0.145 68)">☉</text>
+          <rect x="155" y="108" width="138" height="14" rx="2" fill="white" opacity=".75"/>
+          <text x="159" y="118" font-family="'JetBrains Mono',monospace" font-size="9" fill="oklch(44% 0.14 255)">L(E) = a·E(E|e²)</text>
         </svg>
       </div>
       <div class="ex-card-body">
@@ -532,8 +619,9 @@ dialog#fnModal::backdrop { background: oklch(15% 0.02 255 / .35); backdrop-filte
           <ellipse cx="150" cy="65" rx="30" ry="12" fill="none" stroke="oklch(78% 0.06 255)" stroke-width=".8" opacity=".6"/>
           <ellipse cx="150" cy="65" rx="55" ry="22" fill="none" stroke="oklch(78% 0.06 255)" stroke-width=".8" opacity=".5"/>
           <ellipse cx="150" cy="65" rx="90" ry="36" fill="none" stroke="oklch(78% 0.06 255)" stroke-width=".8" opacity=".4"/>
-          <text x="8" y="15" font-family="'JetBrains Mono',monospace" font-size="8" fill="oklch(44% 0.14 255)">1.5 M asteroids</text>
-          <text x="8" y="26" font-family="'JetBrains Mono',monospace" font-size="8" fill="oklch(62% 0.012 255)">JPL SBDB catalog</text>
+          <rect x="6" y="5" width="126" height="26" rx="3" fill="white" opacity=".72"/>
+          <text x="10" y="15" font-family="'JetBrains Mono',monospace" font-size="8" fill="oklch(44% 0.14 255)">1.5 M asteroids</text>
+          <text x="10" y="26" font-family="'JetBrains Mono',monospace" font-size="8" fill="oklch(55% 0.012 255)">JPL SBDB catalog</text>
         </svg>
       </div>
       <div class="ex-card-body">
@@ -563,8 +651,10 @@ dialog#fnModal::backdrop { background: oklch(15% 0.02 255 / .35); backdrop-filte
           <circle cx="210" cy="78" r="6" fill="oklch(44% 0.14 255)" opacity=".8"/>
           <path d="M 230 40 A 22 22 0 0 1 215 32" fill="none" stroke="oklch(68% 0.145 68)" stroke-width="1.2"/>
           <text x="218" y="30" font-family="'JetBrains Mono',monospace" font-size="8" fill="oklch(68% 0.145 68)">θ₀</text>
-          <text x="32" y="13" font-family="'JetBrains Mono',monospace" font-size="8" fill="oklch(62% 0.012 255)">phase portrait</text>
-          <text x="32" y="126" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="oklch(44% 0.14 255)">sn(t|m)</text>
+          <rect x="30" y="5" width="88" height="13" rx="2" fill="white" opacity=".7"/>
+          <text x="33" y="14" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="oklch(55% 0.012 255)">phase portrait</text>
+          <rect x="180" y="116" width="54" height="12" rx="2" fill="white" opacity=".7"/>
+          <text x="183" y="125" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="oklch(44% 0.14 255)">sn(t|m)</text>
         </svg>
       </div>
       <div class="ex-card-body">

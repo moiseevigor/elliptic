@@ -145,6 +145,17 @@ function wireFinder() {
 }
 
 /* ─── Modal ──────────────────────────────────────────────────────── */
+function renderMath(el, latex) {
+  const doRender = () => {
+    try { el.innerHTML = katex.renderToString(latex, { displayMode: true, throwOnError: false }); }
+    catch(e) { el.textContent = latex; }
+  };
+  if (typeof katex !== 'undefined') { doRender(); return; }
+  // KaTeX script not yet executed — show fallback, re-render on load
+  el.textContent = latex;
+  window.addEventListener('katex-ready', doRender, { once: true });
+}
+
 function openModal(fnId) {
   const fn = window.FUNCTIONS.find(f => f.id === fnId);
   if (!fn) return;
@@ -162,8 +173,26 @@ function openModal(fnId) {
   const dlmf = fn.dlmf
     ? `<a class="modal-link" href="${esc(fn.dlmf)}" target="_blank" rel="noopener">DLMF reference ↗</a>`
     : '';
-  const formula = fn.formula
-    ? `<pre class="modal-formula">${esc(fn.formula)}</pre>`
+
+  // Definition block — prefer KaTeX-rendered LaTeX, fall back to ASCII pre
+  const formulaHtml = fn.formulaTeX
+    ? `<div class="modal-sig-label">DEFINITION</div>
+       <div class="modal-math" data-latex="${esc(fn.formulaTeX)}"></div>`
+    : fn.formula
+      ? `<div class="modal-sig-label">DEFINITION</div>
+         <pre class="modal-formula">${esc(fn.formula)}</pre>`
+      : '';
+
+  // Relations section
+  const relationsHtml = fn.relations && fn.relations.length
+    ? `<div class="modal-sig-label">RELATIONS</div>
+       <ul class="modal-relations">
+         ${fn.relations.map(r => `
+           <li class="modal-rel-item">
+             <button type="button" class="modal-rel-btn" data-rel-fn="${esc(r.fn)}">${esc(r.fn)}</button>
+             <span class="modal-rel-note">${esc(r.note)}</span>
+           </li>`).join('')}
+       </ul>`
     : '';
 
   const tabs = langs.map(L => {
@@ -193,7 +222,8 @@ function openModal(fnId) {
       </div>
       <div class="modal-sig-label">OUTPUT</div>
       <pre class="modal-output">${esc(fn.output)}</pre>
-      ${formula}
+      ${formulaHtml}
+      ${relationsHtml}
       <div class="modal-note" data-note ${fn[activeLang]?.note ? '' : 'hidden'}>${esc(fn[activeLang]?.note || '')}</div>
     </div>
     <div class="modal-footer">
@@ -201,6 +231,18 @@ function openModal(fnId) {
       ${dlmf}
     </div>
   `;
+
+  // Render KaTeX for all [data-latex] elements
+  dlg.querySelectorAll('[data-latex]').forEach(el => renderMath(el, el.dataset.latex));
+
+  // Wire relation buttons → open sibling modal
+  dlg.querySelectorAll('[data-rel-fn]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      dlg.close();
+      // Small delay so the closing animation finishes
+      setTimeout(() => openModal(btn.dataset.relFn), 80);
+    });
+  });
 
   // helper: populate sig/example for the active language
   function paint(L) {

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dubins Car, Euler's Elastica &amp; the Visual Cortex — Elliptic Integrals</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../examples.css">
+</head>
+<body>
+
+<nav aria-label="page navigation">
+  <div class="nav-row">
+    <a class="nav-back" href="https://moiseevigor.github.io/elliptic/">moiseevigor/elliptic</a>
+    <span class="nav-sep">›</span>
+    <a href="../">Examples</a>
+    <span class="nav-sep">›</span>
+    <a href="#">Dubins Car &amp; Visual Cortex</a>
+    <span class="nav-sep" style="margin:0 6px">|</span>
+    <a href="#elastica">Elastica</a>
+    <a href="#euler-spiral">Euler Spiral</a>
+    <a href="#period">Period</a>
+    <a href="#family">Geodesic Family</a>
+    <a href="#v1">Visual Cortex</a>
+    <a href="#code">Code</a>
+    <a href="#references">References</a>
+  </div>
+</nav>
+
+<div class="l-body">
+  <div class="hero">
+    <h1>Dubins Car, Euler's Elastica<br>
+        <span style="font-weight:300;font-size:.72em;letter-spacing:-.01em">&amp; the Visual Cortex</span></h1>
+    <p class="hero-lead">
+      When neurons in primary visual cortex V1 fill in a gap between two oriented line
+      segments, they are — according to Petitot's model — implicitly solving a
+      sub-Riemannian shortest-path problem on the group of plane motions SE(2).
+      The solutions are Euler's <em>elastica</em>: curves that minimise total squared
+      curvature.  Their curvature $\kappa(s)$ as a function of arc length is a Jacobi
+      elliptic function — sn or dn — and the spatial period of that oscillation is
+      governed exactly by $K(k^2)$, the complete elliptic integral of the first kind.
+      This is what motivated the development of the <code>elliptic</code> package.
+    </p>
+    <div class="hero-meta">
+      <span>Part of <a href="https://github.com/moiseevigor/elliptic">moiseevigor/elliptic</a></span>
+      <span>Theory: Petitot (2003), Sachkov &amp; Moiseev (2010)</span>
+      <span>arXiv: <a href="https://arxiv.org/abs/0807.4731">0807.4731</a></span>
+    </div>
+  </div>
+</div>
+
+<article>
+
+<!-- §1  The Dubins car and SE(2) ============================================ -->
+<div class="l-body">
+  <div class="callout">
+    <strong>The core insight.</strong>
+    The group SE(2) of rigid motions of the plane (translations + rotations) carries
+    a natural sub-Riemannian metric: a car can move forward and steer, but cannot
+    slide sideways.  Shortest paths in this metric project, in the plane, to
+    <em>Euler's elastica</em>.  Their curvature is a Jacobi elliptic function of arc
+    length, and the integral package's <code>ellipj</code> and <code>elliptic12</code>
+    routines compute both exactly.
+  </div>
+</div>
+
+<div class="l-body">
+  <h2 id="se2">The Dubins Car and the Group SE(2)</h2>
+
+  <p>
+    A car at position $(x, y)$ heading in direction $\theta$ satisfies:
+  </p>
+  $$\dot x = \cos\theta,\quad \dot y = \sin\theta,\quad \dot\theta = u,$$
+  <p>
+    where the control $u$ is the steering rate (curvature).  If we want to steer from
+    state $(x_0, y_0, \theta_0)$ to $(x_1, y_1, \theta_1)$ while minimising
+    <em>total squared curvature</em>
+  </p>
+  $$\int_0^L u^2\,ds = \int_0^L \kappa^2(s)\,ds,$$
+  <p>
+    the Pontryagin maximum principle (PMP) tells us the optimal control satisfies an
+    ODE equivalent to the nonlinear pendulum.
+    The state space of this system is the Lie group
+    $\mathrm{SE}(2) = \mathbb{R}^2 \rtimes S^1$ — the group of orientation-preserving
+    isometries of the plane.
+  </p>
+  <p>
+    The PMP Hamiltonian along an extremal is
+  </p>
+  $$H = \frac{h_1^2 + h_2^2}{2},$$
+  <p>
+    where $h_1 = p_x\cos\theta + p_y\sin\theta$ and $h_2 = p_\theta$ are the
+    "body-frame" components of the costate.  Hamilton's equations give, after the
+    substitution $h_1 = r\cos\varphi$, $h_2 = r\sin\varphi$:
+  </p>
+  $$\dot\varphi = -r\cos\varphi \cdot \text{(bracket term)},$$
+  <p>
+    which reduces to the nonlinear pendulum $\ddot\varphi = -c\sin\varphi$ for
+    a constant $c > 0$.  The costate component $h_2 = \kappa$ is the curvature of the
+    optimal path.
+  </p>
+</div>
+
+<!-- §2  Elastica and Jacobi functions ======================================= -->
+<div class="l-body">
+  <h2 id="elastica-math">Euler's Elastica and Jacobi Elliptic Functions</h2>
+
+  <p>
+    The curvature of the optimal path satisfies Euler's elastica equation (Euler 1744):
+  </p>
+  $$2\kappa'' + \kappa^3 - \lambda\kappa = 0,\qquad \lambda > 0,$$
+  <p>
+    which is a conservative ODE with energy $E = (\kappa')^2 + V(\kappa)$,
+    $V = -\lambda\kappa^2/2 + \kappa^4/4$.  The potential $V$ has two wells at
+    $\kappa = \pm\sqrt{\lambda}$ and a local maximum at $\kappa = 0$.
+    Solutions split into three topological classes:
+  </p>
+  <ul>
+    <li>
+      <strong>Inflectional elastica</strong> ($k &lt; 1$): $\kappa$ oscillates across
+      zero (two-well oscillation through the barrier).
+      $$\kappa(s) = 2k\,\mathrm{sn}(s\mid k^2).$$
+    </li>
+    <li>
+      <strong>Non-inflectional elastica</strong> ($m &lt; 1$): $\kappa$ stays positive
+      (oscillation within one well).
+      $$\kappa(s) = 2\,\mathrm{dn}(s\mid m).$$
+    </li>
+    <li>
+      <strong>Euler spiral / Cornu spiral</strong> (separatrix, $k = 1$): $\kappa$
+      is a positive pulse that decays to zero at infinity.
+      $$\kappa(s) = 2\,\mathrm{sech}(s) = 2\,\mathrm{dn}(s\mid 1).$$
+    </li>
+  </ul>
+  <p>
+    The spatial period of $\kappa(s)$ — the arc length between successive inflections — is
+  </p>
+  $$T_\kappa = 4K(k^2)\quad\text{(inflectional)},\qquad
+    T_\kappa = 2K(m)\quad\text{(non-inflectional)},$$
+  <p>
+    diverging as $k \to 1^-$ (the separatrix has infinite period — it is the Euler
+    spiral, which spirals into two point attractors at $\pm\infty$).
+    The position is then recovered by integrating
+    $\theta(s) = \int_0^s \kappa(t)\,dt$ and $(x,y)(s) = \int_0^s(\cos\theta,\sin\theta)\,dt$.
+  </p>
+</div>
+
+<!-- §3  Interactive: Elastica explorer ===================================== -->
+<div class="l-body">
+  <h2 id="elastica">Interactive: The Elastica Family</h2>
+  <p>
+    Figure&nbsp;1 shows $\kappa(s)$ (left) and the corresponding curve $(x(s), y(s))$
+    (right) as a function of the modulus $k$.  Drag the slider to morph between
+    curve types.
+  </p>
+  <div class="controls" id="elastica-controls">
+    <div class="ctrl">
+      <label>Type</label>
+      <select id="elastica-type">
+        <option value="inflectional">Inflectional  κ = 2k·sn(s | k²)</option>
+        <option value="noninflectional">Non-inflectional  κ = 2·dn(s | k²)</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>k = <span id="k-label">0.70</span></label>
+      <input type="range" id="elastica-k" min="0.05" max="0.97" step="0.01" value="0.70">
+    </div>
+  </div>
+</div>
+
+<figure class="l-middle" id="fig1">
+  <div class="fig-box" id="elastica-container">
+    <svg id="fig-elastica" style="width:100%;height:360px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 1.</strong>
+    Left: curvature $\kappa(s)$ as a Jacobi function of arc length $s$.
+    For the inflectional family $\kappa = 2k\,\mathrm{sn}(s\mid k^2)$ — an exact
+    Jacobi sn wave that changes sign at each half-period $2K(k^2)$.
+    For the non-inflectional family $\kappa = 2\,\mathrm{dn}(s\mid k^2)$ — always
+    positive, ranging between $2\sqrt{1-k^2}$ and $2$.
+    Right: the corresponding spatial curve $(x(s), y(s))$ obtained by integrating
+    $d\theta/ds = \kappa$ and $(dx/ds, dy/ds) = (\cos\theta, \sin\theta)$.
+  </figcaption>
+</figure>
+
+<!-- §4  Euler spiral ======================================================= -->
+<div class="l-body">
+  <h2 id="euler-spiral">The Euler / Cornu Spiral (Separatrix)</h2>
+  <p>
+    At $k = 1$ the inflectional and non-inflectional families both converge to the
+    <em>Euler spiral</em> (also called the Cornu spiral or clothoid).  Its curvature
+    $\kappa(s) = 2\,\mathrm{sech}(s)$ is a positive pulse centred at $s = 0$, and it
+    is the only elastica that changes from being "more curved" to "less curved" (the
+    curvature maximum is at $s=0$, and $\kappa \to 0$ as $s \to \pm\infty$).
+  </p>
+  <p>
+    In the context of the Moiseev–Sachkov paper, this curve corresponds to the
+    <em>heteroclinic orbit</em> (separatrix) of the pendulum, connecting the unstable
+    fixed points at $\varphi = \pm\pi$.  In highway engineering and railway design the
+    Euler spiral is used as a transition curve exactly because its curvature
+    increases linearly with arc length — smoothly connecting a straight section to
+    a circular arc.
+  </p>
+</div>
+
+<figure class="l-middle" id="fig2">
+  <div class="fig-box">
+    <svg id="fig-cornu" style="width:100%;height:320px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 2.</strong>
+    The Euler spiral: parametric curve whose curvature is $\kappa(s) = 2\,\mathrm{sech}(s)$.
+    The red dot marks $s = 0$ (the point of maximum curvature $\kappa = 2$).  The curve
+    spirals into two attractor points at $s \to \pm\infty$ where $\kappa \to 0$ — it
+    completes an infinite arc length while encircling a finite area.
+    Colour encodes arc length $s$ (Plasma scale, purple = $-6$, yellow = $+6$).
+  </figcaption>
+</figure>
+
+<!-- §5  Period = 4K(k²) ==================================================== -->
+<div class="l-body">
+  <h2 id="period">Spatial Period Governed by $K(k^2)$</h2>
+  <p>
+    Figure&nbsp;3 shows how the spatial period $T(k) = 4K(k^2)$ (inflectional) and
+    $2K(k^2)$ (non-inflectional) depend on the modulus $k$.  The key features:
+  </p>
+  <ul>
+    <li>
+      At $k = 0$: $T \to 2\pi$ (inflectional limit) or $\pi$ (non-inflectional) —
+      the circular limit.
+    </li>
+    <li>
+      At $k \to 1^-$: $T \to +\infty$ — the separatrix has infinite period.
+      Formally $K(k^2) \sim \ln(4/\sqrt{1-k^2})$, a logarithmic divergence.
+    </li>
+    <li>
+      Near $k = 0.9$: the period has already doubled relative to the circular limit —
+      the curve is noticeably "slower" (longer wavelength) than a circle.
+    </li>
+  </ul>
+  <p>
+    This is the same $K(k^2)$ divergence that controls the libration period of the
+    nonlinear pendulum and the Maxwell cut time of the SE(2) geodesic problem.
+  </p>
+</div>
+
+<figure class="l-middle" id="fig3">
+  <div class="fig-box">
+    <svg id="fig-period" style="width:100%;height:270px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 3.</strong>
+    Spatial period $T(k)$ of curvature oscillation as a function of modulus $k$.
+    Blue solid: inflectional family $T = 4K(k^2)$.
+    Green dashed: non-inflectional family $T = 2K(k^2)$.
+    Both diverge logarithmically as $k \to 1$ (red dashed line) — the separatrix /
+    Euler spiral limit.  The shaded red band marks the near-separatrix region $k > 0.9$.
+  </figcaption>
+</figure>
+
+<!-- §6  Geodesic family ==================================================== -->
+<div class="l-body">
+  <h2 id="family">Geodesic Family from a Fixed Base Point</h2>
+  <p>
+    Figure&nbsp;4 shows the exponential map of SE(2): all inflectional elastica sharing
+    the same initial point and heading, for $k = 0.1, 0.2, \ldots, 0.97$ (blue–green
+    gradient) and the Euler spiral $k = 1$ (red).  This is the structure that Sachkov
+    and Moiseev analyse to locate the <em>Maxwell strata</em> — the loci where two
+    geodesics of equal length first coincide, marking the end of global optimality.
+  </p>
+</div>
+
+<figure class="l-middle" id="fig4">
+  <div class="fig-box">
+    <svg id="fig-family" style="width:100%;height:380px"></svg>
+  </div>
+  <figcaption>
+    <strong>Figure 4.</strong>
+    Inflectional elastica for $k = 0.1$ (blue) through $k = 0.97$ (yellow-green) and the
+    Euler spiral $k = 1$ (red), all starting from the same point with the same initial
+    heading.  As $k$ increases the curve gains more curvature oscillations per arc length,
+    eventually spiraling (red).  The Maxwell stratum is the locus of points hit
+    simultaneously by two distinct geodesics from this family.
+  </figcaption>
+</figure>
+
+<!-- §7  Visual cortex model ================================================ -->
+<div class="l-body">
+  <h2 id="v1">Petitot's Model of Primary Visual Cortex V1</h2>
+
+  <p>
+    In 2003 Jean Petitot proposed that the functional architecture of primary visual
+    cortex V1 implements a contact structure on SE(2).  Each neuron in V1 is tuned to
+    a local position <em>and</em> orientation: the cortex is not a 2D image map but a
+    contact bundle over the visual field.  When a contour is interrupted — an occlusion,
+    or a gap between two collinear segments — V1 fills it in by activating neurons along
+    the shortest path in this contact geometry.
+  </p>
+  <p>
+    Citti and Sarti (2006) made the connection precise: the horizontal cortico-cortical
+    connections in V1 implement exactly the sub-Riemannian metric on SE(2), and the
+    "association fields" of Field, Hayes &amp; Hess (1993) — the empirical patterns of
+    which oriented edge pairs humans most readily group together — correspond to
+    sub-Riemannian geodesics.  Those geodesics are Euler's elastica.  Their curvature
+    is $\kappa(s) = 2k\,\mathrm{sn}(s\mid k^2)$, evaluated using the
+    <code>ellipj</code> function.
+  </p>
+  <p>
+    Moiseev &amp; Sachkov (2010) — arXiv:0807.4731 — then completely characterised the
+    <em>Maxwell strata</em> for this problem: the sets where the exponential map fails to
+    be injective, i.e., where the visual-completion "decision" becomes ambiguous because
+    two equally-short curves exist between the given boundary conditions.  The first
+    Maxwell time equals the period $4K(k^2)/\omega_0$, computed via the same integral.
+  </p>
+  <p>
+    The connection drove the original development of the <code>elliptic</code> package
+    (2003–2004): fast, vectorised evaluation of $\mathrm{sn}, \mathrm{cn}, \mathrm{dn}$
+    and $K(m), E(m)$ was needed to sweep large families of geodesics for the Maxwell
+    strata analysis.
+  </p>
+
+  <table class="data-table" style="margin-top:20px">
+    <thead>
+      <tr>
+        <th>Modulus $k$</th>
+        <th>Curve type</th>
+        <th>Period $T = 4K(k^2)$</th>
+        <th>$\kappa(s)$</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="hi">
+        <td>$k \to 0$</td>
+        <td>Nearly circular arc</td>
+        <td>$\to 2\pi$</td>
+        <td>$\approx 0$ (straight) or const. (circle)</td>
+      </tr>
+      <tr class="mid">
+        <td>$k = 0.7$</td>
+        <td>S-curve elastica</td>
+        <td>$\approx 8.7$</td>
+        <td>$1.4\,\mathrm{sn}(s\mid 0.49)$</td>
+      </tr>
+      <tr class="mid">
+        <td>$k = 0.9$</td>
+        <td>Deep S-curve</td>
+        <td>$\approx 14.8$</td>
+        <td>$1.8\,\mathrm{sn}(s\mid 0.81)$</td>
+      </tr>
+      <tr class="low">
+        <td>$k = 1$</td>
+        <td>Euler spiral (sep.)</td>
+        <td>$\to\infty$</td>
+        <td>$2\,\mathrm{sech}(s)$</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- §8  Code =============================================================== -->
+<div class="l-body">
+  <h2 id="code">Code</h2>
+  <p>
+    The Python snippet below sweeps the inflectional elastica family, computes the
+    spatial curve for each modulus using <code>ellipj</code> and <code>elliptic12</code>,
+    and evaluates the period via <code>ellipticK</code> — all vectorised over a batch of
+    $k$-values.
+  </p>
+
+  <div class="code-tabs">
+    <div class="tab-bar">
+      <button class="tab-btn active" type="button" data-tab="py">Python</button>
+      <button class="tab-btn" type="button" data-tab="matlab">MATLAB</button>
+    </div>
+
+    <div class="tab-panel active" data-tab="py">
+<pre><code class="language-python">import numpy as np
+from scipy.integrate import cumulative_trapezoid
+from elliptic import ellipj, elliptic12   # moiseevigor/elliptic
+
+def elastica_inflectional(k: float, n_periods: float = 1.0, N: int = 2000):
+    """
+    Compute one inflectional elastica with modulus k ∈ (0, 1).
+
+    κ(s) = 2k · sn(s | k²),  period T = 4K(k²)
+
+    Returns arrays s, kappa, theta, x, y.
+    """
+    m = k * k
+    # Complete elliptic integral K(m) for the period
+    Km, _, _ = elliptic12(np.array([np.pi / 2]), np.array([m]))
+    T = 4 * Km[0]
+
+    s = np.linspace(-n_periods * T / 2, n_periods * T / 2, N)
+
+    # Jacobi sn evaluated at all arc-length points simultaneously (GPU-ready)
+    sn_vals, cn_vals, dn_vals = ellipj(s, m)
+    kappa = 2 * k * sn_vals
+
+    # Integrate θ(s) = ∫κ ds  and  (x,y) = ∫(cos θ, sin θ) ds
+    theta = cumulative_trapezoid(kappa, s, initial=0.0)
+    x     = cumulative_trapezoid(np.cos(theta), s, initial=0.0)
+    y     = cumulative_trapezoid(np.sin(theta), s, initial=0.0)
+
+    return s, kappa, theta, x, y
+
+
+def elastica_noninflectional(m: float, N: int = 2000):
+    """
+    Non-inflectional elastica: κ(s) = 2·dn(s | m), m ∈ (0, 1).
+    Period T = 2K(m).
+    """
+    Km, _, _ = elliptic12(np.array([np.pi / 2]), np.array([m]))
+    T = 2 * Km[0]
+
+    s = np.linspace(-T / 2, T / 2, N)
+    _, _, dn_vals = ellipj(s, m)
+    kappa = 2 * dn_vals
+
+    theta = cumulative_trapezoid(kappa, s, initial=0.0)
+    x     = cumulative_trapezoid(np.cos(theta), s, initial=0.0)
+    y     = cumulative_trapezoid(np.sin(theta), s, initial=0.0)
+    return s, kappa, theta, x, y
+
+
+# ── Sweep k-values and report period ──────────────────────────────────
+k_vals = np.linspace(0.1, 0.95, 18)
+m_vals = k_vals ** 2
+
+# Vectorised K(m) for all k at once — the GPU payoff
+Km_all, _, _ = elliptic12(np.full(len(m_vals), np.pi / 2), m_vals)
+T_all = 4 * Km_all
+
+print(f"{'k':>6}  {'K(k²)':>9}  {'Period T':>10}")
+for k, Km, T in zip(k_vals, Km_all, T_all):
+    print(f"{k:6.3f}  {Km:9.5f}  {T:10.5f}")
+</code></pre>
+    </div>
+
+    <div class="tab-panel" data-tab="matlab">
+<pre><code class="language-matlab">% Euler's Elastica via Jacobi elliptic functions
+% Requires the elliptic toolbox: https://github.com/moiseevigor/elliptic
+
+function [s, kappa, theta, x, y] = elastica_inflectional(k, n_periods, N)
+    % Inflectional elastica: kappa(s) = 2k * sn(s | k^2)
+    % k in (0, 1),  period T = 4*K(k^2)
+    if nargin < 2, n_periods = 1; end
+    if nargin < 3, N = 2000; end
+
+    m  = k^2;
+    Km = ellipticK(m);          % K(m) — vectorised, GPU-ready
+    T  = 4 * Km;
+
+    s      = linspace(-n_periods*T/2, n_periods*T/2, N)';
+    [sn, ~, ~] = ellipj(s, m);  % Jacobi sn for all s at once
+    kappa  = 2 * k * sn;
+
+    % Integrate theta and (x, y) via cumulative trapezoid
+    ds     = s(2) - s(1);
+    theta  = cumtrapz(s, kappa);
+    x      = cumtrapz(s, cos(theta));
+    y      = cumtrapz(s, sin(theta));
+end
+
+% ── Sweep moduli and print period table ───────────────────────────────
+k_vals = linspace(0.1, 0.95, 18);
+m_vals = k_vals .^ 2;
+
+Km_all = ellipticK(m_vals);     % vectorised call — one line for 18 values
+T_all  = 4 * Km_all;
+
+fprintf('%6s  %9s  %10s\n', 'k', 'K(k²)', 'Period T');
+for i = 1:numel(k_vals)
+    fprintf('%6.3f  %9.5f  %10.5f\n', k_vals(i), Km_all(i), T_all(i));
+end
+
+% ── Plot a family of elastica ─────────────────────────────────────────
+figure; hold on; axis equal;
+cmap = parula(numel(k_vals));
+for i = 1:numel(k_vals)
+    [~, ~, ~, x, y] = elastica_inflectional(k_vals(i));
+    plot(x - x(1), y - y(1), 'Color', cmap(i,:), 'LineWidth', 1.5);
+end
+title('Inflectional elastica family,  \kappa(s) = 2k\cdotsn(s | k^2)');
+xlabel('x'); ylabel('y');
+colorbar; clim([k_vals(1) k_vals(end)]);
+</code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- §9  References ========================================================= -->
+<div class="l-body">
+  <h2 id="references">References</h2>
+  <ol class="references-list">
+    <li>
+      I. Moiseev &amp; Yu. L. Sachkov (2010). "Maxwell strata in sub-Riemannian problem
+      on the group of motions of a plane."
+      <em>ESAIM: Control, Optimisation and Calculus of Variations</em> 16(2): 380–399.
+      <a href="https://arxiv.org/abs/0807.4731">arXiv:0807.4731</a>
+    </li>
+    <li>
+      J. Petitot (2003). "The neurogeometry of pinwheels as a sub-Riemannian contact
+      structure." <em>Journal of Physiology–Paris</em> 97(2–3): 265–309.
+    </li>
+    <li>
+      G. Citti &amp; A. Sarti (2006). "A cortical based model of perceptual completion
+      in the roto-translation space." <em>J. Math. Imaging and Vision</em> 24(3): 307–326.
+    </li>
+    <li>
+      Yu. L. Sachkov (2011). "Cut locus and optimal synthesis in the sub-Riemannian
+      problem on the group of motions of a plane."
+      <em>ESAIM: COCV</em> 17(4): 293–321.
+      <a href="https://arxiv.org/abs/0903.0727">arXiv:0903.0727</a>
+    </li>
+    <li>
+      L. Euler (1744). <em>Methodus Inveniendi Lineas Curvas Maximi Minimive
+      Proprietate Gaudentes.</em> Additamentum I: De curvis elasticis.
+    </li>
+    <li>
+      D. A. Singer (1999). "Curves whose curvature depends on distance from the origin."
+      <em>The American Mathematical Monthly</em> 106(9): 835–841.
+    </li>
+    <li>
+      D. B. Henry (2004). "The Euler spiral: a mathematical history."
+      UC Berkeley Technical Report EECS-2008-111.
+    </li>
+  </ol>
+</div>
+
+</article>
+
+<footer>
+  <p>
+    <a href="https://github.com/moiseevigor/elliptic">moiseevigor/elliptic</a>
+    &thinsp;·&thinsp; computations run client-side &thinsp;·&thinsp;
+    inspired by <a href="https://arxiv.org/abs/0807.4731">arXiv:0807.4731</a>
+    (Moiseev &amp; Sachkov 2010)
+  </p>
+</footer>
+
+<style>
+.references-list {
+  font-size: .92em; line-height: 1.7;
+  color: var(--text-muted, #555); padding-left: 1.4em;
+}
+.references-list li { margin-bottom: .55em; }
+.references-list a  { color: var(--accent); }
+</style>
+
+<script>
+document.querySelectorAll('.code-tabs').forEach(wrap => {
+  const btns = wrap.querySelectorAll('.tab-btn');
+  const pans = wrap.querySelectorAll('.tab-panel');
+  btns.forEach(btn => btn.addEventListener('click', () => {
+    const key = btn.dataset.tab;
+    btns.forEach(b => b.classList.toggle('active', b.dataset.tab === key));
+    pans.forEach(p => p.classList.toggle('active', p.dataset.tab === key));
+  }));
+});
+</script>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

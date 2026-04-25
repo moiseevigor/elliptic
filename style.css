@@ -609,4 +609,12 @@ td a { font-weight: 500; }
   .sidebar { position: static; }
   .page-wrap { padding: 0 16px; }
   .layout-two-col { padding: 0 16px; }
+
+  /* Touch-friendly hit areas */
+  .lang-toggle button { padding: 6px 12px; min-height: 34px; }
+  .nav-github { min-height: 34px; padding: 6px 10px; }
+  .nav-link { padding: 6px 10px; min-height: 34px; }
+
+  /* Compact the logo gap — border is already removed inline on the home link */
+  .nav-home { padding-right: 10px; margin-right: 10px; }
 }

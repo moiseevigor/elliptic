@@ -66,7 +66,11 @@ def _ellipj_xp(xp, u, m):
          xp.where(m == 1.0, 1.0 / xp.cosh(u), cn_g))
     dn = xp.where(m == 0.0, xp.ones_like(u),
          xp.where(m == 1.0, 1.0 / xp.cosh(u), dn_g))
-    am = xp.arcsin(xp.clip(sn, -1.0, 1.0))
+    # am is the *continuous* amplitude from the Landen recursion, not
+    # arcsin(sn): the latter folds it into [-pi/2, pi/2] and so loses the
+    # period count (DLMF 22.16.1: am(u + 2K) = am(u) + pi).
+    am = xp.where(m == 0.0, u,
+         xp.where(m == 1.0, xp.arcsin(xp.clip(xp.tanh(u), -1.0, 1.0)), phin))
     return sn, cn, dn, am
 
 

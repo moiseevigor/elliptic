@@ -85,6 +85,14 @@ end
 function [B, D, J] = ellipticBDJ_core(phi, m, n, compute_J, origSize)
 %ELLIPTICBDJ_CORE  Vectorised serial evaluation (row-vector inputs).
 
+% The Carlson forms below are only valid for |φ| <= pi/2.  All three
+% integrands are pi-periodic, so reduce φ first and restore the periods:
+%   B(φ+k·pi|m)   = B(φ|m)   + 2k·B(m)
+%   D(φ+k·pi|m)   = D(φ|m)   + 2k·D(m)
+%   J(φ+k·pi,n|m) = J(φ,n|m) + 2k·J(n|m)
+k   = ceil(phi./pi - 0.5);
+phi = phi - k .* pi;      % now in (-pi/2, pi/2]
+
 s  = sin(phi);
 c  = cos(phi);
 d2 = 1 - m .* s.^2;    % Δ²
@@ -93,9 +101,12 @@ d  = sqrt(d2);          % Δ
 % s³/3 factor
 s3o3 = s.^3 ./ 3;
 
+one = ones(size(phi));
+zed = zeros(size(phi));
+
 % R_F(c², Δ², 1) and R_D(c², Δ², 1)
-RF = carlsonRF(c.^2, d2, ones(size(phi)));
-RD = carlsonRD(c.^2, d2, ones(size(phi)));
+RF = carlsonRF(c.^2, d2, one);
+RD = carlsonRD(c.^2, d2, one);
 
 F_val = s .* RF;          % = F(φ|m)
 D_val = s3o3 .* RD;       % = D(φ|m)
@@ -105,16 +116,21 @@ B_val = F_val - D_val;    % = B(φ|m)
 B_val(s == 0) = 0;
 D_val(s == 0) = 0;
 
-B = reshape(B_val, origSize);
-D = reshape(D_val, origSize);
+% Complete associate integrals — same Carlson forms at φ = pi/2 (s=1, c=0)
+D_cpl = carlsonRD(zed, 1-m, one) ./ 3;              % D(m)
+B_cpl = carlsonRF(zed, 1-m, one) - D_cpl;           % B(m) = K(m) - D(m)
+
+B = reshape(B_val + 2 .* k .* B_cpl, origSize);
+D = reshape(D_val + 2 .* k .* D_cpl, origSize);
 
 if compute_J
     % 1 − n·s² (denominator parameter for R_J)
     p = 1 - n .* s.^2;
-    RJ = carlsonRJ(c.^2, d2, ones(size(phi)), p);
+    RJ = carlsonRJ(c.^2, d2, one, p);
     J_val = s3o3 .* RJ;
     J_val(s == 0) = 0;
-    J = reshape(J_val, origSize);
+    J_cpl = carlsonRJ(zed, 1-m, one, 1-n) ./ 3;     % J(n|m)
+    J = reshape(J_val + 2 .* k .* J_cpl, origSize);
 else
     J = [];
 end

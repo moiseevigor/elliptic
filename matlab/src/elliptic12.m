@@ -122,13 +122,16 @@ if ~isempty(I)
 	mn = max(n);
 
     % Period reduction (fix for issue #28): F(u+k*pi|m) = F(u|m) + 2*k*K(m).
-    % tan(n*pi/2) is numerically unstable for large n; reducing u to (-pi/2, pi/2]
-    % first avoids accumulated errors in the Landen descent.
+    % tan(n*pi/2) is numerically unstable for large n; reducing u first avoids
+    % accumulated errors in the Landen descent.  Reduce to [0, pi) rather than
+    % (-pi/2, pi/2]: u_work is |u|, and the Landen branch term
+    % pi*ceil(phin/pi-0.5) below misfires when phin lands on -pi/2, which a
+    % symmetric reduction hits for every u within an ulp of pi/2 + k*pi.
     K_vals = pi ./ (2 .* a(mn,:));                                  % K(m) for each unique m
-    u_work = signU .* u(I);
-    k_per  = round(u_work ./ pi);                                   % number of full half-periods
-    phin0  = u_work - k_per .* pi;                                  % reduced to (-pi/2, pi/2]
-    K_per  = k_per .* K_vals(K);                                    % period correction for F
+    u_work = signU .* u(I);                                         % == abs(u(I))
+    k_per  = floor(u_work ./ pi);                                   % number of full half-periods
+    phin0  = u_work - k_per .* pi;                                  % reduced to [0, pi)
+    K_per  = 2 .* k_per .* K_vals(K);                               % period correction for F
 
 	phin = zeros(1,mmax);     C  = zeros(1,mmax);
 	Cp = C;  e  = zeros(1,mmax);  phin(:) = phin0;

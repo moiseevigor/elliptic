@@ -498,3 +498,30 @@
 %!     [~, d2] = theta_prime(2, pi/2, m);
 %!     assert(~isnan(d2), 'theta2''(pi/2) must be finite');
 %! end
+
+% ---------------------------------------------------------------------
+% P. uniquetol_compat — the grouping map that feeds the AGM in
+%    elliptic12/ellipj.  Contract: C(ic) reconstructs A within tol,
+%    C == A(ia) exactly, C strictly increasing, and near-duplicates
+%    (within tol) collapse to one group.  A wrong index map here would
+%    silently corrupt every m-grouped elliptic value downstream.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! rand('seed', 42);
+%! base = rand(1, 20);
+%! A = [base, base + 1e-13, 0.5, 0.5+2e-12, 0.7, fliplr(base)];   % dups + jitter
+%! tol = 1e-11;
+%! [C, ia, ic] = uniquetol_compat(A, tol);
+%! assert(all(abs(C(ic) - A) <= tol * max(1, abs(A))), 'C(ic) must reconstruct A within tol');
+%! assert(isequal(C(:), A(ia)(:)), 'C must equal A(ia) exactly');
+%! assert(all(diff(C) > 0), 'C must be strictly increasing');
+%! assert(all(diff(C) > tol * max(1, abs(C(1:end-1)))), 'groups closer than tol survived');
+%! % elliptic12 must give identical results whether m is grouped or not:
+%! m_dup = [0.4, 0.4+5e-13, 0.4-5e-13, 0.7, 0.7+1e-12];
+%! [F1,E1] = elliptic12(1.1*ones(size(m_dup)), m_dup);
+%! for k = 1:numel(m_dup)
+%!     [F2,E2] = elliptic12(1.1, m_dup(k));
+%!     assert(abs(F1(k)-F2) < 5e-11 && abs(E1(k)-E2) < 5e-11, ...
+%!         'grouped vs scalar elliptic12 disagree at k=%d', k);
+%! end

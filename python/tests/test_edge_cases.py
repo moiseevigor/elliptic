@@ -387,3 +387,46 @@ class TestArclength:
                                            + b ** 2 * math.cos(t) ** 2),
                        0, 2 * math.pi, limit=200)[0]
             assert abs(_s(elliptic.arclength_ellipse(a, b)) - ref) < 1e-9, f"a={a} b={b}"
+
+
+# =====================================================================
+# L. Third kind past pi/2, complex Jacobi, nome, agm, theta_prime —
+#    mpmath 1.4.1 references at mp.dps = 50 (25 significant digits)
+# =====================================================================
+class TestMpmathAnchors:
+    def test_elliptic3_extended_phase(self):
+        """mpmath ellippi(c, u, m); exercises the quasi-period reduction."""
+        rows = [  # u, c, m, Pi
+            (2.0, 0.3, 0.4, 2.906928215899509476566159),
+            (3.14159265358979323846, 0.3, 0.4, 4.297590831732913271869402),
+            (6.0, 0.3, 0.4, 8.30819635557621288613689),
+            (-2.2, 0.25, 0.6, -3.471643753410082592812564),
+            (4.5, 0.7, 0.2, 8.475833763417048864937332),
+        ]
+        for u, c, m, ref in rows:
+            got = _s(elliptic.elliptic3(u, m, c))
+            assert abs(got - ref) < 1e-12 * max(1, abs(ref)), f"Pi({u}|{m},{c})"
+        assert abs(_s(elliptic.elliptic3(-2.0, 0.4, 0.3))
+                   + _s(elliptic.elliptic3(2.0, 0.4, 0.3))) < 1e-13
+
+    def test_ellipji_vs_mpmath(self):
+        rows = [  # m, u, sn, cn, dn   (mpmath ellipfun)
+            (0.3, complex(1.2, -0.8), complex(1.144487529338893062450354, -0.2802393491508895255196492), complex(0.4746455171789828435720278, 0.6757262603879129546403857), complex(0.8030935803341932691444772, 0.1198106104396107763170419)),
+            (0.7, complex(2.9, 0.2), complex(0.8945661685904884966950071, -0.0623052446149157017922886), complex(-0.4667874916734775923001321, -0.1194037221486780885477261), complex(0.667799853302213119590502, 0.05842366478197534982879624)),
+            (0.7, complex(0.1, 1.9), complex(2.711675412858391500357814, -4.920359160836619695635427), complex(-4.998252993291208495782488, -2.669416089337967774258619), complex(-4.209736402055241155323296, -2.218593037476527723830424)),
+            (0.96, complex(4.5, -2.5), complex(0.9833643701168131893646114, -0.09200718087257114311996756), complex(0.3369732007632264400404546, 0.2684978605421883948528415), complex(-0.3680824599803019014518416, -0.2359729940161469769037399)),
+        ]
+        for m, u, sn_r, cn_r, dn_r in rows:
+            sn, cn, dn = (complex(np.atleast_1d(v)[0]) for v in elliptic.ellipji(u, m))
+            assert abs(sn - sn_r) < 1e-12 * max(1, abs(sn_r))
+            assert abs(cn - cn_r) < 1e-12 * max(1, abs(cn_r))
+            assert abs(dn - dn_r) < 1e-12 * max(1, abs(dn_r))
+
+    def test_nome_agm_theta_prime(self):
+        """q(1/2) = exp(-pi) exactly (K = K' at m = 1/2); AGM and jtheta rows."""
+        assert abs(_s(elliptic.nomeq(0.5)) - math.exp(-math.pi)) < 1e-16
+        assert abs(_s(elliptic.inversenomeq(math.exp(-math.pi))) - 0.5) < 1e-12
+        assert abs(_s(elliptic.agm(1.0, 0.01)) - 0.2621668872022492366947771) < 1e-15
+        th, thp = (_s(v) for v in elliptic.theta_prime(1, 0.4, 0.6))
+        assert abs(th - 0.3776251831225481533690215) < 1e-13
+        assert abs(thp - 0.8967180488866961938686533) < 1e-13

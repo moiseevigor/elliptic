@@ -420,3 +420,61 @@
 %!             'arc a=%g b=%g to %g: %.15g vs %.15g', a, b, t1, arclength_ellipse(a,b,0,t1), q1);
 %!     end
 %! end
+
+% ---------------------------------------------------------------------
+% L. Third kind past pi/2 and negative phase — mpmath 1.4.1 ellippi at
+%    mp.dps = 50 (values to 25 digits).  The Gauss-Legendre core is only
+%    valid on [0, pi/2]; these rows exercise the quasi-period reduction
+%    Pi(u+k*pi|m,c) = Pi(u|m,c) + 2k*Pi(pi/2|m,c) and oddness.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! R = [ % u, c, m, Pi   (mpmath ellippi(c, u, m))
+%!  2.0 0.3 0.4 2.906928215899509476566159
+%!  3.14159265358979323846 0.3 0.4 4.297590831732913271869402
+%!  6.0 0.3 0.4 8.30819635557621288613689
+%!  -2.2 0.25 0.6 -3.471643753410082592812564
+%!  4.5 0.7 0.2 8.475833763417048864937332
+%! ];
+%! for i = 1:rows(R)
+%!     got = elliptic3(R(i,1), R(i,3), R(i,2));
+%!     assert(abs(got - R(i,4)) < 1e-12*max(1,abs(R(i,4))), ...
+%!         'Pi(%g|m=%g,c=%g) = %.15g, expected %.15g', R(i,1), R(i,3), R(i,2), got, R(i,4));
+%! end
+%! % oddness on the extended domain
+%! assert(abs(elliptic3(-2.0, 0.4, 0.3) + elliptic3(2.0, 0.4, 0.3)) < 1e-13, 'Pi must be odd');
+
+% ---------------------------------------------------------------------
+% M. Complex Jacobi functions — mpmath 1.4.1 ellipfun at mp.dps = 50
+%    (values to 25 digits), including multi-period complex arguments.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! R = [ % m, Re u, Im u, Re sn, Im sn, Re cn, Im cn, Re dn, Im dn
+%!  0.3 1.2 -0.8 1.144487529338893062450354 -0.2802393491508895255196492 0.4746455171789828435720278 0.6757262603879129546403857 0.8030935803341932691444772 0.1198106104396107763170419
+%!  0.7 2.9 0.2 0.8945661685904884966950071 -0.0623052446149157017922886 -0.4667874916734775923001321 -0.1194037221486780885477261 0.667799853302213119590502 0.05842366478197534982879624
+%!  0.7 0.1 1.9 2.711675412858391500357814 -4.920359160836619695635427 -4.998252993291208495782488 -2.669416089337967774258619 -4.209736402055241155323296 -2.218593037476527723830424
+%!  0.96 4.5 -2.5 0.9833643701168131893646114 -0.09200718087257114311996756 0.3369732007632264400404546 0.2684978605421883948528415 -0.3680824599803019014518416 -0.2359729940161469769037399
+%! ];
+%! for i = 1:rows(R)
+%!     [sn,cn,dn] = ellipji(R(i,2)+1i*R(i,3), R(i,1));
+%!     assert(abs(sn - (R(i,4)+1i*R(i,5))) < 1e-12*max(1,abs(sn)), 'sn wrong at row %d', i);
+%!     assert(abs(cn - (R(i,6)+1i*R(i,7))) < 1e-12*max(1,abs(cn)), 'cn wrong at row %d', i);
+%!     assert(abs(dn - (R(i,8)+1i*R(i,9))) < 1e-12*max(1,abs(dn)), 'dn wrong at row %d', i);
+%! end
+
+% ---------------------------------------------------------------------
+% N. Nome — closed form q(1/2) = exp(-pi)  (K(1/2) = K'(1/2)); AGM vs
+%    mpmath.agm.  theta_prime spot value against mpmath jtheta.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! assert(abs(nomeq(0.5) - exp(-pi)) < 1e-16, 'q(1/2) must equal exp(-pi)');
+%! assert(abs(inversenomeq(exp(-pi)) - 0.5) < 1e-12, 'inversenomeq(exp(-pi)) must be 1/2');
+%! % AGM(1, 0.01) = 0.2621668872022492366947771  (mpmath 1.4.1, dps=50)
+%! [a,b,c,n] = agm(1, 0.01, (1-0.01)/2);
+%! assert(abs(a(double(n)+1,1) - 0.2621668872022492366947771) < 1e-15, 'AGM(1,0.01) wrong');
+%! % theta_1'(0.4 | m=0.6) = jtheta(1, 0.4, q(0.6), 1)  (mpmath, 25 digits)
+%! [th, thp] = theta_prime(1, 0.4, 0.6);
+%! assert(abs(th  - 0.3776251831225481533690215) < 1e-13, 'theta1(0.4|0.6) wrong');
+%! assert(abs(thp - 0.8967180488866961938686533) < 1e-13, 'theta1_prime(0.4|0.6) wrong');

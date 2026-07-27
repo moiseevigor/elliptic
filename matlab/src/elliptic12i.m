@@ -62,8 +62,6 @@ E1 = F1;     E2 = F1;
 Z1 = F1;     Z2 = F1;
 Fi = F1;     Ei = F1;
 Zi = F1;
-lambda = []; mu = [];
-I = [];      J  = [];
 
 % make a row vector
 m = m(:).';
@@ -78,27 +76,30 @@ I = find (abs(phi) < eps);
 phi(I) = eps;
 I = [];
 
-% finding the roots of the equation
+% finding the roots of the equation, with X = cot(lambda)^2
 % X^2 - (cot(phi)^2+m*sinh(psi)^2*csc(phi)^2-1+m)X - (1-m)*cot(phi)^2 = 0
-b = -(cot(phi).^2 + m.*sinh(psi).^2.*csc(phi).^2-1+m);
-c = -(1-m).*cot(phi).^2;
+cot2 = cot(phi).^2;
+b = -(cot2 + m.*sinh(psi).^2.*csc(phi).^2-1+m);
+c = -(1-m).*cot2;
 
-X1 = -b/2 + sqrt(b.^2/4-c);
-I = find(X1>=0);
+% The constant term -(1-m)*cot(phi)^2 is <= 0, so the two roots always
+% straddle zero and the admissible one is X1 = -b/2 + sqrt(b^2/4-c).  Near
+% phi = pi/2 that form cancels catastrophically (both terms are ~ |b|/2
+% while X1 -> 0), so for b > 0 use the algebraically equal
+% X1 = -c/(b/2+sqrt(...)), which keeps full precision.
+sq = sqrt(b.^2/4-c);
+X1 = -b/2 + sq;
+ratio = X1 ./ cot2;                     % == tan(phi)^2 * cot(lambda)^2
+Ib = find(b > 0);
+X1(Ib)    = -c(Ib)./(b(Ib)/2 + sq(Ib));
+ratio(Ib) = (1-m(Ib))./(b(Ib)/2 + sq(Ib));
 
-if length(I) ~= length(u)
-    X2 = -b/2 - sqrt(b.^2/4-c);
-    J = find(X2>=0);
-end
-
-if( ~isempty(I) )
-    lambda(I) = acot( sqrt(X1(I)) );
-    mu(I)     = atan( sqrt(1./m(I).*(tan(phi(I)).^2.*cot(lambda(I)).^2 - 1)) );
-end
-if( ~isempty(J) )
-    lambda(J) = acot( sqrt(X2(J)) );
-    mu(J)     = atan( sqrt(1./m(J).*(tan(phi(J)).^2.*cot(lambda(J)).^2 - 1)) );
-end
+lambda = acot( sqrt(X1) );
+% tan(mu)^2 = (tan(phi)^2*cot(lambda)^2 - 1)/m, evaluated from RATIO rather
+% than from LAMBDA: at phi = pi/2 the root X1 underflows, LAMBDA rounds to
+% exactly pi/2 and cot(LAMBDA) loses every digit of it -- that is what used
+% to drop the whole imaginary part of the result there.
+mu = atan( sqrt( max((ratio - 1)./m, 0) ) );
 
 % change of variables taking into account periodicity ceil to the right
 lambda = (-1).^floor(phi/pi*2).*lambda + pi*ceil(phi/pi-0.5+eps);

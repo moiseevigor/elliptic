@@ -54,15 +54,20 @@ def elliptic12i(u, m):
     c      = -(1.0 - m_f) * cot2
 
     disc  = np.sqrt(np.maximum(b**2 / 4.0 - c, 0.0))
-    X1    = -b / 2.0 + disc
-    X2    = -b / 2.0 - disc
 
-    X     = np.where(X1 >= 0, X1, X2)
+    # c <= 0, so the roots straddle zero and -b/2 + disc is the non-negative
+    # one.  Near phi = pi/2 that form cancels catastrophically (both terms
+    # ~ |b|/2 while the root ~ 0), so use the equal -c/(b/2 + disc) when b > 0.
+    den   = np.where(b > 0, b / 2.0 + disc, 1.0)     # b > 0 => den >= b/2 > 0
+    X     = np.where(b > 0, -c / den, -b / 2.0 + disc)
+    ratio = np.where(b > 0, (1.0 - m_f) / den,       # == tan(phi)² · cot(lam)²
+                     (-b / 2.0 + disc) / cot2)
 
     lam  = np.arctan(1.0 / np.sqrt(np.maximum(X, 0.0) + 1e-300))
-    mu   = np.arctan(np.sqrt(np.maximum(
-               1.0 / m_f * (np.tan(phi_s)**2 * (np.cos(lam) / np.sin(lam))**2 - 1.0),
-               0.0)))
+    # tan(mu)² = (tan(phi)²·cot(lam)² - 1)/m, taken from *ratio* rather than
+    # from lam: at phi = pi/2 the root X underflows, lam rounds to exactly
+    # pi/2 and cot(lam) loses every digit of it, collapsing Im to zero.
+    mu   = np.arctan(np.sqrt(np.maximum((ratio - 1.0) / m_f, 0.0)))
 
     # Account for periodicity
     lam = (-1.0)**np.floor(phi / np.pi * 2) * lam + np.pi * np.ceil(phi / np.pi - 0.5 + 1e-14)

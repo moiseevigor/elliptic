@@ -76,88 +76,32 @@ m = m(:).';    % make a row vector
 u = u(:).';
 
 KK = ellipke(m);
-period_condition = u./KK/2-floor(u./KK/2);
 
-I_odd = find( abs(m-1) > 10*eps & abs(m) > 10*eps & abs(period_condition - 0.5) < 10*eps );
-% here we cheat, add some disturbance to avoid the AGM algorithm divergence
-% when the inputs are the ratios of complete elliptic integrals
-if ( ~isempty(I_odd) )
-    u(I_odd) = u(I_odd) + 100000*eps;
-    m(I_odd) = m(I_odd) + 10000*eps;
+% Theta functions from their q-series (A&S 16.27, 16.38):
+%     Th(u|m) = theta_4(v, q),  H(u|m) = theta_1(v, q),  v = pi*u/(2K)
+% with nome q = exp(-pi*K(1-m)/K(m)).  The series converges geometrically in
+% q^(n^2) and is accurate to full double precision; the previous AGM-product
+% form lost ~11 digits of the overall normalisation and needed a deliberate
+% perturbation of u and m at the odd half-periods to stay finite.
+q = exp(-pi .* ellipke(1-m) ./ KK);
+q(~(q < 1)) = 0;                      % m == 1 (and NaN) handled below
+v = pi .* u ./ (2 .* KK);
+
+qmax = max([q(:); 0]);
+if qmax > 0
+    nTerms = min(1000, max(1, ceil(sqrt(log(tol) / log(qmax)))));
+else
+    nTerms = 1;
 end
 
-I = find( abs(m-1) > 10*eps & ...
-          abs(m) > 10*eps ...
-        );
-%         abs(period_condition - 0.5) > 10*eps ...                % odd period
-%         abs(period_condition) > 10*eps ...                      % even period
-
-if ~isempty(I)
-    % Use standard uniquetol for numerical precision issues
-    % This is the recommended MATLAB approach since R2015a
-    m_vals = m(I);
-    tol_unique = 1e-11;
-
-    [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
-    K = K(:).';
-
-    % pre-allocate space and augment if needed
-	chunk = 7;
-	a = zeros(chunk,length(mu));
-	c = a;
-	b = a;
-	a(1,:) = ones(1,length(mu));
-	c(1,:) = sqrt(mu);
-	b(1,:) = sqrt(1-mu);
-	n = zeros(1,length(mu));
-	i = 1;
-
-    % Arithmetic-Geometric Mean of A, B and C
-    while any(abs(c(i,:)) > tol)
-        i = i + 1;
-        if i > size(a,1)
-          a = [a; zeros(2,length(mu))];
-          b = [b; zeros(2,length(mu))];
-          c = [c; zeros(2,length(mu))];
-        end
-        a(i,:) = 0.5 * (a(i-1,:) + b(i-1,:));
-        b(i,:) = sqrt(a(i-1,:) .* b(i-1,:));
-        c(i,:) = 0.5 * (a(i-1,:) - b(i-1,:));
-        mask = (abs(c(i,:)) <= tol) & (abs(c(i-1,:)) > tol);
-        n(mask) = i-1;
-	end
-
-    mmax = length(I);
-	phin = zeros(1,mmax);
-    prodth = ones(i,mmax);
-
-    % Calculate phin
-    phin(:) = (2 .^ n(K)).*a(i,K).*u(I);
-    phin_pred = phin;
-	while i > 1
-        i = i - 1;
-        mask = n(K) >= i;
-        if any(mask)
-          phin(mask) = 0.5*(asin(c(i+1,K(mask)).*sin(phin(mask))./a(i+1,K(mask))) + phin(mask));
-          prodth(i,mask) = ( sec(2*phin(mask)-phin_pred(mask)) ).^(1/2^(i+1));
-          if (i > 1)
-              phin_pred = phin;
-          end
-        end
-    end
-
-    th_save = sqrt(2*sqrt(1-m(I)).* KK(I)/pi.* cos(phin_pred - phin)./cos(phin) ).* prod(prodth,1);
-    Th(I) = th_save;
-    H(I) = sqrt(sqrt(m(I))).* sin(phin).* th_save;
+Th = ones(size(v));
+H  = zeros(size(v));
+for nn = 1:nTerms
+    Th = Th + 2*(-1)^nn .* q.^(nn^2) .* cos(2*nn .* v);
 end
-
-% special values of u = (2n+1)*KK, odd periods
-% I_odd = find( abs(m-1) > 10*eps & abs(m) > 10*eps & abs(period_condition - 0.5) < 10*eps );
-% if ( ~isempty(I_odd) )
-%     Th(I_odd) = 1+2*(1./(1-exp(-pi*ellipke(1-m(I_odd))./KK(I_odd)))-1);
-%     Th(I_odd) = sqrt(KK(I_odd)./ellipke(1-m(I_odd)));
-%     H(I_odd)  = (-1).^(floor(u(I_odd)./KK(I_odd)/2)).* sqrt(sqrt(m(I_odd))).* Th(I_odd);
-% end
+for nn = 0:nTerms
+    H = H + 2*(-1)^nn .* q.^((nn+0.5)^2) .* sin((2*nn+1) .* v);
+end
 
 % Special cases: m = {0, 1}
 m0 = find(abs(m) < 10*eps);

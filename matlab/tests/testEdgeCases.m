@@ -478,3 +478,23 @@
 %! [th, thp] = theta_prime(1, 0.4, 0.6);
 %! assert(abs(th  - 0.3776251831225481533690215) < 1e-13, 'theta1(0.4|0.6) wrong');
 %! assert(abs(thp - 0.8967180488866961938686533) < 1e-13, 'theta1_prime(0.4|0.6) wrong');
+
+% ---------------------------------------------------------------------
+% O. Theta derivative at the zeros of theta itself.  DLMF 20.4.6:
+%    theta1'(0) = theta2(0)*theta3(0)*theta4(0).  The old logarithmic-
+%    derivative form returned NaN (0*Inf) at z = k*pi for theta1 and
+%    z = pi/2 + k*pi for theta2.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! for m = [0.1 0.5 0.9]
+%!     [~, d1] = theta_prime(1, 0, m);
+%!     [t2, ~] = theta_prime(2, 0, m);
+%!     [t3, ~] = theta_prime(3, 0, m);
+%!     [t4, ~] = theta_prime(4, 0, m);
+%!     assert(abs(d1 - t2*t3*t4) < 1e-13, 'DLMF 20.4.6 violated at m=%g', m);
+%!     [~, dpi] = theta_prime(1, pi, m);
+%!     assert(~isnan(dpi) && abs(dpi + d1) < 1e-13, 'theta1''(pi) must equal -theta1''(0)');
+%!     [~, d2] = theta_prime(2, pi/2, m);
+%!     assert(~isnan(d2), 'theta2''(pi/2) must be finite');
+%! end

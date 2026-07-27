@@ -430,3 +430,15 @@ class TestMpmathAnchors:
         th, thp = (_s(v) for v in elliptic.theta_prime(1, 0.4, 0.6))
         assert abs(th - 0.3776251831225481533690215) < 1e-13
         assert abs(thp - 0.8967180488866961938686533) < 1e-13
+
+    def test_theta_prime_at_theta_zeros(self):
+        """DLMF 20.4.6: theta1'(0) = theta2(0)*theta3(0)*theta4(0), and the
+        derivative must be finite at the zeros of theta itself (the MATLAB
+        port's log-derivative form returned NaN there)."""
+        for m in (0.1, 0.5, 0.9):
+            d1 = _s(elliptic.theta_prime(1, 0.0, m)[1])
+            t2, t3, t4 = (_s(elliptic.theta_prime(j, 0.0, m)[0]) for j in (2, 3, 4))
+            assert abs(d1 - t2 * t3 * t4) < 1e-13, f"DLMF 20.4.6 at m={m}"
+            dpi = _s(elliptic.theta_prime(1, math.pi, m)[1])
+            assert not math.isnan(dpi) and abs(dpi + d1) < 1e-13
+            assert not math.isnan(_s(elliptic.theta_prime(2, math.pi / 2, m)[1]))

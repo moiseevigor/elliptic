@@ -32,8 +32,23 @@ end
 if any(m < 0) || any(m > 1) || any(c < 0) || any(c > 1),
   error('M and C must be in the range [0, 1].');
 end
-if any(u > pi/2) || any(u < 0),
-    error('U must be in the range [0, pi/2].');
+% Reduce the phase to [0, pi/2] using oddness and the quasi-period
+% (the integrand is pi-periodic and even about every multiple of pi/2):
+%   Pi(-u|m,c)     = -Pi(u|m,c)
+%   Pi(u+k*pi|m,c) =  Pi(u|m,c) + 2k*Pi(pi/2|m,c)
+%   Pi(pi-u|m,c)   =  2*Pi(pi/2|m,c) - Pi(u|m,c)
+% The Gauss-Legendre rule below is only accurate on [0, pi/2]; phases
+% outside that range used to be rejected with an error.
+if any(u(:) < 0) || any(u(:) > pi/2)
+    signU = sign(u);  ua = abs(u);
+    k_per = floor(ua ./ pi);
+    r     = ua - k_per .* pi;            % in [0, pi)
+    refl  = r > pi/2;
+    ur    = r;  ur(refl) = pi - r(refl); % in [0, pi/2]
+    Pcpl  = elliptic3(pi/2 + zeros(size(u)), m, c);
+    Pred  = elliptic3(ur, m, c);
+    Pi    = signU .* (2 .* k_per .* Pcpl + refl .* (2 .* Pcpl) + (1 - 2 .* refl) .* Pred);
+    return;
 end
 
 [mm,nm] = size(m);

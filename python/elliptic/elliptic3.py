@@ -66,6 +66,23 @@ def elliptic3(u, m, n):
                 "or compute via Carlson R_J with complex arguments."
             )
 
+    # Reduce the phase to [0, pi/2] using oddness and the quasi-period
+    # (the integrand is pi-periodic and even about every multiple of pi/2):
+    #   Pi(-u)      = -Pi(u)
+    #   Pi(u+k*pi)  =  Pi(u) + 2k*Pi(pi/2)
+    #   Pi(pi-u)    =  2*Pi(pi/2) - Pi(u)
+    # The 10-point Gauss-Legendre rule below is only accurate on [0, pi/2];
+    # larger phases used to be evaluated directly and were silently wrong
+    # (~1e-6 at u = 6).
+    sign_u = xp.where(u < 0, -xp.ones_like(u), xp.ones_like(u))
+    ua     = xp.abs(u)
+    k_per  = xp.floor(ua / math.pi)
+    r      = ua - k_per * math.pi                       # in [0, pi)
+    refl   = r > math.pi * 0.5
+    u_red  = xp.where(refl, math.pi - r, r)             # in [0, pi/2]
+    reduced = xp.any(k_per > 0) or xp.any(refl) or xp.any(u < 0)
+
+    u = u_red
     half_u = u * 0.5
     P = xp.zeros_like(u)
     for ti, wi in zip(_GL_T, _GL_W):
@@ -79,6 +96,24 @@ def elliptic3(u, m, n):
             1.0 / ((1.0 - n * s2m) * xp.sqrt(xp.clip(1.0 - m * s2m, 0.0, None)))
         )
     Pi = half_u * P
+
+    if reduced:
+        # Complete integral Pi(pi/2|m,n) by the same rule, then undo the
+        # reduction:  Pi(|u|) = 2k*Pcpl + refl*2*Pcpl ± Pi(u_red),  * sign(u)
+        qtr = math.pi * 0.25
+        Pc = xp.zeros_like(u)
+        for ti, wi in zip(_GL_T, _GL_W):
+            tp  = qtr + qtr * ti
+            tm  = qtr - qtr * ti
+            s2p = xp.sin(tp) ** 2
+            s2m = xp.sin(tm) ** 2
+            Pc = Pc + wi * (
+                1.0 / ((1.0 - n * s2p) * xp.sqrt(xp.clip(1.0 - m * s2p, 0.0, None))) +
+                1.0 / ((1.0 - n * s2m) * xp.sqrt(xp.clip(1.0 - m * s2m, 0.0, None)))
+            )
+        Pc = qtr * Pc
+        Pi = sign_u * (2.0 * k_per * Pc + xp.where(refl, 2.0 * Pc, xp.zeros_like(Pc))
+                       + xp.where(refl, -Pi, Pi))
 
     # u == pi/2 and (m == 1 or n == 1) → inf
     inf_mask = ((u == math.pi * 0.5) & (m == 1.0)) | ((u == math.pi * 0.5) & (n == 1.0))

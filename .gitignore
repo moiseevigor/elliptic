@@ -13,3 +13,4 @@ python/examples/__pycache__/
 examples/gpu-asteroid-swarm/data/asteroids_full.npz
 examples/gpu-asteroid-swarm/data/asteroids_full.parquet
 python/bench_results_gpu.csv
+.serena/

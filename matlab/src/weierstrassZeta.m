@@ -5,19 +5,14 @@ function Z = weierstrassZeta(z, e1, e2, e3)
 %
 %   NOTE: this is the Weierstrass ζ, NOT the Riemann ζ.
 %
-%   Algorithm:
-%     1. Compute the real half-period  ω1 = K(m)/√(e1-e3),  m=(e2-e3)/(e1-e3).
-%     2. Compute the quasi-period  η1 = ζ(ω1)  via a regularised integral
-%        (A&S 18.10.1):
-%            η1 = 1/ω1 + ∫_0^{ω1} [-℘(t) + 1/t²] dt
-%        The integrand equals O(t²) near t=0 (Laurent cancellation), so it
-%        is evaluated with a 10-point Gauss-Legendre rule on [ε₀, ω1] plus
-%        an analytic correction  -g2*ε₀³/60 - g3*ε₀⁵/140  on [0, ε₀]
-%        (ε₀ = 0.1·ω1 avoids catastrophic cancellation).
-%     3. Integrate:  ζ(z) = η1 + ∫_{ω1}^z [-℘(t)] dt  (GL quadrature).
+%   Algorithm (closed theta form, DLMF 23.6.13 with 23.6.8):
+%       ω1 = K(m)/√(e1-e3),  m = (e2-e3)/(e1-e3),  q = exp(-π·K(1-m)/K(m))
+%       η1 = -π²/(12ω1) · θ1'''(0,q)/θ1'(0,q)
+%       ζ(z) = η1·z/ω1 + π/(2ω1) · θ1'(v,q)/θ1(v,q),   v = πz/(2ω1)
+%   The theta series converges geometrically; no quadrature is involved.
 %
-%   Quasi-periodicity: ζ(z + 2ω1) = ζ(z) + 2η1.  The function is valid
-%   for |z| < ~4ω1; accuracy degrades near lattice poles.
+%   Quasi-periodicity ζ(z + 2kω1) = ζ(z) + 2kη1 is carried exactly by
+%   the formula, so the function is valid for any real z.
 %
 %   At poles (z = 0 or lattice points): Z = Inf.
 %
@@ -66,97 +61,55 @@ Z(:) = weierZ_core(z(:).', e1(:).', e2(:).', e3(:).');
 % -----------------------------------------------------------------------
 function Z = weierZ_core(z, e1, e2, e3)
 %WEIERZCORE  Vectorised serial evaluation (row-vector inputs).
-N = numel(z);
+%
+% Closed theta form (DLMF 23.6.13 with 23.6.8):
+%
+%   zeta(z) = eta1*z/omega1 + pi/(2*omega1) * theta1'(v,q)/theta1(v,q)
+%   eta1    = -pi^2/(12*omega1) * theta1'''(0,q)/theta1'(0,q)
+%   v = pi*z/(2*omega1),  q = exp(-pi*K(1-m)/K(m)),  m = (e2-e3)/(e1-e3)
+%
+% No quadrature: the previous Gauss-Legendre form was ~1e-9 at best, and
+% the theta series converges geometrically in q^((n+1/2)^2).  The formula
+% carries the quasi-periodicity zeta(z + 2k*omega1) = zeta(z) + 2k*eta1
+% exactly (theta1'(v+pi)/theta1(v+pi) is pi-periodic, the linear term does
+% the rest), so no period reduction is needed either.
 
-% Half-period and modulus
 m_param = (e2 - e3) ./ (e1 - e3);
-[KK, ~] = ellipke(m_param);
-omega1  = KK ./ sqrt(e1 - e3);
+KK  = ellipke(m_param);
+KKp = ellipke(1 - m_param);
+omega1 = KK ./ sqrt(e1 - e3);
+q = exp(-pi .* KKp ./ KK);
+v = pi .* z ./ (2 .* omega1);
 
-% Lattice invariants needed for the small-t analytic correction
-g2 = -4 .* (e1.*e2 + e1.*e3 + e2.*e3);
-g3 =  4 .* e1 .* e2 .* e3;
+[th1, th1p, th1p0, th1ppp0] = weierZ_theta1(v, q);
 
-% η1 = ζ(ω1) via regularised integral on [ε₀, ω1] + analytic patch on [0, ε₀]
-eps0   = 0.1 .* omega1;                     % cutoff: avoids cancellation
-% Analytic correction for ∫_0^{ε₀} [-℘(t)+1/t²] dt:
-%   -℘(t)+1/t² = -g2*t²/20 - g3*t⁴/28 + ...  (A&S 18.5.5)
-%   integral   = -g2*ε₀³/60 - g3*ε₀⁵/140
-anal   = -g2 .* eps0.^3 / 60 - g3 .* eps0.^5 / 140;
-% GL integral on [ε₀, ω1] of  f(t) = -℘(t) + 1/t²
-eta1   = 1 ./ omega1 + anal + weierZ_gl_integral(@feta, eps0, omega1, e1, e2, e3);
+eta1 = -pi^2 ./ (12 .* omega1) .* th1ppp0 ./ th1p0;
+Z = eta1 .* z ./ omega1 + pi ./ (2 .* omega1) .* th1p ./ th1;
 
-% Period reduction: bring z to (-ω1, ω1] so the integration path ω1→z_red
-% stays within (-ω1, ω1] and never crosses a pole of ℘ at 0 or ±2ω1, etc.
-%   ζ(z) = ζ(z_red) + k·2η1   where  z_red = z - k·2ω1
-% Use floor with a half-period offset to map (-ω1, ω1] (avoids round(0.5)=1
-% pushing ω1 itself to the wrong strip).
-k      = floor((z + omega1 .* (1 - eps)) ./ (2 .* omega1));
-z_red  = z - k .* (2 .* omega1);
-
-% ζ(z_red) = η1 + ∫_{ω1}^{z_red} [-℘(t)] dt, but only when z_red > 0.
-% For z_red < 0 the path from ω1 to z_red crosses the pole of ℘ at t=0.
-% Use odd symmetry ζ(-z) = -ζ(z) instead: evaluate at |z_red| and negate.
-neg    = z_red < 0;
-az_red = abs(z_red);
-int_val = weierZ_gl_integral(@fzeta, omega1, az_red, e1, e2, e3);
-Z_red = eta1 + int_val;          % ζ(|z_red|) for all elements
-Z_red(neg) = -Z_red(neg);        % ζ(z_red) = -ζ(-z_red) for negative z_red
-Z = Z_red + k .* (2 .* eta1);
-
-% Poles: z_red ≈ 0 means z is at a lattice point
-Z(az_red < eps^(1/3)) = Inf;
+% Lattice points z = 2k*omega1 (theta1 vanishes): pole of zeta
+Z(th1 == 0) = Inf;
 
 
 % -----------------------------------------------------------------------
-function v = feta(t, e1, e2, e3)
-% Regularised integrand for η1: -℘(t) + 1/t²  (regular at t=0, O(t²))
-P = weierstrassP(t, e1, e2, e3);
-v = -P + 1 ./ t.^2;
-% At extremely small t the lattice pole of P makes ℘ ≈ 1/t², so the
-% difference can underflow; replace with analytic O(t²) value if needed.
-g2 = -4 .* (e1.*e2 + e1.*e3 + e2.*e3);
-g3 =  4 .* e1 .* e2 .* e3;
-small = abs(t) < 1e-4;
-if any(small)
-    v(small) = (-g2(small) .* t(small).^2 / 20 - g3(small) .* t(small).^4 / 28);
+function [th1, th1p, th1p0, th1ppp0] = weierZ_theta1(v, q)
+% theta1(v,q), its v-derivative, and theta1'(0), theta1'''(0).
+% The common factor 2 is dropped: it cancels in every ratio used here.
+qmax = max([q(:); 0]);
+if qmax > 0
+    nT = min(30, max(2, ceil(sqrt(abs(log(eps) ./ log(qmax))))));
+else
+    nT = 1;
 end
-
-
-% -----------------------------------------------------------------------
-function v = fzeta(t, e1, e2, e3)
-% Integrand for ζ(z): -℘(t)
-v = -weierstrassP(t, e1, e2, e3);
-% Replace Inf (at poles) with 0 so GL sum doesn't blow up;
-% in practice t never hits an exact lattice point in the GL grid.
-v(~isfinite(v)) = 0;
-
-
-% -----------------------------------------------------------------------
-function I = weierZ_gl_integral(f_handle, a, b, e1, e2, e3)
-%WEIERZ_GL_INTEGRAL  10-pt GL quadrature of f(t,e1,e2,e3) from a to b (arrays).
-%   All of a, b, e1, e2, e3 are row vectors of the same length N.
-%   Returns a row vector I of length N.
-t_gl = [ 0.9931285991850949,  0.9639719272779138, ...
-         0.9122344282513259,  0.8391169718222188, ...
-         0.7463319064601508,  0.6360536807265150, ...
-         0.5108670019508271,  0.3737060887154195, ...
-         0.2277858511416451,  0.07652652113349734 ];
-w_gl = [ 0.01761400713915212, 0.04060142980038694, ...
-         0.06267204833410907, 0.08327674157670475, ...
-         0.1019301198172404,  0.1181945319615184,  ...
-         0.1316886384491766,  0.1420961093183820,  ...
-         0.1491729864726037,  0.1527533871307258   ];
-
-mid = (a + b) ./ 2;
-hw  = (b - a) ./ 2;
-I   = zeros(size(a));
-for k = 1:10
-    tp = mid + hw .* t_gl(k);
-    tm = mid - hw .* t_gl(k);
-    I  = I + w_gl(k) .* (f_handle(tp, e1, e2, e3) + f_handle(tm, e1, e2, e3));
+th1 = zeros(size(v));  th1p = th1;
+th1p0 = zeros(size(v)); th1ppp0 = th1p0;
+for n = 0:nT
+    qq = (-1)^n .* q.^((n+0.5)^2);
+    k  = 2*n + 1;
+    th1     = th1     + qq .* sin(k .* v);
+    th1p    = th1p    + qq .* k .* cos(k .* v);
+    th1p0   = th1p0   + qq .* k;
+    th1ppp0 = th1ppp0 - qq .* k^3;
 end
-I = I .* hw;
 
 
 % -----------------------------------------------------------------------

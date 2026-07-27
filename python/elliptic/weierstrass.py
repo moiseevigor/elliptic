@@ -12,23 +12,6 @@ import math
 import numpy as np
 from ._xputils import get_xp
 
-# 10-point GL nodes/weights as plain Python floats
-_GL_T = [
-    0.9931285991850949, 0.9639719272779138,
-    0.9122344282513259, 0.8391169718222188,
-    0.7463319064601508, 0.6360536807265150,
-    0.5108670019508271, 0.3737060887154195,
-    0.2277858511416451, 0.07652652113349734,
-]
-_GL_W = [
-    0.01761400713915212, 0.04060142980038694,
-    0.06267204833410907, 0.08327674157670475,
-    0.10193011981724040, 0.11819453196151840,
-    0.13168863844917660, 0.14209610931838200,
-    0.14917298647260370, 0.15275338713072580,
-]
-
-
 def _broadcast4(z, e1, e2, e3):
     xp = get_xp(z, e1, e2, e3)
     z  = xp.asarray(z,  dtype=xp.float64)
@@ -37,18 +20,6 @@ def _broadcast4(z, e1, e2, e3):
     e3 = xp.asarray(e3, dtype=xp.float64)
     z, e1, e2, e3 = xp.broadcast_arrays(z, e1, e2, e3)
     return xp, z, e1, e2, e3
-
-
-def _gl_integral_numpy(f, a, b, e1, e2, e3):
-    """10-pt GL quadrature of f(t, e1, e2, e3) on [a, b]."""
-    mid = 0.5 * (a + b)
-    half = 0.5 * (b - a)
-    I = np.zeros_like(a)
-    for ti, wi in zip(_GL_T, _GL_W):
-        t_p = mid + half * ti
-        t_m = mid - half * ti
-        I += wi * (f(t_p, e1, e2, e3) + f(t_m, e1, e2, e3))
-    return half * I
 
 
 # ---------------------------------------------------------------------------
@@ -92,46 +63,48 @@ def weierstrassZeta(z, e1, e2, e3):
     return np.asarray(Z.reshape(orig_shape))
 
 
-def _weierZ_numpy(z, e1, e2, e3):
+def _lattice_theta_numpy(z, e1, e2, e3):
+    """omega1, eta1 and the theta1 series values needed by zeta/sigma.
+
+    Closed theta forms (DLMF 23.6.8/9/13): no quadrature.  Returns
+    (omega1, eta1, th1, th1p) with the common factor 2 of A&S 16.27
+    dropped from every series -- only ratios are used downstream, except
+    th1/th1p0 where both drop the same factor.
+    """
     from .elliptic12 import _elliptic12_xp
     m_param = (e2 - e3) / (e1 - e3)
     phi_half = np.full_like(m_param, math.pi / 2)
-    K, _, _ = _elliptic12_xp(np, phi_half, m_param)
+    K,  _, _ = _elliptic12_xp(np, phi_half, m_param)
+    Kp, _, _ = _elliptic12_xp(np, phi_half, 1.0 - m_param)
     omega1 = K / np.sqrt(e1 - e3)
+    q = np.exp(-math.pi * Kp / K)
+    v = math.pi * z / (2.0 * omega1)
 
-    g2 = -4.0 * (e1 * e2 + e1 * e3 + e2 * e3)
-    g3 =  4.0 * e1 * e2 * e3
+    qmax = float(np.max(q)) if q.size else 0.0
+    nT = min(30, max(2, math.ceil(math.sqrt(abs(math.log(np.finfo(float).eps)
+                                                / math.log(qmax)))))) if qmax > 0 else 1
 
-    eps0 = 0.1 * omega1
-    anal = -g2 * eps0 ** 3 / 60.0 - g3 * eps0 ** 5 / 140.0
+    th1 = np.zeros_like(v); th1p = np.zeros_like(v)
+    th1p0 = np.zeros_like(v); th1ppp0 = np.zeros_like(v)
+    for n in range(nT + 1):
+        qq = (-1.0) ** n * q ** ((n + 0.5) ** 2)
+        k = 2 * n + 1
+        th1     += qq * np.sin(k * v)
+        th1p    += qq * k * np.cos(k * v)
+        th1p0   += qq * k
+        th1ppp0 -= qq * k ** 3
+    eta1 = -math.pi ** 2 / (12.0 * omega1) * th1ppp0 / th1p0
+    return omega1, eta1, th1, th1p, th1p0
 
-    def feta(t, e1, e2, e3):
-        P = _weierP_numpy(t, e1, e2, e3)
-        v = -P + 1.0 / t ** 2
-        g2_ = -4.0 * (e1 * e2 + e1 * e3 + e2 * e3)
-        g3_ =  4.0 * e1 * e2 * e3
-        small = np.abs(t) < 1e-4
-        v[small] = -g2_[small] * t[small] ** 2 / 20.0 - g3_[small] * t[small] ** 4 / 28.0
-        return v
 
-    gl_eta = _gl_integral_numpy(feta, eps0, omega1, e1, e2, e3)
-    eta1 = 1.0 / omega1 + anal + gl_eta
-
-    k = np.floor((z + omega1 * (1.0 - 1e-14)) / (2.0 * omega1))
-    z_red = z - k * 2.0 * omega1
-    neg = z_red < 0.0
-    az_red = np.abs(z_red)
-
-    def fzeta(t, e1, e2, e3):
-        v = -_weierP_numpy(t, e1, e2, e3)
-        v[~np.isfinite(v)] = 0.0
-        return v
-
-    int_val = _gl_integral_numpy(fzeta, omega1, az_red, e1, e2, e3)
-    Z_red = eta1 + int_val
-    Z_red[neg] = -Z_red[neg]
-    Z = Z_red + k * 2.0 * eta1
-    Z[az_red < 1e-5] = np.inf
+def _weierZ_numpy(z, e1, e2, e3):
+    # zeta(z) = eta1*z/omega1 + pi/(2*omega1) * theta1'(v)/theta1(v)  [DLMF 23.6.13]
+    # Quasi-periodicity zeta(z + 2k*omega1) = zeta(z) + 2k*eta1 is carried
+    # exactly by the formula; no period reduction needed.
+    omega1, eta1, th1, th1p, _ = _lattice_theta_numpy(z, e1, e2, e3)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        Z = eta1 * z / omega1 + math.pi / (2.0 * omega1) * th1p / th1
+    Z[th1 == 0.0] = np.inf          # lattice points z = 2k*omega1
     return Z
 
 
@@ -149,34 +122,12 @@ def weierstrassSigma(z, e1, e2, e3):
 
 
 def _weierS_numpy(z, e1, e2, e3):
-    from .elliptic12 import _elliptic12_xp
-    m_param = (e2 - e3) / (e1 - e3)
-    phi_half = np.full_like(m_param, math.pi / 2)
-    K, _, _ = _elliptic12_xp(np, phi_half, m_param)
-    omega1 = K / np.sqrt(e1 - e3)
-
-    g2 = -4.0 * (e1 * e2 + e1 * e3 + e2 * e3)
-    g3 =  4.0 * e1 * e2 * e3
-
-    t_split = np.minimum(0.25 * omega1, np.abs(z))
-
-    # Analytic part of integral on [0, t_split]: integral of zeta(t)-1/t
-    # Laurent: zeta(t)-1/t = -g2*t^3/60 - g3*t^5/140 + ...
-    # integral = -g2*t_split^4/240 - g3*t_split^6/840
-    anal = -g2 * t_split ** 4 / 240.0 - g3 * t_split ** 6 / 840.0
-
-    def flog(t, e1, e2, e3):
-        """zeta(t) - 1/t (integrand for log sigma)."""
-        Z = _weierZ_numpy(t, e1, e2, e3)
-        v = Z - 1.0 / t
-        v[~np.isfinite(v)] = 0.0
-        return v
-
-    gl_part = _gl_integral_numpy(flog, t_split, np.abs(z), e1, e2, e3)
-    log_sigma = np.log(np.abs(z) + (z == 0.0)) + anal + gl_part
-    S = np.sign(z) * np.exp(log_sigma)
-    S[z == 0.0] = 0.0
-    return S
+    # sigma(z) = 2*omega1/pi * exp(eta1*z^2/(2*omega1)) * theta1(v)/theta1'(0)
+    # [DLMF 23.6.9].  Entire function: every lattice zero and sign change
+    # comes out of theta1 itself.  The previous form integrated log(sigma)
+    # through the zeta pole at 2*omega1 and was wrong beyond it.
+    omega1, eta1, th1, _, th1p0 = _lattice_theta_numpy(z, e1, e2, e3)
+    return 2.0 * omega1 / math.pi * np.exp(eta1 * z * z / (2.0 * omega1)) * th1 / th1p0
 
 
 # -----------------------------------------------------------------------

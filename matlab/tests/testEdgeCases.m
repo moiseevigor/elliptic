@@ -343,6 +343,65 @@
 %! end
 
 % ---------------------------------------------------------------------
+% K. Weierstrass functions against 30-digit reference values.
+%    Reference: theta-function closed forms (DLMF 23.6.4, 23.6.8, 23.6.9,
+%    23.6.13) evaluated with mpmath 1.4.1 at mp.dps = 50 — a formula
+%    family independent of this library's sn-based / series code.  The
+%    reference construction itself was validated to < 1e-44 against
+%    P'^2 = 4P^3 - g2*P - g3, zeta' = -P, sigma'/sigma = zeta, P(w1) = e1,
+%    and the Laurent behaviour at z -> 0 before use.
+%    Rows: roots (e1,e2,e3) exactly representable in binary with
+%    e1+e2+e3 == 0 exactly (inexact roots break the depressed cubic by
+%    O(eps*P^2) and poison the DE identity).
+%    z/w1 = 2.6 is the case the old quadrature Sigma got wrong by -277x.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! % e1 e2 e3, z, P, Pp, Zeta, Sigma  (mpmath, 30 digits)
+%! R = [
+%!  2.0 -0.5 -1.5 0.364678508599203802930916253782  7.60991654315483213781676575283 -40.716795203467035857794498067   2.73133905217586401231118481172  0.364322893731329436910487536054
+%!  2.0 -0.5 -1.5 1.09403552579761140879274876135   2.31139666938461354617370617507   3.65334019657835372774485143298  0.509456906969716181254227726116 0.993298793310168551601976056672
+%!  2.0 -0.5 -1.5 2.37041030589482471905095564958   3.55973799836232295109911735041 -11.3205842122331758742412322161   3.5753186226267378852136602119  -7.35675884743112892037462320321
+%!  1.0 0.25 -1.25 0.54105576073301731403993176119  3.48955873892538680757168974091 -12.3652547699847269163302027234   1.83475002192072477467486916472  0.540061003157461700899655935519
+%!  1.0 0.25 -1.25 1.62316728219905194211979528357  1.13305294818566893955539247187   1.05828457240220452238075426776  0.25696621923989724678288838394  1.40818598628919804944444268506
+%!  1.0 0.25 -1.25 3.51686244476461254125955644774  1.67783096402393224759843061699  -3.36668198668738980119457645764  2.26609152750196941530142216878 -8.29563954795637078192140811817
+%! ];
+%! for i = 1:rows(R)
+%!     e1=R(i,1); e2=R(i,2); e3=R(i,3); z=R(i,4);
+%!     assert(abs(weierstrassP(z,e1,e2,e3)      - R(i,5)) < 1e-12*max(1,abs(R(i,5))), 'P wrong at row %d', i);
+%!     assert(abs(weierstrassPPrime(z,e1,e2,e3) - R(i,6)) < 1e-12*max(1,abs(R(i,6))), 'Pprime wrong at row %d', i);
+%!     assert(abs(weierstrassZeta(z,e1,e2,e3)   - R(i,7)) < 1e-12*max(1,abs(R(i,7))), 'Zeta wrong at row %d', i);
+%!     assert(abs(weierstrassSigma(z,e1,e2,e3)  - R(i,8)) < 1e-12*max(1,abs(R(i,8))), 'Sigma wrong at row %d', i);
+%! end
+
+% ---------------------------------------------------------------------
+% K2. Weierstrass structural identities (DLMF 23.2, 23.6):
+%     P'^2 = 4P^3 - g2 P - g3;  zeta(z + 2k*w1) = zeta(z) + 2k*eta1 with
+%     eta1 = zeta(w1);  sigma(z + 2*w1) = -sigma(z)*exp(2*eta1*(z + w1)).
+%     Roots exactly binary-representable, e1+e2+e3 == 0 exactly.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! e1=1.5; e2=0.25; e3=-1.75;
+%! [g2,g3] = weierstrassInvariants(e1,e2,e3);
+%! m = (e2-e3)/(e1-e3);  w1 = ellipke(m)/sqrt(e1-e3);
+%! eta1 = weierstrassZeta(w1,e1,e2,e3);
+%! for zf = [0.23 0.61 0.89]
+%!     z = zf*w1;
+%!     P  = weierstrassP(z,e1,e2,e3);
+%!     Pp = weierstrassPPrime(z,e1,e2,e3);
+%!     assert(abs(Pp^2 - (4*P^3 - g2*P - g3)) < 1e-9*max(1,Pp^2), 'DE violated at z/w1=%g', zf);
+%!     for k = [-2 -1 1 2]
+%!         Zk = weierstrassZeta(z + 2*k*w1, e1,e2,e3);
+%!         assert(abs(Zk - (weierstrassZeta(z,e1,e2,e3) + 2*k*eta1)) < 1e-11, ...
+%!             'zeta quasi-period broken at z/w1=%g k=%d', zf, k);
+%!     end
+%!     Sq = weierstrassSigma(z + 2*w1, e1,e2,e3);
+%!     Sw = -weierstrassSigma(z,e1,e2,e3) * exp(2*eta1*(z + w1));
+%!     assert(abs(Sq - Sw) < 1e-10*max(1,abs(Sw)), 'sigma quasi-period broken at z/w1=%g', zf);
+%! end
+
+% ---------------------------------------------------------------------
 % J. Ellipse arclength.  Degenerate circle and the full ellipse, against
 %    the plain arclength integral (QUADGK) — the full ellipse spans 2*pi
 %    of phase and so exercises the quasi-period.

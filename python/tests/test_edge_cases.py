@@ -310,6 +310,73 @@ class TestCarlson:
 
 
 # =====================================================================
+# K. Weierstrass functions — 30-digit external reference values
+# =====================================================================
+class TestWeierstrassExternal:
+    """Reference: theta-function closed forms (DLMF 23.6.4/8/9/13) evaluated
+    with mpmath 1.4.1 at mp.dps = 50 — a formula family independent of this
+    library's sn-based / series code.  The reference construction was
+    validated to < 1e-44 against P'^2 = 4P^3 - g2 P - g3, zeta' = -P,
+    sigma'/sigma = zeta, P(w1) = e1, and the z -> 0 Laurent behaviour.
+
+    Roots are exactly binary-representable with e1+e2+e3 == 0 exactly
+    (inexact roots break the depressed cubic by O(eps*P^2)).
+    z/w1 = 2.6 is the case the old quadrature Sigma got wrong by -277x.
+    """
+
+    # e1, e2, e3, z, P, Pp, Zeta, Sigma  (mpmath, 30 digits)
+    ROWS = [
+        (2.0, -0.5, -1.5, 0.364678508599203802930916253782,
+         7.60991654315483213781676575283, -40.716795203467035857794498067,
+         2.73133905217586401231118481172, 0.364322893731329436910487536054),
+        (2.0, -0.5, -1.5, 1.09403552579761140879274876135,
+         2.31139666938461354617370617507, 3.65334019657835372774485143298,
+         0.509456906969716181254227726116, 0.993298793310168551601976056672),
+        (2.0, -0.5, -1.5, 2.37041030589482471905095564958,
+         3.55973799836232295109911735041, -11.3205842122331758742412322161,
+         3.5753186226267378852136602119, -7.35675884743112892037462320321),
+        (1.0, 0.25, -1.25, 0.54105576073301731403993176119,
+         3.48955873892538680757168974091, -12.3652547699847269163302027234,
+         1.83475002192072477467486916472, 0.540061003157461700899655935519),
+        (1.0, 0.25, -1.25, 1.62316728219905194211979528357,
+         1.13305294818566893955539247187, 1.05828457240220452238075426776,
+         0.25696621923989724678288838394, 1.40818598628919804944444268506),
+        (1.0, 0.25, -1.25, 3.51686244476461254125955644774,
+         1.67783096402393224759843061699, -3.36668198668738980119457645764,
+         2.26609152750196941530142216878, -8.29563954795637078192140811817),
+    ]
+
+    def test_against_mpmath_reference(self):
+        for e1, e2, e3, z, P, Pp, Ze, Si in self.ROWS:
+            assert abs(_s(elliptic.weierstrassP(z, e1, e2, e3)) - P) < 1e-12 * max(1, abs(P))
+            assert abs(_s(elliptic.weierstrassPPrime(z, e1, e2, e3)) - Pp) < 1e-12 * max(1, abs(Pp))
+            assert abs(_s(elliptic.weierstrassZeta(z, e1, e2, e3)) - Ze) < 1e-12 * max(1, abs(Ze))
+            assert abs(_s(elliptic.weierstrassSigma(z, e1, e2, e3)) - Si) < 1e-12 * max(1, abs(Si))
+
+    def test_structural_identities(self):
+        """DE, zeta quasi-period (eta1 = zeta(w1)), sigma quasi-period
+        sigma(z + 2 w1) = -sigma(z) exp(2 eta1 (z + w1))   [DLMF 23.2]"""
+        e1, e2, e3 = 1.5, 0.25, -1.75
+        g2, g3, _ = (float(np.atleast_1d(v)[0])
+                     for v in elliptic.weierstrassInvariants(e1, e2, e3))
+        m = (e2 - e3) / (e1 - e3)
+        w1 = float(ellipk(m)) / math.sqrt(e1 - e3)
+        eta1 = _s(elliptic.weierstrassZeta(w1, e1, e2, e3))
+        for zf in (0.23, 0.61, 0.89):
+            z = zf * w1
+            P = _s(elliptic.weierstrassP(z, e1, e2, e3))
+            Pp = _s(elliptic.weierstrassPPrime(z, e1, e2, e3))
+            assert abs(Pp ** 2 - (4 * P ** 3 - g2 * P - g3)) < 1e-9 * max(1, Pp ** 2)
+            Z0 = _s(elliptic.weierstrassZeta(z, e1, e2, e3))
+            for k in (-2, -1, 1, 2):
+                Zk = _s(elliptic.weierstrassZeta(z + 2 * k * w1, e1, e2, e3))
+                assert abs(Zk - (Z0 + 2 * k * eta1)) < 1e-11, f"zeta q-p z/w1={zf} k={k}"
+            Sq = _s(elliptic.weierstrassSigma(z + 2 * w1, e1, e2, e3))
+            Sw = -_s(elliptic.weierstrassSigma(z, e1, e2, e3)) * math.exp(2 * eta1 * (z + w1))
+            assert abs(Sq - Sw) < 1e-10 * max(1, abs(Sw)), f"sigma q-p z/w1={zf}"
+
+
+# =====================================================================
 # J. Ellipse arclength — spans 2*pi of phase, so exercises the quasi-period
 # =====================================================================
 class TestArclength:

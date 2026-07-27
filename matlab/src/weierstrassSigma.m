@@ -7,22 +7,17 @@ function S = weierstrassSigma(z, e1, e2, e3)
 %
 %   NOTE: this is the Weierstrass σ, NOT the Riemann ξ or σ functions.
 %
-%   Algorithm:
-%       log σ(z) = log z + ∫_0^z [ζ(t) - 1/t] dt
-%       σ(z)     = z · exp( ∫_0^z [ζ(t) - 1/t] dt )
+%   Algorithm (closed theta form, DLMF 23.6.9 with 23.6.8):
+%       ω1 = K(m)/√(e1-e3),  m = (e2-e3)/(e1-e3),  q = exp(-π·K(1-m)/K(m))
+%       η1 = -π²/(12ω1) · θ1'''(0,q)/θ1'(0,q)
+%       σ(z) = (2ω1/π) · exp(η1·z²/(2ω1)) · θ1(v,q)/θ1'(0,q),  v = πz/(2ω1)
+%   The theta series converges geometrically; no quadrature is involved,
+%   and every lattice zero and sign change comes out of θ1 itself.
 %
-%   The integral is split at  t_split = min(0.25·ω1, |z|):
+%   Validity: σ(z) grows quasi-exponentially; double overflows eventually
+%   through the exp(η1·z²/(2ω1)) factor.
 %
-%     ∫_0^{t_split}: Laurent series  ζ(t)-1/t = -g2·t³/60 - g3·t⁵/140 + …
-%       → analytic: -g2·t_split⁴/240 - g3·t_split⁶/840
-%
-%     ∫_{t_split}^z: 10-pt Gauss-Legendre on ζ(t)-1/t.
-%       For t ≥ t_split the GL integral for ζ(t) avoids the near-singular
-%       1/t² region of ℘, so weierstrassZeta returns accurate values.
-%
-%   Validity: σ(z) grows quasi-exponentially; double overflows for |z|>~4ω1.
-%
-%   At z = 0:  S = 0 exactly.
+%   At z = 0:  S = 0 exactly (θ1(0) = 0).
 %
 %   All input conventions match WEIERSTRASSP.  Parallel and GPU modes are
 %   enabled via ELLIPTIC_CONFIG.
@@ -70,75 +65,51 @@ S(:) = weierS_core(z(:).', e1(:).', e2(:).', e3(:).');
 function S = weierS_core(z, e1, e2, e3)
 %WEIERSCORE  Vectorised serial evaluation (row-vector inputs).
 %
-% σ(z) = z · exp( ∫_0^z [ζ(t) - 1/t] dt )
+% Closed theta form (DLMF 23.6.9 with 23.6.8):
 %
-% Split the integral at t_split = min(0.25·ω1, |z|):
-%   [0, t_split]   → Laurent series (no cancellation)
-%   [t_split, z]   → 10-pt GL on ζ(t)-1/t  (t large enough for accurate ζ)
-
-t_gl = [ 0.9931285991850949,  0.9639719272779138, ...
-         0.9122344282513259,  0.8391169718222188, ...
-         0.7463319064601508,  0.6360536807265150, ...
-         0.5108670019508271,  0.3737060887154195, ...
-         0.2277858511416451,  0.07652652113349734 ];
-w_gl = [ 0.01761400713915212, 0.04060142980038694, ...
-         0.06267204833410907, 0.08327674157670475, ...
-         0.1019301198172404,  0.1181945319615184,  ...
-         0.1316886384491766,  0.1420961093183820,  ...
-         0.1491729864726037,  0.1527533871307258   ];
-
-N  = numel(z);
-g2 = -4 .* (e1.*e2 + e1.*e3 + e2.*e3);
-g3 =  4 .* e1 .* e2 .* e3;
+%   sigma(z) = 2*omega1/pi * exp(eta1*z^2/(2*omega1)) * theta1(v,q)/theta1'(0,q)
+%   eta1     = -pi^2/(12*omega1) * theta1'''(0,q)/theta1'(0,q)
+%   v = pi*z/(2*omega1),  q = exp(-pi*K(1-m)/K(m)),  m = (e2-e3)/(e1-e3)
+%
+% No quadrature.  The previous form integrated log(sigma) through the
+% zeta pole at 2*omega1, so it was ~1e-8 inside the first period and
+% catastrophically wrong (magnitude AND sign) for |z| > 2*omega1; the
+% theta form is entire and carries every lattice zero and sign change.
 
 m_param = (e2 - e3) ./ (e1 - e3);
-[KK, ~] = ellipke(m_param);
-omega1  = KK ./ sqrt(e1 - e3);
+KK  = ellipke(m_param);
+KKp = ellipke(1 - m_param);
+omega1 = KK ./ sqrt(e1 - e3);
+q = exp(-pi .* KKp ./ KK);
+v = pi .* z ./ (2 .* omega1);
 
-% Exploit odd symmetry σ(-z) = -σ(z): work with |z|, restore sign at end.
-% This avoids the GL interval [t_split, z] crossing z=0 for negative z.
-sgn = sign(z);
-az  = abs(z);
+[th1, ~, th1p0, th1ppp0] = weierZ_theta1_local(v, q);
 
-% t_split: Laurent below, numerical ζ above.
-% min(0.25*omega1, 0.99*|z|) keeps t_split inside (0, |z|).
-t_split = min(0.25 .* omega1, az .* 0.99);
-t_split = max(t_split, 1e-10);
-
-% Analytic part:  ∫_0^{t_split} [ζ(t)-1/t] dt
-%   ζ(t)-1/t = -g2*t³/60 - g3*t⁵/140 + O(t⁷)   (A&S 18.5.5 integrated)
-%   integral  = -g2*t⁴/240 - g3*t⁶/840
-int_laurent = -g2 .* t_split.^4 / 240 - g3 .* t_split.^6 / 840;
-
-% GL part:  ∫_{t_split}^{|z|} [ζ(t)-1/t] dt
-% For t >= t_split >= 0.25*omega1, the GL integral for weierstrassZeta(t)
-% is free from near-singular ℘ behaviour (smallest GL node > 0.2*omega1).
-a   = t_split;
-b   = az;
-mid = (a + b) ./ 2;
-hw  = (b - a) ./ 2;
-int_gl = zeros(1, N);
-for k = 1:10
-    tp = mid + hw .* t_gl(k);
-    tm = mid - hw .* t_gl(k);
-    int_gl = int_gl + w_gl(k) .* (fsigma(tp,e1,e2,e3) + fsigma(tm,e1,e2,e3));
-end
-int_gl = int_gl .* hw;
-
-log_sigma = int_laurent + int_gl;
-S = sgn .* az .* exp(log_sigma);
-
-% Exact value at z = 0
-S(az < eps^(1/2)) = 0;
+eta1 = -pi^2 ./ (12 .* omega1) .* th1ppp0 ./ th1p0;
+S = 2 .* omega1 ./ pi .* exp(eta1 .* z.^2 ./ (2 .* omega1)) .* th1 ./ th1p0;
 
 
 % -----------------------------------------------------------------------
-function v = fsigma(t, e1, e2, e3)
-% Integrand: ζ(t) - 1/t  (called only for t >= t_split >= 0.25*omega1,
-% so weierstrassZeta is accurate — no small-t cancellation here).
-v = weierstrassZeta(t, e1, e2, e3) - 1 ./ t;
-% Guard: at lattice poles (shouldn't occur in normal integration range)
-v(~isfinite(v)) = 0;
+function [th1, th1p, th1p0, th1ppp0] = weierZ_theta1_local(v, q)
+% theta1(v,q), v-derivative, theta1'(0), theta1'''(0).  The common factor
+% 2 of A&S 16.27 is dropped from all four series: only the ratios
+% theta1/theta1'(0) and theta1'''(0)/theta1'(0) are ever used.
+qmax = max([q(:); 0]);
+if qmax > 0
+    nT = min(30, max(2, ceil(sqrt(abs(log(eps) ./ log(qmax))))));
+else
+    nT = 1;
+end
+th1 = zeros(size(v));  th1p = th1;
+th1p0 = zeros(size(v)); th1ppp0 = th1p0;
+for n = 0:nT
+    qq = (-1)^n .* q.^((n+0.5)^2);
+    k  = 2*n + 1;
+    th1     = th1     + qq .* sin(k .* v);
+    th1p    = th1p    + qq .* k .* cos(k .* v);
+    th1p0   = th1p0   + qq .* k;
+    th1ppp0 = th1ppp0 - qq .* k^3;
+end
 
 
 % -----------------------------------------------------------------------

@@ -69,6 +69,54 @@
 %! ];
 %! assert(norm(Z-expectedZ) < 1e-12, 'Z value is incorrect.')
 
+% Issue #35: quasi-period past pi/2 must be 2*k*K(m) / 2*k*E(m), not k*K / k*E
+%!test
+%! clear
+%! m = 0.4;
+%! [K,Ec] = ellipke(m);
+%! phi = [-1.2 1.2 pi/2 1.6 2.7 pi 4.0 3*pi/2 7.0];
+%! [F,E] = elliptic12(phi, m*ones(size(phi)));
+%! for k = 1:numel(phi)
+%!     Fq = quadgk(@(t) 1./sqrt(1-m*sin(t).^2), 0, phi(k), 'AbsTol', 1e-13);
+%!     Eq = quadgk(@(t)  sqrt(1-m*sin(t).^2),   0, phi(k), 'AbsTol', 1e-13);
+%!     assert(abs(F(k)-Fq) < 1e-11, 'F(%g) = %.12f, expected %.12f', phi(k), F(k), Fq);
+%!     assert(abs(E(k)-Eq) < 1e-11, 'E(%g) = %.12f, expected %.12f', phi(k), E(k), Eq);
+%! end
+%! assert(abs(elliptic12(pi/2 + pi, m) - (elliptic12(pi/2, m) + 2*K)) < 1e-12, 'F is not 2K-quasi-periodic.')
+
+% Issue #35: elliptic12i must stay continuous across Re(u) = pi/2 below the
+% branch point at pi/2 + i*acosh(1/sqrt(m)), and match elliptic12 on the real axis
+%!test
+%! clear
+%! m = 0.4;
+%! psi = 0.5;                                  % < acosh(1/sqrt(0.4)) = 1.0317
+%! phi = linspace(0.2, 3.0, 141);
+%! [Fi,Ei] = elliptic12i(phi + 1i*psi, m*ones(size(phi)));
+%! step = max(abs(diff(Fi)));                  % ~0.03 when smooth, ~K when branching
+%! assert(step < 0.05, 'F jumps by %g across Re(u) = pi/2.', step);
+%! step = max(abs(diff(Ei)));
+%! assert(step < 0.05, 'E jumps by %g across Re(u) = pi/2.', step);
+%! phi = [0.3 1.2 pi/2 2.0 3.4];               % real u: must agree with elliptic12
+%! [Fr,Er] = elliptic12(phi, m*ones(size(phi)));
+%! [Fc,Ec] = elliptic12i(phi, m*ones(size(phi)));
+%! assert(norm(Fc-Fr) < 1e-9 && norm(Ec-Er) < 1e-9, 'elliptic12i disagrees with elliptic12 on the real axis.')
+
+% Issue #35: at Re(u) = pi/2 exactly the imaginary part used to collapse to zero.
+% Closed form, valid for |psi| < acosh(1/sqrt(m)):
+%   F(pi/2 + i*psi | m) = K(m) + i*F(mu | 1-m),  sin(mu) = tanh(psi)/sqrt(1-m)
+%!test
+%! clear
+%! for m = [0.1 0.4 0.75]
+%!     for psi = [0.01 0.05 0.3]
+%!         mu   = asin(tanh(psi)/sqrt(1-m));
+%!         want = ellipke(m) + 1i*elliptic12(mu, 1-m);
+%!         got  = elliptic12i(pi/2 + 1i*psi, m);
+%!         assert(abs(got-want) < 1e-12, ...
+%!             'F(pi/2+%gi | %g) = %.12f%+.12fi, expected %.12f%+.12fi', ...
+%!             psi, m, real(got), imag(got), real(want), imag(want));
+%!     end
+%! end
+
 % Benchmark time and memory
 %!test
 %! clear

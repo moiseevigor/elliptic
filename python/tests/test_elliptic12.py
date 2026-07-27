@@ -50,6 +50,49 @@ class TestElliptic12:
         Z_ref = E - (E_m / K_m) * F
         assert abs(Z - Z_ref) < 1e-13
 
+    def test_beyond_half_period(self):
+        """F(phi+k*pi|m) = F(phi|m) + 2k*K(m), likewise E (issue #35)."""
+        m = 0.4
+        phi = np.array([-1.2, 1.2, np.pi / 2, 1.6, 2.7, np.pi, 4.0, 7.0])
+        F, E, _ = elliptic.elliptic12(phi, m)
+        np.testing.assert_allclose(F, ellipkinc(phi, m), atol=1e-12)
+        np.testing.assert_allclose(E, ellipeinc(phi, m), atol=1e-12)
+
+
+class TestElliptic12iBranch:
+    """Issue #35: elliptic12i branched at Re(u) = pi/2."""
+
+    def test_continuous_across_half_period(self):
+        # The branch point sits at pi/2 + i*acosh(1/sqrt(m)); below it the
+        # function is analytic, so crossing Re(u) = pi/2 must be smooth.
+        m = 0.4
+        psi = 0.5                            # < acosh(1/sqrt(0.4)) = 1.0317
+        u = np.linspace(0.2, 3.0, 141) + 1j * psi
+        Fi, Ei, _ = elliptic.elliptic12i(u, m)
+        assert np.max(np.abs(np.diff(Fi))) < 0.05   # ~0.03 smooth, ~K if branching
+        assert np.max(np.abs(np.diff(Ei))) < 0.05
+
+    def test_half_period_line_closed_form(self):
+        """At Re(u) = pi/2 exactly the imaginary part used to collapse to 0.
+
+        For |psi| < acosh(1/sqrt(m)):
+            F(pi/2 + i*psi | m) = K(m) + i*F(mu | 1-m),
+            sin(mu) = tanh(psi)/sqrt(1-m)
+        """
+        for m in (0.1, 0.4, 0.75):
+            for psi in (0.01, 0.05, 0.3):
+                mu = np.arcsin(np.tanh(psi) / np.sqrt(1 - m))
+                want = ellipk(m) + 1j * ellipkinc(mu, 1 - m)
+                got = np.atleast_1d(elliptic.elliptic12i(np.pi / 2 + 1j * psi, m)[0])[0]
+                assert abs(got - want) < 1e-12, f"m={m}, psi={psi}: {got} != {want}"
+
+    def test_real_axis_matches_elliptic12(self):
+        m = 0.4
+        phi = np.array([0.3, 1.2, np.pi / 2, 2.0, 3.4])
+        Fi, Ei, _ = elliptic.elliptic12i(phi + 0j, m)
+        np.testing.assert_allclose(np.real(Fi), ellipkinc(phi, m), atol=1e-9)
+        np.testing.assert_allclose(np.real(Ei), ellipeinc(phi, m), atol=1e-9)
+
 
 class TestEllipj:
     def test_scalar_vs_scipy(self):

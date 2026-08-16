@@ -74,12 +74,10 @@ end
 
 I = find(m ~= 1 & m ~= 0);
 if ~isempty(I)
-    % Use standard uniquetol for numerical precision issues
-    % This is the recommended MATLAB approach since R2015a
+    % Preserve distinct parameters exactly; tolerance grouping is a silent
+    % data substitution and is particularly damaging near m=1.
     m_vals = m(I);
-    tol_unique = 1e-11;
-
-    [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
+    [mu, ~, K] = unique(m_vals);
     K = K(:).';
 
     mumax = length(mu);
@@ -109,8 +107,15 @@ if ~isempty(I)
 	end
 
     mmax = length(I);
+    % Use the platform complete integral for reduction.  Deriving K from the
+    % tolerance-stopped AGM is adequate for small u but its last-bit error is
+    % multiplied by the period count for large u, especially near m=1.
+    K_unique = carlsonRF(zeros(size(mu)), 1-mu, ones(size(mu)));
+    K_vals = K_unique(K);
+    period = floor((u(I) + K_vals) ./ (2 .* K_vals));
+    u_reduced = u(I) - 2 .* period .* K_vals;
 	phin = zeros(1,mmax);
-	phin(:) = (2 .^ n(K)).*a(i,K).*u(I);
+	phin(:) = (2 .^ n(K)).*a(i,K).*u_reduced;
 	while i > 1
         i = i - 1;
         mask = n(K) >= i;
@@ -118,10 +123,11 @@ if ~isempty(I)
           phin(mask) = 0.5*(asin(c(i+1,K(mask)).*sin(phin(mask))./a(i+1,K(mask))) + phin(mask));
         end
 	end
-	am(I) = phin;
-	sn(I) = sin(phin);
-	cn(I) = cos(phin);
-	dn(I) = sqrt(1 - m(I).*sin(phin).^2);
+    quasi_sign = 1 - 2 .* mod(period, 2);
+	am(I) = phin + period .* pi;
+	sn(I) = quasi_sign .* sin(phin);
+	cn(I) = quasi_sign .* cos(phin);
+	dn(I) = sqrt((1 - m(I)) + m(I).*cn(I).^2);
 end
 
 % Special cases: m = {0, 1}
@@ -215,18 +221,27 @@ function [sn,cn,dn,am] = gpu_ellipj(u, m, tol)
             n(mask) = ii - 1;
         end
 
+        % Reduce by the 2K quasi-period before the amplified Landen phase.
+        % This mirrors the serial path and prevents large-argument phase loss.
+        a_final = gather(a(:,ii));
+        K_vals = carlsonRF(zeros(size(mu)), 1-mu, ones(size(mu)));
+        period = floor((u(I) + K_vals) ./ (2 .* K_vals));
+        u_reduced = u(I) - 2 .* period .* K_vals;
+
         % Ascending Landen back-substitution with multiplicative masking
-        phin = gpuArray((2 .^ n) .* gather(a(:,ii)) .* u(I));
+        phin = gpuArray((2 .^ n) .* a_final .* u_reduced);
         for jj = ii-1:-1:1
             active = gpuArray(double(n >= jj));
             phin_new = 0.5*(asin(c(:,jj+1).*sin(phin)./a(:,jj+1)) + phin);
             phin = phin + active .* (phin_new - phin);
         end
 
-        am(I) = gather(phin);
-        sn(I) = gather(sin(phin));
-        cn(I) = gather(cos(phin));
-        dn(I) = sqrt(1 - m(I) .* gather(sin(phin)).^2);
+        quasi_sign = 1 - 2 .* mod(period, 2);
+        phin_cpu = gather(phin);
+        am(I) = phin_cpu + period .* pi;
+        sn(I) = quasi_sign .* sin(phin_cpu);
+        cn(I) = quasi_sign .* cos(phin_cpu);
+        dn(I) = sqrt((1 - m(I)) + m(I) .* cn(I).^2);
     end
 
     % Special cases: m = {0, 1}

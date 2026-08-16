@@ -3,9 +3,10 @@ function Pi = elliptic3(u,m,c);
 %   Pi = ELLIPTIC3(U,M,C) where U is a phase in radians, 0<M<1 is
 %   the module and 0<C<1 is a parameter.
 %
-%   ELLIPTIC3 uses Gauss-Legendre 10 points quadrature template
-%   described in [3] to determine the value of the Incomplete Elliptic
-%   Integral of the Third Kind (see [1, 2]).
+%   ELLIPTIC3 uses 20-node Gauss-Legendre quadrature away from endpoint
+%   singularities and Carlson RF/RJ forms near a pole.  The hybrid avoids
+%   the quadrature's loss of precision as C or M approaches one while
+%   retaining its vectorised fast path for regular inputs.
 %
 %   Pi(u,m,c) = int(1/((1 - c*sin(t)^2)*sqrt(1 - m*sin(t)^2)), t=0..u)
 %
@@ -62,9 +63,13 @@ end
 
 Pi = zeros(size(u));
 
-% GPU dispatch: move computation to GPU if enabled and available
+% GPU dispatch: the legacy fixed quadrature is retained only away from the
+% endpoint singularities.  Near a pole it loses several digits, so fall back
+% to the Carlson CPU core below.
 N_el = numel(u);
-if has_gpu()
+gpu_regular = all((1 - c(:).*sin(u(:)).^2) >= 0.25) && ...
+              all((1 - m(:).*sin(u(:)).^2) >= 0.25);
+if has_gpu() && gpu_regular
     Pi = gpu_elliptic3(u, m, c);
     return;
 end
@@ -81,27 +86,60 @@ m = m(:).';    % make a row vector
 u = u(:).';
 c = c(:).';
 
-I = find( u==pi/2 & m==1 | u==pi/2 & c==1 );
+I = find(u==pi/2 & m==1 | u==pi/2 & c==1);
 
-t = [ 0.9931285991850949,  0.9639719272779138,...            % Base points
-      0.9122344282513259,  0.8391169718222188,...            % for Gauss-Legendre integration
-      0.7463319064601508,  0.6360536807265150,...
-      0.5108670019508271,  0.3737060887154195,...
-      0.2277858511416451,  0.07652652113349734 ];
-w = [ 0.01761400713915212, 0.04060142980038694,...           % Weights
-      0.06267204833410907, 0.08327674157670475,...           % for Gauss-Legendre integration
-      0.1019301198172404,  0.1181945319615184,...
-      0.1316886384491766,  0.1420961093183820,...
-      0.1491729864726037,  0.1527533871307258  ];
+% Hybrid evaluator.  The 20-node rule is full precision while both endpoint
+% denominators stay >= 0.25; nearer a pole, switch only those elements to the
+% Carlson form (DLMF 19.25.1).  This retains the vectorised fast path without
+% the previous seven-digit loss as c approached 1.
+s = sin(u);
+s2 = s.^2;
+co = cos(u);
+d2 = 1 - m.*s2;
+p = 1 - c.*s2;
+danger = (d2 < 0.25) | (p < 0.25);
+P = zeros(size(u));
 
-P = 0;  i = 0;
-while i < 10
-    i  = i + 1;
-    c0 = u.*t(i)/2;
-    P  = P + w(i).*(g(u/2+c0,m,c) + g(u/2-c0,m,c));
+regular = find(~danger);
+if ~isempty(regular)
+    t = [0.9931285991850949, 0.9639719272779138, ...
+         0.9122344282513259, 0.8391169718222188, ...
+         0.7463319064601508, 0.6360536807265150, ...
+         0.5108670019508271, 0.3737060887154195, ...
+         0.2277858511416451, 0.07652652113349734];
+    w = [0.01761400713915212, 0.04060142980038694, ...
+         0.06267204833410907, 0.08327674157670475, ...
+         0.1019301198172404,  0.1181945319615184, ...
+         0.1316886384491766,  0.1420961093183820, ...
+         0.1491729864726037,  0.1527533871307258];
+    ur = u(regular);
+    mr = m(regular);
+    cr = c(regular);
+    Pr = zeros(size(ur));
+    for jj = 1:10
+        c0 = ur .* t(jj) ./ 2;
+        Pr = Pr + w(jj) .* (g(ur./2+c0, mr, cr) + g(ur./2-c0, mr, cr));
+    end
+    P(regular) = ur ./ 2 .* Pr;
 end
-P = u/2.*P;
-Pi(:) = P;                                                   % Incomplete elliptic integral of the third kind
+
+% Keep the eager Carlson evaluation finite at endpoint poles; those outputs
+% are replaced by Inf below.
+near = find(danger);
+if ~isempty(near)
+    c_eval = c(near);
+    d2_eval = d2(near);
+    p_eval = p(near);
+    endpoint = (u(near)==pi/2 & (m(near)==1 | c(near)==1));
+    c_eval(endpoint) = 0;
+    d2_eval(endpoint) = 1;
+    p_eval(endpoint) = 1;
+    RF = carlsonRF(co(near).^2, d2_eval, ones(size(near)));
+    RJ = carlsonRJ(co(near).^2, d2_eval, ones(size(near)), p_eval);
+    P(near) = s(near).*RF + c_eval.*s(near).^3.*RJ./3;
+end
+P(s == 0) = 0;
+Pi(:) = P;
 
 % special values u==pi/2 & m==1 | u==pi/2 & c==1
 Pi(I) = inf;

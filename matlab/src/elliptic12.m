@@ -84,12 +84,10 @@ m(m<eps) = 0;
 
 I = find(m ~= 1 & m ~= 0);
 if ~isempty(I)
-    % Use standard uniquetol for numerical precision issues
-    % This is the recommended MATLAB approach since R2015a
+    % Group exact duplicates only.  uniquetol(1e-11) silently substituted a
+    % neighbouring parameter and caused errors up to 1e-9 near m=1.
     m_vals = m(I);
-    tol_unique = 1e-11;
-
-    [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
+    [mu, ~, K] = unique(m_vals);
     K = K(:).';
     mumax = length(mu);
     signU = sign(u(I));
@@ -259,7 +257,15 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
         e_vals = 2 .^ (0:mn-1);
         e = gpuArray(e_vals(max(n-1, 1))(:));  % column, e(j)=e_vals(n(j)-1)
 
-        phin = gpuArray(signU .* u(I));
+        % Mirror the serial issue-#35 fix: reduce the phase before the
+        % Landen descent and restore 2*k*K afterwards.  The previous GPU
+        % branch still evaluated the unreduced phase and therefore retained
+        % the v4.1.0 regression even after the CPU path was repaired.
+        K_vals = pi ./ (2 .* a(:,mn));
+        u_work = signU .* u(I);
+        k_per = floor(u_work ./ pi);
+        phin = gpuArray(u_work - k_per .* pi);
+        K_per = 2 .* gpuArray(k_per) .* K_vals;
         C    = gpuArray(zeros(mmax, 1));
         Cp   = gpuArray(zeros(mmax, 1));
         c2   = c .^ 2;
@@ -273,7 +279,7 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
             Cp = Cp + active .* c(:,jj+1) .* sin(phin);
         end
 
-        Ff = phin ./ (a(:,mn) .* e * 2);
+        Ff = phin ./ (a(:,mn) .* e * 2) + K_per;
         F(I) = gather(Ff)                    .* signU;
         Z(I) = gather(Cp)                    .* signU;
         E(I) = gather(Cp + (1 - 0.5*C) .* Ff) .* signU;

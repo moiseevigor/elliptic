@@ -16,16 +16,12 @@ function [B, D, S] = ellipticBD(m)
 %
 %   Algorithm — Carlson symmetric forms (DLMF §19.25):
 %
-%       B(m) = (1/2) · K(m) + (1/2) · E(m) / (1−m)   -- well-conditioned
+%       K(m) = RF(0, 1−m, 1)
+%       D(m) = RD(0, 1−m, 1) / 3
+%       B(m) = K(m) − D(m)
 %
-%   Actually uses:
-%       [K, E] = ellipke(m)
-%       D(m) = (K − E) / m
-%       B(m) = K − D
-%       S(m) = (D − B) / m = (2D − K) / m
-%
-%   This avoids subtraction of nearly equal numbers via ellipke's own
-%   internal cancellation-safe algorithm.
+%   The expression S=(D−B)/m still cancels as m→0, so a convergent
+%   binomial/integral series is used for |m|<10⁻².
 %
 %   M may be a scalar or array. All elements must satisfy 0 <= m < 1.
 %   At m = 0: B = D = π/4.
@@ -74,21 +70,27 @@ end
 % -----------------------------------------------------------------------
 function [B, D, S] = ellipticBD_core(m, origSize)
 %ELLIPTICBD_CORE  Vectorised serial evaluation (row-vector input).
-[K, E] = ellipke(m);
-mc = 1 - m;
-
-% D = (K − E) / m, handle m = 0 via L'Hôpital: D(0) = π/4
-D = zeros(size(m));
-nz = (m ~= 0);
-D(nz) = (K(nz) - E(nz)) ./ m(nz);
-D(~nz) = pi / 4;
-
+zero = m .* 0;
+one = zero + 1;
+K = carlsonRF(zero, 1-m, one);
+D = carlsonRD(zero, 1-m, one) ./ 3;
 B = K - D;
 
-% S = (D − B) / m = (2D − K) / m, handle m = 0 via L'Hôpital: S(0) = π/16
-S = zeros(size(m));
-S(nz) = (D(nz) - B(nz)) ./ m(nz);
-S(~nz) = pi / 16;
+% S = (D-B)/m is catastrophically cancelling near m=0.  Evaluate the
+% binomial/integral series there instead.
+S_series = zero;
+for kk = 1:8
+    ck  = nchoosek(2*kk, kk) / 4^kk;
+    Ik  = pi * nchoosek(2*kk, kk) / (2 * 4^kk);
+    Ik1 = pi * nchoosek(2*kk+2, kk+1) / (2 * 4^(kk+1));
+    S_series = S_series + ck * (2*Ik1 - Ik) .* m.^(kk-1);
+end
+m_safe = m;
+m_safe(m_safe == 0) = 1;
+S_direct = (D - B) ./ m_safe;
+S = S_direct;
+small = abs(m) < 1e-2;
+S(small) = S_series(small);
 
 B = reshape(B, origSize);
 D = reshape(D, origSize);

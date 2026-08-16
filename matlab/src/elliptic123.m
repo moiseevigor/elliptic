@@ -523,7 +523,7 @@ end
 
 
 
-function [Fi,Ei,Zi] = elliptic12i(u,m,tol)
+function [Fi,Ei,Zi] = elliptic12i_legacy(u,m,tol)
 
 % ELLIPTIC12i evaluates the Incomplete Elliptic Integrals
 % of the First, Second Kind and Jacobi's Zeta Function for the complex
@@ -630,8 +630,8 @@ end
 lambda = (-1).^floor(phi/pi*2).*lambda + pi*ceil(phi/pi-0.5+eps);
 mu     = sign(psi).*real(mu);
 
-[F1(:),E1(:)] = elliptic12ic(lambda, m, tol);
-[F2(:),E2(:)] = elliptic12ic(mu, 1-m, tol);
+[F1(:),E1(:)] = elliptic12ic_legacy(lambda, m, tol);
+[F2(:),E2(:)] = elliptic12ic_legacy(mu, 1-m, tol);
 
 % complex values of elliptic integral of the first kind
 Fi = F1 + sqrt(-1)*F2;
@@ -655,7 +655,7 @@ end
 
 % END FUNCTION ELLIPTIC12i()
 
-function [F,E,Z] = elliptic12ic(u,m,tol)
+function [F,E,Z] = elliptic12ic_legacy(u,m,tol)
 %
 % Bug fix for the elliptic12 in the main distribution.
 % This function should disappear when the fixes appear there.
@@ -681,12 +681,9 @@ if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 
 I = uint32( find(m ~= 1 & m ~= 0) );
 if ~isempty(I)
-    % Use standard uniquetol for numerical precision issues
-    % This is the recommended MATLAB approach since R2015a
+    % Legacy implementation retained only for historical comparison.
     m_vals = m(I);
-    tol_unique = 1e-11;
-
-    [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
+    [mu, ~, K] = unique(m_vals);
     K = uint32(K(:).');  % Ensure K is a row vector
     mumax = length(mu);
     signU = sign(u(I));
@@ -942,4 +939,3 @@ if ~isempty(im)
 end
 
 end
-

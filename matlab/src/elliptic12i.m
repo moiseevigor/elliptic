@@ -99,7 +99,9 @@ lambda = acot( sqrt(X1) );
 % than from LAMBDA: at phi = pi/2 the root X1 underflows, LAMBDA rounds to
 % exactly pi/2 and cot(LAMBDA) loses every digit of it -- that is what used
 % to drop the whole imaginary part of the result there.
-mu = atan( sqrt( max((ratio - 1)./m, 0) ) );
+m_calc = m;
+m_calc(m_calc == 0) = 1;
+mu = atan( sqrt( max((ratio - 1)./m_calc, 0) ) );
 
 % change of variables taking into account periodicity ceil to the right
 lambda = (-1).^floor(phi/pi*2).*lambda + pi*ceil(phi/pi-0.5+eps);
@@ -126,5 +128,12 @@ Ei(:) = Ei(:) + E1(:) + sqrt(-1)*(-E2(:) + F2(:));
 [K,Ee] = ellipke(m);
 % complex values of zeta function
 Zi(:) = Ei(:) - Ee(:)./K(:).*Fi(:);
+
+% Exact elementary limit at m=0.  The transformation above contains a
+% division by m and previously returned NaN for this documented endpoint.
+m0 = find(m == 0);
+Fi(m0) = u(m0);
+Ei(m0) = u(m0);
+Zi(m0) = 0;
 
 % END FUNCTION ELLIPTIC12i()

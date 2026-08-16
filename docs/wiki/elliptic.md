@@ -148,7 +148,7 @@ _See also_ `ELLIPKE`, `ELLIPJ`, `ELLIPTIC3`, `THETA`.
 
 [ELLIPTIC3](https://github.com/moiseevigor/elliptic/blob/master/src/elliptic3.m) evaluates incomplete elliptic integral of the third kind `Pi = ELLIPTIC3(U,M,C)` where `U` is a phase in radians, `0 < M < 1` is the module and `0 < C < 1` is a parameter.
 
-`ELLIPTIC3` uses Gauss-Legendre 10 points quadrature template described in [3] to determine the value of the Incomplete Elliptic Integral of the Third Kind (see [1, 2]).
+`ELLIPTIC3` uses vectorised 20-node Gauss-Legendre quadrature on regular inputs and switches to Carlson RF/RJ symmetric forms near endpoint poles. This preserves the fast path while avoiding fixed-quadrature precision loss as `M` or `C` approaches one.
 
 **General definition:**
 ```

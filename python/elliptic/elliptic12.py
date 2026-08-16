@@ -78,16 +78,23 @@ def _elliptic12_xp(xp, u, m):
     E = xp.where(m == 0.0, u, E)
     Z = xp.where(m == 0.0, xp.zeros_like(Z), Z)
 
-    # m == 1: F = log(tan(π/4 + u_r/2)), E via sin, Z = sin(u_r)
-    F_m1 = xp.log(xp.tan(math.pi / 4 + u_r * 0.5))
-    um1  = xp.abs(u_r)
-    Nf   = xp.floor((um1 + math.pi * 0.5) / math.pi)
+    # m == 1: F has its first non-integrable pole at |u|=π/2.  Period
+    # reduction must not hide that crossing (the old code returned F=0 at
+    # u=π and also under-counted E beyond the first quadrant).
+    um1 = xp.abs(u)
+    Nf = xp.floor((um1 + math.pi * 0.5) / math.pi)
     sgn  = xp.where(u >= 0.0, xp.ones_like(u), -xp.ones_like(u))
     E_m1 = ((-1.0) ** Nf * xp.sin(um1) + 2.0 * Nf) * sgn
-    Z_m1 = xp.sin(u_r)           # (-1)^Nf * sin(u), Nf=0 for |u_r|<π/2
+    Z_m1 = xp.sin(u_r)
 
-    near_pole_m1 = xp.abs(u_r) >= math.pi * 0.5 - 1e-14
-    F_m1 = xp.where(near_pole_m1, xp.full_like(F_m1, math.inf) * sgn, F_m1)
+    crossed_pole_m1 = um1 >= math.pi * 0.5
+    u_m1_safe = xp.where(crossed_pole_m1, xp.zeros_like(u), u)
+    F_m1_finite = xp.log(xp.tan(math.pi * 0.25 + 0.5 * u_m1_safe))
+    F_m1 = xp.where(
+        crossed_pole_m1,
+        xp.full_like(F_m1_finite, math.inf) * sgn,
+        F_m1_finite,
+    )
     F = xp.where(m == 1.0, F_m1, F)
     E = xp.where(m == 1.0, E_m1, E)
     Z = xp.where(m == 1.0, Z_m1, Z)

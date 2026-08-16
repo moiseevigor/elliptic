@@ -10,7 +10,7 @@ Relations:
 """
 from __future__ import annotations
 
-import numpy as np
+from ._xputils import get_xp
 from .ellipj import ellipj
 from .ellipticBDJ import ellipticBDJ
 
@@ -32,14 +32,20 @@ def jacobiEDJ(u, m, n=None):
     Eu, Du : arrays
     Ju : array or None
     """
-    u_arr = np.asarray(u, dtype=np.float64)
-    m_arr = np.asarray(m, dtype=np.float64)
-    u_arr, m_arr = np.broadcast_arrays(u_arr, m_arr)
+    args = (u, m, n) if n is not None else (u, m)
+    xp = get_xp(*args)
+    u_arr = xp.asarray(u, dtype=xp.float64)
+    m_arr = xp.asarray(m, dtype=xp.float64)
+    if n is None:
+        u_arr, m_arr = xp.broadcast_arrays(u_arr, m_arr)
+    else:
+        n = xp.asarray(n, dtype=xp.float64)
+        u_arr, m_arr, n = xp.broadcast_arrays(u_arr, m_arr, n)
 
     _, _, _, phi = ellipj(u_arr, m_arr)
     B, D, J = ellipticBDJ(phi, m_arr, n)
 
     Du = D
-    Eu = u_arr - m_arr * np.asarray(D)
+    Eu = u_arr - m_arr * D
     Ju = J
     return Eu, Du, Ju

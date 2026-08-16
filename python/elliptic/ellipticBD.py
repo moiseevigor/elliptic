@@ -14,7 +14,7 @@ import math
 import numpy as np
 
 from ._xputils import get_xp
-from .elliptic12 import _elliptic12_xp
+from .carlson import _rf_xp, _rd_xp
 
 
 def ellipticBD(m):
@@ -34,17 +34,24 @@ def ellipticBD(m):
 
 
 def _bd_xp(xp, m):
-    phi = xp.full_like(m, math.pi * 0.5)
-    K, E, _ = _elliptic12_xp(xp, phi, m)
-
-    # D = (K - E) / m,  limit at m=0: π/4
-    D = xp.where(m == 0.0,
-                 xp.full_like(m, math.pi * 0.25),
-                 (K - E) / xp.where(m == 0.0, xp.ones_like(m), m))
+    zero = xp.zeros_like(m)
+    one = xp.ones_like(m)
+    K = _rf_xp(xp, zero, 1.0 - m, one)
+    D = _rd_xp(xp, zero, 1.0 - m, one) / 3.0
     B = K - D
-    S = xp.where(m == 0.0,
-                 xp.full_like(m, math.pi / 16.0),
-                 (D - B) / xp.where(m == 0.0, xp.ones_like(m), m))
+
+    # S=(D-B)/m is catastrophically cancelling near m=0.  Evaluate its
+    # convergent binomial/integral series there:
+    #   1/sqrt(1-m sin²t) = Σ C_k m^k sin^(2k)t.
+    S_series = xp.zeros_like(m)
+    for k in range(1, 9):
+        ck = math.comb(2 * k, k) / (4.0 ** k)
+        ik = math.pi * math.comb(2 * k, k) / (2.0 * 4.0 ** k)
+        ik1 = math.pi * math.comb(2 * k + 2, k + 1) / (2.0 * 4.0 ** (k + 1))
+        S_series = S_series + ck * (2.0 * ik1 - ik) * m ** (k - 1)
+    m_safe = xp.where(m == 0.0, xp.ones_like(m), m)
+    S_direct = (D - B) / m_safe
+    S = xp.where(xp.abs(m) < 1e-2, S_series, S_direct)
     return B, D, S
 
 

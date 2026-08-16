@@ -11,6 +11,8 @@ except ImportError:
     pass
 
 try:
+    import jax
+    jax.config.update("jax_enable_x64", True)
     import jax.numpy  # noqa: F401
     BACKENDS.append("jax")
 except ImportError:

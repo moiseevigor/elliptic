@@ -1,7 +1,9 @@
 """Nome q(m) and its inverse m(q)."""
 from __future__ import annotations
+import math
 import numpy as np
-from array_api_compat import array_namespace
+from ._xputils import get_xp
+from .theta import _q_from_m_xp
 
 
 def nomeq(m):
@@ -17,23 +19,19 @@ def nomeq(m):
     q : array
         Nome in [0, 1).
     """
-    from scipy.special import ellipk
-    m = np.asarray(m, dtype=np.float64)
-    xp = array_namespace(m)
-    m_np = np.asarray(m).ravel()
-    K  = ellipk(m_np)
-    Kp = ellipk(1.0 - m_np)
-    q  = np.exp(-np.pi * Kp / K)
-    q  = q.reshape(np.asarray(m).shape)
-    return xp.asarray(q)
+    xp = get_xp(m)
+    m = xp.asarray(m, dtype=xp.float64)
+    q = _q_from_m_xp(xp, m)
+    return xp.where(m == 1.0, xp.ones_like(q), q)
 
 
 def inversenomeq(q):
     """Inverse nome: parameter m from nome q.
 
-    Uses ``scipy.optimize.brentq`` to invert ``nomeq``. In double precision the
-    representable range is roughly q ∈ [0, 0.779]; beyond this, m(q) exceeds
-    1 - 2⁻⁵³ and cannot be represented.
+    Uses a fixed-iteration bisection against the library's own Carlson-based
+    ``nomeq`` implementation. In double precision the representable range is
+    roughly q ∈ [0, 0.779]; beyond this, m(q) exceeds 1 - 2⁻⁵³ and cannot be
+    represented.
 
     Parameters
     ----------
@@ -46,38 +44,38 @@ def inversenomeq(q):
         Parameter m = m(q) in [0, 1).
     """
     import warnings
-    from scipy.optimize import brentq
-    from scipy.special import ellipk
 
-    q = np.asarray(q, dtype=np.float64)
-    xp = array_namespace(q)
-    q_flat = np.asarray(q).ravel()
+    xp = get_xp(q)
+    q = xp.asarray(q, dtype=xp.float64)
 
-    if np.any(q_flat < 0) or np.any(q_flat >= 1):
-        raise ValueError("q must be in [0, 1)")
+    m_hi_scalar = np.nextafter(1.0, 0.0)
+    q_max = float(_q_from_m_xp(np, np.asarray(m_hi_scalar)))
 
-    m_hi  = np.nextafter(1.0, 0.0)        # largest f64 strictly < 1
-    q_max = float(np.exp(-np.pi * ellipk(1.0 - m_hi) / ellipk(m_hi)))
-    if np.any(q_flat >= q_max):
-        raise ValueError(
-            f"inversenomeq: q must be < {q_max:.15f} in double precision "
-            "(the essential singularity of m(q) at q=1 cannot be resolved in f64)"
-        )
-    if np.any(q_flat > 0.76):
-        warnings.warn("inversenomeq: accuracy degrades for q > 0.76 (near m=1 singularity)",
-                      RuntimeWarning, stacklevel=2)
+    if xp is np:
+        if np.any((q < 0.0) | (q >= 1.0)):
+            raise ValueError("q must be in [0, 1)")
+        if np.any(q >= q_max):
+            raise ValueError(
+                f"inversenomeq: q must be < {q_max:.15f} in double precision "
+                "(the essential singularity of m(q) at q=1 cannot be resolved in f64)"
+            )
+        if np.any(q > 0.76):
+            warnings.warn(
+                "inversenomeq: accuracy degrades for q > 0.76 (near m=1 singularity)",
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
-    def _nomeq_scalar(m_val):
-        K  = float(ellipk(m_val))
-        Kp = float(ellipk(1.0 - m_val))
-        return float(np.exp(-np.pi * Kp / K))
-
-    m_out = np.empty_like(q_flat)
-    for i, qi in enumerate(q_flat):
-        if qi == 0.0:
-            m_out[i] = 0.0
-        else:
-            m_out[i] = brentq(lambda m: _nomeq_scalar(m) - qi, 0.0, m_hi, xtol=1e-14)
-
-    m_out = m_out.reshape(np.asarray(q).shape)
-    return xp.asarray(m_out)
+    valid = (q >= 0.0) & (q < q_max)
+    q_safe = xp.where(valid, q, xp.zeros_like(q))
+    lo = xp.zeros_like(q_safe)
+    hi = xp.full_like(q_safe, m_hi_scalar)
+    for _ in range(64):
+        mid = 0.5 * (lo + hi)
+        q_mid = _q_from_m_xp(xp, mid)
+        lower = q_mid < q_safe
+        lo = xp.where(lower, mid, lo)
+        hi = xp.where(lower, hi, mid)
+    result = 0.5 * (lo + hi)
+    result = xp.where(q == 0.0, xp.zeros_like(result), result)
+    return xp.where(valid, result, xp.full_like(result, math.nan))

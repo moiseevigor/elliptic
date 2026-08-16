@@ -33,6 +33,7 @@ def carlsonRC(x, y):
 def _rc_xp(xp, x, y):
     EPS = 1e-300
     diff = y - x
+    TOL = 1e-14
 
     # safe arguments for each branch (avoid div-by-zero when not selected)
     x_safe   = xp.where(x > EPS, x, xp.full_like(x, 1.0))
@@ -41,11 +42,12 @@ def _rc_xp(xp, x, y):
     y_safe   = xp.where(y > EPS, y, xp.full_like(y, 1.0))
 
     rc_gt  = xp.arctan(xp.sqrt(xp.clip(diff / x_safe, 0.0, None))) / xp.sqrt(yd_safe)
-    rc_lt  = xp.arctanh(xp.sqrt(xp.clip(-diff / x_safe, 0.0, None))) / xp.sqrt(yd_safe2)
+    lt_active = (diff < -TOL) & (y > EPS) & (x > EPS)
+    lt_ratio = xp.where(lt_active, -diff / x_safe, xp.full_like(diff, 0.5))
+    rc_lt  = xp.arctanh(xp.sqrt(xp.clip(lt_ratio, 0.0, None))) / xp.sqrt(yd_safe2)
     rc_eq  = 1.0 / xp.sqrt(x_safe)
     rc_x0  = (math.pi * 0.5) / xp.sqrt(y_safe)
 
-    TOL = 1e-14
     out = xp.where(diff > TOL, rc_gt, xp.where(diff < -TOL, rc_lt, rc_eq))
     out = xp.where(x < EPS, rc_x0, out)
     out = xp.where(y < EPS, xp.full_like(out, math.inf), out)
@@ -156,8 +158,7 @@ def carlsonRJ(x, y, z, p):
     p = xp.asarray(p, dtype=xp.float64)
     x, y, z, p = xp.broadcast_arrays(x, y, z, p)
 
-    import numpy as _np
-    if _np.any(_np.asarray(p) <= 0.0):
+    if xp is np and np.any(p <= 0.0):
         raise ValueError(
             "carlsonRJ: p must be > 0. For p < 0 the integral is a Cauchy "
             "principal value (DLMF 19.20.14); use the transformation to "

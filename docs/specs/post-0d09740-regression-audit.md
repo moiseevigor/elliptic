@@ -66,6 +66,26 @@ regression tests. No public function was intentionally removed.
 - A base-dependency-only public API exercise verifies that SciPy is absent and
   not imported at runtime.
 
+## Adversarial review round (2026-08-16)
+
+An independent adversarial review (Codex, cross-checked against mpmath at
+40-100 digits) of the four commits above found five material counterexamples
+that the original round missed.  All are fixed and regression-tested
+(`testEdgeCases.m` block Q, `test_edge_cases.py::TestAdversarialRound`):
+
+| Finding | Failure | Fix |
+|---|---|---|
+| `elliptic3` negative amplitude with pole in the complete integral | `0*Inf = NaN` for e.g. `Pi(-1\|.5,1)` (MATLAB) | complete-integral correction applied only where a half-period or reflection is present |
+| complex `F/E` small `m` (both ports) | A&S 17.4.11 decomposition loses `sqrt(eps/m)` digits: `F(0.2i\|1e-20)` returned 0, error 9.2e-3 at `m=1e-14` | Maclaurin series through `m^2`, switched at `m*max(1, e^(2\|psi\|)) < 1e-4`; crossover error ~2e-12 vs mpmath |
+| Weierstrass pole classification (both ports) | tolerance windows (`abs(sn) < eps^(1/3)` MATLAB; `8*eps*max(1,\|z\|)` Python) returned `Inf` for the finite `P(1e-16) = 1e32` | pole only at the exact lattice point (`z_reduced == 0` / `sn == 0`), per the DLMF 23.9.2 Laurent expansion |
+| inverse nome small `q` (both ports) | Python bisection had a `2^-64` absolute floor (`m(1e-30)` off by 9 orders); MATLAB tables documented-unreliable outside `[1e-5, 0.76]` | DLMF 20.9.1 closed form `m = (theta2/theta3)^4` with the `q^(1/4)` factor kept outside the ratio; exact at every scale |
+| Carlson `RC` scale invariance (Python) | absolute branch tolerance sent small-scale inputs down the degenerate branch: `RC(1e-20,2e-20)` off 27%, contaminating `RJ` | relative branch selection; homogeneity `RF,RC ~ lambda^(-1/2)`, `RD,RJ ~ lambda^(-3/2)` now tested at `lambda = 1e+/-20` |
+
+Also from that round: reversed arc intervals are now signed for circles and
+ellipses alike; DLMF citations corrected (19.25.14 for incomplete third kind,
+19.25.5/19.25.9 for F/E); nondegenerate `ellipticBD` anchors at
+`m = 0.2, 0.7, 0.999`.
+
 ## Deliberate limits and residual risk
 
 - CUDA/OpenCL hardware was not available during this audit. GPU source paths
@@ -79,3 +99,13 @@ regression tests. No public function was intentionally removed.
   complex input explicitly instead of silently discarding data.
 - `elliptic3` deliberately rejects real paths that cross a third-kind pole;
   Cauchy principal-value continuation is not implemented.
+- Jacobi phase reduction is double precision: the residual phase carries an
+  absolute uncertainty ~`|u|*eps`, so `ellipj` holds full precision to
+  `|u| ~ 1e12`, degrades linearly beyond, and has lost the phase entirely by
+  `|u| ~ 1e16`.  Every double-precision implementation (MATLAB's and SciPy's
+  included) shares this bound; extended-precision reduction would need K(m)
+  to ~32 digits.
+- `elliptic12i` follows the A&S 17.4.11 real-decomposition branch: on
+  `Re u = pi/2` above the branch point, `Re F = K(m)`, which diverges as
+  `m -> 1`.  mpmath/Mathematica may return values on a different sheet
+  there; the convention is now documented in both ports.

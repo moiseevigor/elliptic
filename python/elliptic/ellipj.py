@@ -1,5 +1,10 @@
 """Jacobi elliptic functions sn, cn, dn, am — native on any array backend.
 
+Accuracy limit for large arguments: the phase is reduced modulo 2K in
+double precision, so the residual carries an absolute uncertainty ~|u|*eps.
+Full precision holds for |u| up to ~1e12; by |u| ~ 1e16 the phase is lost
+entirely (a bound shared by every double implementation, scipy included).
+
 Algorithm: Arithmetic-Geometric Mean + descending Landen back-substitution
 (Abramowitz & Stegun §16.4).  Fixed 25 AGM iterations, no per-element
 convergence tracking → fully data-parallel on CUDA / JAX.

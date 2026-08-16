@@ -31,26 +31,30 @@ def carlsonRC(x, y):
 
 
 def _rc_xp(xp, x, y):
-    EPS = 1e-300
     diff = y - x
-    TOL = 1e-14
+    # Branch selection must be RELATIVE: R_C is homogeneous of degree -1/2
+    # (DLMF 19.20.3), and an absolute |y-x| < 1e-14 window sent every
+    # small-scale input down the degenerate x==y branch -- RC(1e-20, 2e-20)
+    # returned 1/sqrt(x), a 27% error.
+    scale = xp.maximum(xp.abs(x), xp.abs(y))
+    tol = 1e-14 * scale
 
     # safe arguments for each branch (avoid div-by-zero when not selected)
-    x_safe   = xp.where(x > EPS, x, xp.full_like(x, 1.0))
-    yd_safe  = xp.where(diff > EPS, diff, xp.full_like(diff, 1.0))
-    yd_safe2 = xp.where(-diff > EPS, -diff, xp.full_like(diff, 1.0))
-    y_safe   = xp.where(y > EPS, y, xp.full_like(y, 1.0))
+    x_safe   = xp.where(x > 0, x, xp.full_like(x, 1.0))
+    yd_safe  = xp.where(diff > 0, diff, xp.full_like(diff, 1.0))
+    yd_safe2 = xp.where(-diff > 0, -diff, xp.full_like(diff, 1.0))
+    y_safe   = xp.where(y > 0, y, xp.full_like(y, 1.0))
 
     rc_gt  = xp.arctan(xp.sqrt(xp.clip(diff / x_safe, 0.0, None))) / xp.sqrt(yd_safe)
-    lt_active = (diff < -TOL) & (y > EPS) & (x > EPS)
+    lt_active = (diff < -tol) & (y > 0) & (x > 0)
     lt_ratio = xp.where(lt_active, -diff / x_safe, xp.full_like(diff, 0.5))
     rc_lt  = xp.arctanh(xp.sqrt(xp.clip(lt_ratio, 0.0, None))) / xp.sqrt(yd_safe2)
     rc_eq  = 1.0 / xp.sqrt(x_safe)
     rc_x0  = (math.pi * 0.5) / xp.sqrt(y_safe)
 
-    out = xp.where(diff > TOL, rc_gt, xp.where(diff < -TOL, rc_lt, rc_eq))
-    out = xp.where(x < EPS, rc_x0, out)
-    out = xp.where(y < EPS, xp.full_like(out, math.inf), out)
+    out = xp.where(diff > tol, rc_gt, xp.where(diff < -tol, rc_lt, rc_eq))
+    out = xp.where(x == 0, rc_x0, out)
+    out = xp.where(y == 0, xp.full_like(out, math.inf), out)
     return out
 
 

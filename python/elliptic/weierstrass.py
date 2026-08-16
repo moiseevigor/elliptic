@@ -54,10 +54,10 @@ def _weierP_xp(xp, z, e1, e2, e3):
     w = z_reduced * scale
     sn, _, _, _ = _ellipj_xp(xp, w, m)
     sn2 = sn * sn
-    pole_tol = 8.0 * np.finfo(np.float64).eps * xp.maximum(
-        xp.ones_like(z), xp.abs(z)
-    )
-    pole = xp.abs(z_reduced) <= pole_tol
+    # Pole only at the exact lattice point (DLMF 23.9.2: the Laurent
+    # expansion makes every nearby representable z a huge FINITE value --
+    # P(1e-16) ~ 1e32, not Inf; a tolerance here destroys that data).
+    pole = z_reduced == 0.0
     P = e3 + (e1 - e3) / xp.where(pole, xp.ones_like(sn2), sn2)
     return xp.where(pole, xp.full_like(P, math.inf), P)
 
@@ -118,10 +118,10 @@ def _weierZ_xp(xp, z, e1, e2, e3):
     omega1, eta1, th1, th1p, _ = _lattice_theta_xp(xp, z, e1, e2, e3)
     period = xp.round(z / (2.0 * omega1))
     z_reduced = z - 2.0 * period * omega1
-    pole_tol = 8.0 * np.finfo(np.float64).eps * xp.maximum(
-        xp.ones_like(z), xp.abs(z)
-    )
-    pole = xp.abs(z_reduced) <= pole_tol
+    # Pole only at the exact lattice point (DLMF 23.9.2: the Laurent
+    # expansion makes every nearby representable z a huge FINITE value --
+    # P(1e-16) ~ 1e32, not Inf; a tolerance here destroys that data).
+    pole = z_reduced == 0.0
     ratio = th1p / xp.where(pole, xp.ones_like(th1), th1)
     Z = eta1 * z / omega1 + math.pi / (2.0 * omega1) * ratio
     return xp.where(pole, xp.full_like(Z, math.inf), Z)
@@ -191,9 +191,9 @@ def weierstrassPPrime(z, e1, e2, e3):
     w = z_reduced * root_scale
     sn, cn, dn, _ = _ellipj_xp(xp, w, m)
     scale = -2.0 * (e1 - e3) ** 1.5
-    pole_tol = 8.0 * np.finfo(np.float64).eps * xp.maximum(
-        xp.ones_like(z), xp.abs(z)
-    )
-    pole = xp.abs(z_reduced) <= pole_tol
+    # Pole only at the exact lattice point (DLMF 23.9.2: the Laurent
+    # expansion makes every nearby representable z a huge FINITE value --
+    # P(1e-16) ~ 1e32, not Inf; a tolerance here destroys that data).
+    pole = z_reduced == 0.0
     dP    = scale * cn * dn / xp.where(pole, xp.ones_like(sn), sn * sn * sn)
     return xp.where(pole, xp.full_like(dP, math.inf), dP)

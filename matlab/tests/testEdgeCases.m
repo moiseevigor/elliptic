@@ -525,3 +525,79 @@
 %!     assert(abs(F1(k)-F2) < 2e-13 && abs(E1(k)-E2) < 2e-13, ...
 %!         'grouped vs scalar elliptic12 disagree at k=%d', k);
 %! end
+
+% ---------------------------------------------------------------------
+% Q. Adversarial-review round (external Codex + mpmath 1.4.1, dps=40).
+%    Each block below is a counterexample that a prior version failed.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! % Q1: negative amplitude while the COMPLETE integral has a pole (0*Inf).
+%! assert(abs(elliptic3(-1, 0.5, 1)   - (-1.7319915420235269928)) < 1e-13, 'Pi(-1|.5,1) wrong');
+%! assert(abs(elliptic3(-1, 1,   0.2) - (-1.3115010674599590753)) < 1e-13, 'Pi(-1|1,.2) wrong');
+%! assert(~isnan(elliptic3(-0.4, 1, 1)), 'Pi(-0.4|1,1) must not be NaN');
+
+%!test
+%! clear
+%! % Q2: complex F/E small-m series region (A&S path lost sqrt(eps/m) digits).
+%! assert(abs(elliptic12i(0.2i, 1e-20) - 0.2i) < 1e-15, 'F(0.2i|1e-20)');
+%! [F,E] = elliptic12i(pi/2 + 0.2i, 1e-14);
+%! assert(abs(F - (1.5707963267949005462 + 0.20000000000000101344i)) < 1e-13, 'F(pi/2+0.2i|1e-14)');
+%! assert(abs(E - (1.5707963267948926922 + 0.19999999999999898656i)) < 1e-13, 'E(pi/2+0.2i|1e-14)');
+%! [F,E] = elliptic12i(pi/2 + 0.2i, 1e-6);
+%! assert(abs(F - (1.5707967194941992113 + 0.20000010134411776594i)) < 5e-12, 'F(pi/2+0.2i|1e-6)');
+%! assert(abs(E - (1.5707959340957412894 + 0.19999989865593359446i)) < 5e-12, 'E(pi/2+0.2i|1e-6)');
+%! % both sides of the series threshold vs mpmath (dps=30)
+%! Fa = elliptic12i(1.1+0.3i, 0.99e-4);
+%! assert(abs(Fa - (1.1000153646885162+0.3000120622623928i)) < 1e-12, 'series side of crossover');
+%! Fb = elliptic12i(1.1+0.3i, 1.01e-4);
+%! assert(abs(Fb - (1.1000156750952820+0.3000123059589823i)) < 5e-12, 'decomposition side of crossover');
+
+%!test
+%! clear
+%! % Q3: Weierstrass near-origin values are huge but FINITE (DLMF 23.9.2);
+%! % only the exact lattice point is a pole.
+%! assert(abs(weierstrassP(1e-16,1,0,-1)      - 1e32)  < 1e19,  'P(1e-16) must be ~1e32');
+%! assert(abs(weierstrassPPrime(1e-16,1,0,-1) + 2e48)  < 1e36,  'Pp(1e-16) must be ~-2e48');
+%! assert(abs(weierstrassZeta(1e-16,1,0,-1)   - 1e16)  < 1e3,   'zeta(1e-16) must be ~1e16');
+%! assert(isinf(weierstrassP(0,1,0,-1)), 'P(0) must be Inf');
+
+%!test
+%! clear
+%! % Q4: inverse nome via DLMF 20.9.1 -- exact at every scale.
+%! assert(abs(inversenomeq(1e-30) - 1.6e-29) < 1e-41, 'm(1e-30) must be 1.6e-29');
+%! assert(abs(inversenomeq(1e-12) - 1.5999999999872e-11) < 1e-24, 'm(1e-12) = 16q - 128q^2');
+%! for mv = [1e-8 0.3 0.85 0.999]
+%!     assert(abs(inversenomeq(nomeq(mv)) - mv) < 1e-12*max(mv,1e-3), 'roundtrip fails at m=%g', mv);
+%! end
+
+%!test
+%! clear
+%! % Q5: Carlson scale invariance (DLMF 19.20): RF ~ lambda^(-1/2), RC same,
+%! % RD/RJ ~ lambda^(-3/2).  An absolute branch tolerance broke this.
+%! x=1; y=2; z=3; p=4;
+%! for lam = [1e-20 1e20]
+%!     assert(abs(carlsonRF(lam*x,lam*y,lam*z)     - carlsonRF(x,y,z)/sqrt(lam))       < 1e-10*abs(carlsonRF(x,y,z)/sqrt(lam)), 'RF homogeneity at %g', lam);
+%!     assert(abs(carlsonRC(lam*x,lam*y)           - carlsonRC(x,y)/sqrt(lam))         < 1e-10*abs(carlsonRC(x,y)/sqrt(lam)), 'RC homogeneity at %g', lam);
+%!     assert(abs(carlsonRD(lam*x,lam*y,lam*z)     - carlsonRD(x,y,z)/lam^1.5)         < 1e-10*abs(carlsonRD(x,y,z)/lam^1.5), 'RD homogeneity at %g', lam);
+%!     assert(abs(carlsonRJ(lam*x,lam*y,lam*z,lam*p) - carlsonRJ(x,y,z,p)/lam^1.5)     < 1e-10*abs(carlsonRJ(x,y,z,p)/lam^1.5), 'RJ homogeneity at %g', lam);
+%! end
+%! assert(abs(carlsonRC(1e-20,2e-20) - 7853981633.9744830962) < 1e-4, 'RC(1e-20,2e-20)');
+
+%!test
+%! clear
+%! % Q6: ellipticBD nondegenerate anchors (mpmath: B=(E-(1-m)K)/m, D=(K-E)/m).
+%! R = [0.2 0.8066808960371526438 0.85294270257337535705
+%!      0.7 0.88437375336868858245 1.1909893819237805614
+%!      0.999 0.99832798626015502386 3.8428045742901420065];
+%! for i = 1:rows(R)
+%!     [B,D] = ellipticBD(R(i,1));
+%!     assert(abs(B - R(i,2)) < 1e-14, 'B(%g)', R(i,1));
+%!     assert(abs(D - R(i,3)) < 1e-13, 'D(%g)', R(i,1));
+%! end
+
+%!test
+%! clear
+%! % Q7: reversed arc intervals are signed, circles included.
+%! assert(abs(arclength_ellipse(2,3,1,0.1) + arclength_ellipse(2,3,0.1,1)) < 1e-13, 'ellipse arc not odd under reversal');
+%! assert(abs(arclength_ellipse(2,2,1,0.1) - (-1.8)) < 1e-13, 'reversed circle arc must be -a*(t1-t0)');

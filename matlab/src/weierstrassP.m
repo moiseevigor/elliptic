@@ -67,7 +67,10 @@ w   = z .* sqrt(e1 - e3);
 [sn, ~, ~] = ellipj(w, m);
 P   = e3 + (e1 - e3) ./ sn.^2;
 % Poles: sn -> 0 at z = 0 and at lattice points
-P(abs(sn) < eps^(1/3)) = Inf;
+% Pole only where sn vanishes exactly (z at a representable lattice
+% point): the old abs(sn) < eps^(1/3) window (~6e-6!) replaced huge
+% finite near-pole values -- P(1e-16) ~ 1e32 -- with Inf.
+P(sn == 0) = Inf;
 
 
 % -----------------------------------------------------------------------
@@ -79,7 +82,10 @@ w    = z_f .* sqrt(e1_f - e3_f);
 % ellipj sees has_gpu()=true and dispatches to gpu_ellipj automatically
 [sn, ~, ~] = ellipj(w, m);
 P    = e3_f + (e1_f - e3_f) ./ sn.^2;
-P(abs(sn) < eps^(1/3)) = Inf;
+% Pole only where sn vanishes exactly (z at a representable lattice
+% point): the old abs(sn) < eps^(1/3) window (~6e-6!) replaced huge
+% finite near-pole values -- P(1e-16) ~ 1e32 -- with Inf.
+P(sn == 0) = Inf;
 P    = reshape(P, origSize);
 
 

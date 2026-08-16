@@ -9,6 +9,13 @@ function [sn,cn,dn,am] = ellipj(u,m,tol)
 %   [Sn,Cn,Dn,Am] = ELLIPJ(U,M,TOL) computes the elliptic functions to
 %   the accuracy TOL instead of the default TOL = EPS.
 %
+%   Accuracy limit for large arguments: the phase is reduced modulo 2K in
+%   double precision, so the residual phase carries an absolute uncertainty
+%   of about |U|*eps.  Full precision holds for |U| up to ~1e12; beyond
+%   that the error grows linearly and by |U| ~ 1e16 the phase is lost
+%   entirely.  This bound is shared by every double-precision
+%   implementation (including MATLAB's and SciPy's own ELLIPJ).
+%
 %   Some definitions of the Jacobi elliptic functions use the modulus
 %   k instead of the parameter m.  They are related by m = k^2.
 %

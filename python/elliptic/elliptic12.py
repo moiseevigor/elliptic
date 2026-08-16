@@ -4,7 +4,7 @@
     E(phi, m) = integral_0^phi  sqrt(1 - m sin^2 t)      dt
     Z(phi, m) = E(phi, m) - E(m)/K(m) * F(phi, m)   [Jacobi Zeta]
 
-Algorithm: Carlson symmetric forms (DLMF 19.25.5-6):
+Algorithm: Carlson symmetric forms (DLMF 19.25.5 for F, 19.25.9 for E):
     F = sin(phi) * RF(cos^2, 1-m sin^2, 1)
     E = F - m * sin^3(phi)/3 * RD(cos^2, 1-m sin^2, 1)
     Z = E - E(m)/K(m) * F   where K=RF(0,1-m,1), E(m)=K - m/3*RD(0,1-m,1)

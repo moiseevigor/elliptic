@@ -442,3 +442,84 @@ class TestMpmathAnchors:
             dpi = _s(elliptic.theta_prime(1, math.pi, m)[1])
             assert not math.isnan(dpi) and abs(dpi + d1) < 1e-13
             assert not math.isnan(_s(elliptic.theta_prime(2, math.pi / 2, m)[1]))
+
+
+# =====================================================================
+# Q. Adversarial-review round (external Codex + mpmath 1.4.1, dps=40).
+#    Each test is a counterexample a prior version failed.
+# =====================================================================
+class TestAdversarialRound:
+    def test_elliptic3_negative_amplitude_with_pole(self):
+        """0*Inf guard: negative phase never crossing the complete-integral pole."""
+        assert abs(_s(elliptic.elliptic3(-1.0, 0.5, 1.0)) - (-1.7319915420235269928)) < 1e-13
+        assert abs(_s(elliptic.elliptic3(-1.0, 1.0, 0.2)) - (-1.3115010674599590753)) < 1e-13
+        assert not math.isnan(_s(elliptic.elliptic3(-0.4, 1.0, 1.0)))
+
+    def test_complex_FE_small_m_series(self):
+        """A&S 17.4.11 path lost sqrt(eps/m) digits; the m^2 series is exact."""
+        assert abs(_s(elliptic.elliptic12i(0.2j, 1e-20)[0]) - 0.2j) < 1e-15
+        F, E, _ = elliptic.elliptic12i(math.pi / 2 + 0.2j, 1e-14)
+        assert abs(_s(F) - (1.5707963267949005462 + 0.20000000000000101344j)) < 1e-13
+        assert abs(_s(E) - (1.5707963267948926922 + 0.19999999999999898656j)) < 1e-13
+        F, E, _ = elliptic.elliptic12i(math.pi / 2 + 0.2j, 1e-6)
+        assert abs(_s(F) - (1.5707967194941992113 + 0.20000010134411776594j)) < 5e-12
+        assert abs(_s(E) - (1.5707959340957412894 + 0.19999989865593359446j)) < 5e-12
+        # both sides of the series threshold vs mpmath (dps=30)
+        Fa = _s(elliptic.elliptic12i(1.1 + 0.3j, 0.99e-4)[0])
+        assert abs(Fa - (1.1000153646885162 + 0.3000120622623928j)) < 1e-12
+        Fb = _s(elliptic.elliptic12i(1.1 + 0.3j, 1.01e-4)[0])
+        assert abs(Fb - (1.1000156750952820 + 0.3000123059589823j)) < 5e-12
+
+    def test_weierstrass_near_origin_finite(self):
+        """DLMF 23.9.2: only the exact lattice point is a pole; z = 1e-16 is
+        a huge FINITE value (a tolerance here used to return Inf)."""
+        assert abs(_s(elliptic.weierstrassP(1e-16, 1.0, 0.0, -1.0)) - 1e32) < 1e19
+        assert abs(_s(elliptic.weierstrassPPrime(1e-16, 1.0, 0.0, -1.0)) + 2e48) < 1e36
+        assert abs(_s(elliptic.weierstrassZeta(1e-16, 1.0, 0.0, -1.0)) - 1e16) < 1e3
+        assert math.isinf(_s(elliptic.weierstrassP(0.0, 1.0, 0.0, -1.0)))
+
+    def test_inverse_nome_all_scales(self):
+        """DLMF 20.9.1 closed form: m = (theta2/theta3)^4, exact at every scale
+        (the 64-step bisection had a 2^-64 absolute floor: m(1e-30) came back
+        2.7e-20)."""
+        assert abs(_s(elliptic.inversenomeq(1e-30)) - 1.6e-29) < 1e-41
+        assert abs(_s(elliptic.inversenomeq(1e-12)) - 1.5999999999872e-11) < 1e-24
+        for mv in (1e-8, 0.3, 0.85, 0.999):
+            assert abs(_s(elliptic.inversenomeq(np.asarray(_s(elliptic.nomeq(mv))))) - mv) \
+                < 1e-12 * max(mv, 1e-3), f"roundtrip at m={mv}"
+        # the computed upper endpoint must be accepted, not rejected
+        q_max = _s(elliptic.nomeq(np.nextafter(1.0, 0.0)))
+        assert _s(elliptic.inversenomeq(q_max)) > 0.999
+
+    def test_carlson_scale_invariance(self):
+        """DLMF 19.20: RF, RC ~ lambda^-1/2; RD, RJ ~ lambda^-3/2.  An absolute
+        branch tolerance in RC broke this at small scales (27% at 1e-20)."""
+        x, y, z, p = 1.0, 2.0, 3.0, 4.0
+        for lam in (1e-20, 1e20):
+            for fn, args, power in (
+                (elliptic.carlsonRF, (x, y, z), 0.5),
+                (elliptic.carlsonRC, (x, y), 0.5),
+                (elliptic.carlsonRD, (x, y, z), 1.5),
+                (elliptic.carlsonRJ, (x, y, z, p), 1.5),
+            ):
+                base = _s(fn(*args))
+                scaled = _s(fn(*(lam * a for a in args)))
+                want = base / lam ** power
+                assert abs(scaled - want) < 1e-10 * abs(want), f"{fn.__name__} at {lam}"
+        assert abs(_s(elliptic.carlsonRC(1e-20, 2e-20)) - 7853981633.9744830962) < 1e-4
+
+    def test_ellipticBD_nondegenerate_anchors(self):
+        """mpmath: B = (E-(1-m)K)/m, D = (K-E)/m at dps=40."""
+        rows = [(0.2, 0.8066808960371526438, 0.85294270257337535705),
+                (0.7, 0.88437375336868858245, 1.1909893819237805614),
+                (0.999, 0.99832798626015502386, 3.8428045742901420065)]
+        for m, B_ref, D_ref in rows:
+            B, D, _ = elliptic.ellipticBD(m)
+            assert abs(_s(B) - B_ref) < 1e-14, f"B({m})"
+            assert abs(_s(D) - D_ref) < 1e-13, f"D({m})"
+
+    def test_reversed_arc_intervals_signed(self):
+        """Reversal negates the arc for ellipses AND circles alike."""
+        assert abs(_s(elliptic.arclength_ellipse(2.0, 3.0, 1.0, 0.1))
+                   + _s(elliptic.arclength_ellipse(2.0, 3.0, 0.1, 1.0))) < 1e-13
+        assert abs(_s(elliptic.arclength_ellipse(2.0, 2.0, 1.0, 0.1)) - (-1.8)) < 1e-13

@@ -2,7 +2,7 @@
 
     Pi(u, m, n) = integral_0^u  1 / ((1 - n sin^2 t) sqrt(1 - m sin^2 t))  dt
 
-Algorithm: Carlson symmetric forms (DLMF 19.25.1). Pure array-namespace
+Algorithm: Carlson symmetric forms (DLMF 19.25.14). Pure array-namespace
 operations run natively on NumPy, PyTorch CUDA, and JAX.
 """
 from __future__ import annotations

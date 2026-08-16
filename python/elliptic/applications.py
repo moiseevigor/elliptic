@@ -76,6 +76,8 @@ def arclength_ellipse(a, b, theta0=0.0, theta1=None):
 
     arc_b = b_safe * (E1_b - E0_b)
     arc_a = a_safe * (E0_a - E1_a)
-    arc_circle = a_safe * xp.abs(theta1 - theta0)
+    # Signed, like the ellipse branches: reversed intervals negate
+    # (the old abs() here made circles disagree with every non-circle).
+    arc_circle = a_safe * (theta1 - theta0)
     arc = xp.where(b > a, arc_b, xp.where(a > b, arc_a, arc_circle))
     return xp.where(valid, arc, xp.full_like(arc, np.nan))

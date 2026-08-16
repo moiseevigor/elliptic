@@ -46,9 +46,18 @@ if any(u(:) < 0) || any(u(:) > pi/2)
     r     = ua - k_per .* pi;            % in [0, pi)
     refl  = r > pi/2;
     ur    = r;  ur(refl) = pi - r(refl); % in [0, pi/2]
-    Pcpl  = elliptic3(pi/2 + zeros(size(u)), m, c);
     Pred  = elliptic3(ur, m, c);
-    Pi    = signU .* (2 .* k_per .* Pcpl + refl .* (2 .* Pcpl) + (1 - 2 .* refl) .* Pred);
+    % Complete-integral correction only where a half-period or reflection
+    % actually applies: when the complete integral is a pole (m = 1 or
+    % c = 1), an unconditional 2*k_per*Pcpl forms 0*Inf = NaN for phases
+    % that never cross it (e.g. plain negative amplitudes).
+    corr = zeros(size(ur));
+    idx  = (k_per > 0) | refl;
+    if any(idx(:))
+        Pcpl = elliptic3(pi/2 + zeros(size(u)), m, c);
+        corr(idx) = 2 .* k_per(idx) .* Pcpl(idx) + 2 .* refl(idx) .* Pcpl(idx);
+    end
+    Pi = signU .* (corr + (1 - 2 .* refl) .* Pred);
     return;
 end
 
@@ -90,7 +99,7 @@ I = find(u==pi/2 & m==1 | u==pi/2 & c==1);
 
 % Hybrid evaluator.  The 20-node rule is full precision while both endpoint
 % denominators stay >= 0.25; nearer a pole, switch only those elements to the
-% Carlson form (DLMF 19.25.1).  This retains the vectorised fast path without
+% Carlson form (DLMF 19.25.14).  This retains the vectorised fast path without
 % the previous seven-digit loss as c approached 1.
 s = sin(u);
 s2 = s.^2;

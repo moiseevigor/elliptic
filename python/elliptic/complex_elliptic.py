@@ -98,10 +98,25 @@ def elliptic12i(u, m):
     K_m, E_m, _ = _elliptic12_xp(xp, xp.full_like(m_f, np.pi * 0.5), m_f)
     Zi   = Ei - (E_m / K_m) * Fi
 
-    # Exact elementary limit at m=0.
-    Fi = xp.where(m_f == 0.0, u_f, Fi)
-    Ei = xp.where(m_f == 0.0, u_f, Ei)
-    Zi = xp.where(m_f == 0.0, xp.zeros_like(Fi), Zi)
+    # Small-m Maclaurin series (through m^2).  The A&S 17.4.11 decomposition
+    # loses ~sqrt(eps/m) digits as m -> 0 (0.2 absolute at m = 1e-16); the
+    # series is exact there and covers m = 0 itself:
+    #   F = u + m(u/4 - sin2u/8) + m^2(9u/64 - 3sin2u/32 + 3sin4u/256) + O(m^3)
+    #   E = u - m(u/4 - sin2u/8) - m^2(3u/64 -  sin2u/32 +  sin4u/256) + O(m^3)
+    # Valid while |m sin^2 u| is small: switch on m*max(1, e^(2|psi|)) < 1e-4,
+    # where the crossover error is ~2e-12 (measured against 40-digit mpmath).
+    m_eff = m_f * xp.maximum(xp.ones_like(m_f), xp.exp(2.0 * xp.abs(psi)))
+    small = m_eff < 1e-4
+    s2 = xp.sin(2.0 * u_f)
+    s4 = xp.sin(4.0 * u_f)
+    F_ser = (u_f + m_f * (u_f / 4.0 - s2 / 8.0)
+             + m_f**2 * (9.0 * u_f / 64.0 - 3.0 * s2 / 32.0 + 3.0 * s4 / 256.0))
+    E_ser = (u_f - m_f * (u_f / 4.0 - s2 / 8.0)
+             - m_f**2 * (3.0 * u_f / 64.0 - s2 / 32.0 + s4 / 256.0))
+    Z_ser = E_ser - (E_m / K_m) * F_ser
+    Fi = xp.where(small, F_ser, Fi)
+    Ei = xp.where(small, E_ser, Ei)
+    Zi = xp.where(small, Z_ser, Zi)
     return Fi, Ei, Zi
 
 

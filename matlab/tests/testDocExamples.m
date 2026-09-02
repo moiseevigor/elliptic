@@ -15,8 +15,7 @@ end
 %!  end
 
 %!test
-%! src = fullfile(fileparts(mfilename('fullpath')), '..', 'src');
-%! addpath(src);
+%! src = fileparts(which('elliptic12'));   % mfilename is empty inside test blocks under test(<full path>)
 %! files = dir(fullfile(src, '*.m'));
 %! nrun = 0;
 %! for f = 1:numel(files)

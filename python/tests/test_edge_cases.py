@@ -746,7 +746,9 @@ class TestInputShapes:
                 so = [np.asarray(o) for o in tup(fn(*[complex(x) if np.iscomplexobj(x) else float(x) for x in sa])) if o is not None]
                 for o, s in zip(outs, so):
                     x, y = o.ravel()[i], s.item()
-                    assert x == y or (np.isnan(x) and np.isnan(y)) or abs(x - y) <= 4e-16 * max(1, abs(y))
+                    # 4e-15, not 4e-16: NumPy's SIMD sin/cos on Linux differ from the
+                    # scalar libm path by an ulp, which a batch-vs-scalar comparison sees
+                    assert x == y or (np.isnan(x) and np.isnan(y)) or abs(x - y) <= 4e-15 * max(1, abs(y))
             ca = [np.asarray(args[0]).ravel()] + [(np.asarray(x).ravel()[0] if np.ndim(x) else x) for x in args[1:]]
             assert np.asarray(tup(fn(*ca))[0]).shape == (6,)
 

@@ -7,8 +7,10 @@ function testGpuStrict()
 end
 
 %!test
-%! here = fileparts(mfilename('fullpath'));
-%! addpath(fullfile(here, '..', 'src'));
+%! % locate the stub from the source directory: mfilename is empty inside test
+%! % blocks when test() is called with a full path (CI), so relative paths fail
+%! src = fileparts(which('elliptic12'));
+%! here = fullfile(src, '..', 'tests');
 %! addpath(fullfile(here, 'gpu_stub'), '-begin');
 %! unwind_protect
 %!   rand('seed', 5); N = 300;
@@ -65,7 +67,7 @@ end
 
 %!test
 %! % the stub itself must reject what ocl rejects, or the test above proves nothing
-%! here = fileparts(mfilename('fullpath'));
+%! here = fullfile(fileparts(which('elliptic12')), '..', 'tests');
 %! addpath(fullfile(here, 'gpu_stub'), '-begin');
 %! unwind_protect
 %!   caught = false;

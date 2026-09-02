@@ -682,3 +682,19 @@ class TestAdversarialRound6:
         for c, ref in [(-0.5, 0.9560406633267465), (-3.0, 0.66684868942035313), (-100.0, 0.1523863772236308)]:
             assert abs(_s(elliptic.elliptic3(1.0, 0.5, c)) - ref) < 5e-16
         assert abs(_s(elliptic.elliptic3(4.0, 0.9, -100.0)) - 0.4921742710224714) < 5e-15
+
+    def test_bulirsch_cel_is_kc_native(self):
+        """Bulirsch's algorithm: the old route through m = 1 - kc**2 lost kc
+        below ~1e-8 (cel1(1e-9) returned 2e6; ln(4/kc) = 22.1).  p < 0 is the
+        Cauchy principal value = Re Pi(1-p | 1-kc^2) (mpmath)."""
+        assert abs(_s(elliptic.cel1(1e-9)) - (22.109560198066302)) < 1e-15 * 22
+        assert abs(_s(elliptic.cel1(1e-300)) - (692.1618222593336)) < 1e-15 * 692
+        assert abs(_s(elliptic.cel1(2.0)) - (1.0782578237498216)) < 1e-15                      # kc > 1 is m = -3
+        assert abs(_s(elliptic.cel(0.5, -0.5, 1.0, 1.0)) - (-1.0782578237498216)) < 1e-15 * 1.1
+        assert abs(_s(elliptic.cel(0.7, -5.0, 1.0, 1.0)) - (-0.092277884964284496)) < 1e-15
+        assert abs(_s(elliptic.cel(1e-9, 0.3, 1.5, -0.7)) - (-46.045402351061091)) < 1e-15 * 47
+        assert _s(elliptic.cel(-0.3, 1.0, 1.0, 1.0)) == _s(elliptic.cel1(0.3))   # depends on kc^2 only
+        assert math.isinf(_s(elliptic.cel1(0.0))) and _s(elliptic.cel1(0.0)) > 0
+        kc = np.array([1e-12, 0.3, 0.9, 2.5]); p = np.array([-0.4, 0.7, -3.0, 1e-3])
+        K = np.asarray(elliptic.cel1(kc))
+        assert np.all(np.abs(np.asarray(elliptic.cel(kc, p, 1.0, 0.0)) + p * np.asarray(elliptic.cel(kc, p, 0.0, 1.0)) - K) < 1e-14 * np.maximum(1, K))

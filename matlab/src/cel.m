@@ -55,51 +55,59 @@ C = reshape(C, origSize);
 
 % -----------------------------------------------------------------------
 function C = cel_core(kc, p, a, b)
-%CEL_CORE  Vectorised evaluation (row-vector inputs).
-N = numel(kc);
-C = zeros(1, N);
-
-bad = (kc < 0);
-C(bad) = NaN;
-pole = (p <= 0);
-C(pole) = Inf;
-
-ok = ~bad & ~pole;
-if ~any(ok), return; end
-
-m  = 1 - kc(ok).^2;
-[K, ~] = ellipke(m);
-[B, D, ~] = ellipticBD(m);
-
-pp = p(ok); aa = a(ok); bb = b(ok);
-
-% Case p ≈ 1: use a*B + b*D
-% Case p ≠ 1: use Carlson/Pi formula
-p1 = abs(pp - 1) < 1e-12;
-pn = ~p1;
-
-Cv = zeros(1, sum(ok));
-Cv(p1) = aa(p1) .* B(p1) + bb(p1) .* D(p1);
-
-if any(pn)
-    pn_m = m(pn); pn_p = pp(pn); pn_a = aa(pn); pn_b = bb(pn); pn_K = K(pn);
-    n_val = 1 - pn_p;   % n for Π(n|m) = Π(1-p|m)
-
-    % Compute J_complete(n|m) via Carlson at φ=π/2 (s=1, c=0, d=kc):
-    %   J = (1/3) * RJ(0, kc², 1, 1-n)  where 1-n = p
-    kc_pn = sqrt(1 - pn_m);
-    RJ_val = carlsonRJ(zeros(size(pn_m)), kc_pn.^2, ones(size(pn_m)), pn_p);
-    J_n = RJ_val ./ 3;      % J_complete(n|m) = s³/3 * RJ at s=1
-
-    Pi_n = pn_K + n_val .* J_n;    % Π(1-p|m) = K + (1-p)*J
-
-    % Formula (DLMF §19.25, decomposition):
-    %   cel = a*K + (b - a*p)*(Pi - K)/(1-p)
-    Cv(pn) = pn_a .* pn_K + (pn_b - pn_a .* pn_p) .* (Pi_n - pn_K) ./ n_val;
+%CEL_CORE  Bulirsch's algorithm (Numer. Math. 13 (1969) 305, "cel"), vectorised.
+%   Works directly with kc, so kc ~ 1e-9 (where 1 - kc^2 rounds to 1 and the
+%   previous ellipke/ellipticBD route returned Inf or garbage: cel1(1e-9) came
+%   out 2e6 instead of ln(4/kc) = 22.1) and kc > 1 (m < 0) are exact, and p < 0
+%   yields the Cauchy principal value.  Quadratically convergent Landen ascent;
+%   the stopping test |g - k| <= g*CA leaves an error of order CA^2.
+CA = 1e-9;
+N  = numel(kc);
+C  = nan(1, N);
+k  = abs(kc);                                   % the integral depends on kc^2 only
+zero_kc = (k == 0);
+% kc = 0: the integrand ~ b/(p cos) at pi/2 diverges unless b = 0; for b = 0
+% the limit kc -> 0 is finite and the ascent evaluates it from realmin.
+k(zero_kc & (b == 0)) = realmin;
+run = ~zero_kc | (b == 0);
+if any(zero_kc & (b ~= 0))
+    C(zero_kc & (b ~= 0)) = sign(b(zero_kc & (b ~= 0)) ./ p(zero_kc & (b ~= 0))) .* Inf;
 end
-
-C(ok) = Cv;
-
+if ~any(run), return; end
+k = k(run); p = p(run); a = a(run); b = b(run);
+n  = numel(k);
+e  = k;  em = ones(1, n);
+pos = p > 0;
+% p > 0
+pp = sqrt(p(pos));  p(pos) = pp;  b(pos) = b(pos) ./ pp;
+% p <= 0: transform to the p > 0 case (principal value); p = 0 gives Inf below
+neg = ~pos;
+if any(neg)
+    f = k(neg).^2;  q = 1 - f;  g = 1 - p(neg);  f = f - p(neg);
+    q = q .* (b(neg) - a(neg) .* p(neg));
+    pn = sqrt(f ./ g);
+    an = (a(neg) - b(neg)) ./ g;
+    b(neg) = -q ./ (g.^2 .* pn) + an .* pn;
+    a(neg) = an;  p(neg) = pn;
+end
+active = true(1, n);
+for it = 1:60
+    f = a(active);
+    a(active) = a(active) + b(active) ./ p(active);
+    g = e(active) ./ p(active);
+    b(active) = 2 .* (b(active) + f .* g);
+    p(active) = p(active) + g;
+    g = em(active);
+    em(active) = em(active) + k(active);
+    conv = abs(g - k(active)) <= g .* CA;
+    idx = find(active);
+    kk = 2 .* sqrt(e(idx(~conv)));
+    k(idx(~conv)) = kk;
+    e(idx(~conv)) = kk .* em(idx(~conv));
+    active(idx(conv)) = false;
+    if ~any(active), break; end
+end
+C(run) = pi / 2 .* (b + a .* em) ./ (em .* (em + p));
 
 % -----------------------------------------------------------------------
 function [kc, p, a, b] = cel_broadcast(kc, p, a, b)

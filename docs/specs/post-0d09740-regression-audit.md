@@ -184,6 +184,8 @@ for theta1).  The remaining cross-port gap is `sn, cn, dn` at `|u| ~ 1e5`
 (1e-11): the `4K` period is not a constant, so `u - 4kK` rounds by
 `eps*|u|` in both ports; this is the documented limit of `ellipj`.
 
+| 6.9 | `cel` (both ports) | evaluated through `m = 1 - kc^2`, which loses `kc` entirely below ~1e-8: `cel1(1e-9)` was Inf (MATLAB) / 2e6 (Python) against `ln(4/kc) = 22.1`; MATLAB also rejected `kc > 1` (`m < 0`) and both returned Inf for `p < 0` | Bulirsch's own kc-native algorithm (Numer. Math. 13, 1969) in both ports: any real `kc`, `p < 0` is the Cauchy principal value (`= Re Pi(1-p | m)`, checked against mpmath), bit-identical across ports, 1e-16 from `kc = 1e-300` to 100 |
+
 Also in this round: every MATLAB docstring `Example:` block now runs as a
 test (`testDocExamples.m`) and the Python docstrings run under
 `pytest --doctest-modules` (one example printed a 0-d array and was fixed).

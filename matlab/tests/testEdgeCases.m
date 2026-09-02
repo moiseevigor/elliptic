@@ -771,3 +771,23 @@
 %! assert(abs(elliptic3(1, 0.5, -3.0) - 0.66684868942035313) < 5e-16, 'elliptic3 with c = -3');
 %! assert(abs(elliptic3(1, 0.5, -100.0) - 0.1523863772236308) < 5e-16, 'elliptic3 with c = -100 (Carlson branch)');
 %! assert(abs(elliptic3(4, 0.9, -100.0) - 0.4921742710224714) < 5e-15, 'elliptic3 with c = -100, reduced phase');
+
+%% ---------------------------------------------------------------------
+%% V. Bulirsch cel (round 6b).  The old route through m = 1 - kc^2 lost kc
+%%    entirely below ~1e-8 (cel1(1e-9) was Inf here, 2e6 in Python; the value
+%%    is ln(4/kc) = 22.1), rejected kc > 1 (m < 0) and returned Inf for p < 0.
+%%    Bulirsch's own algorithm is kc-native; p < 0 is the Cauchy principal
+%%    value, equal to Re Pi(1-p | 1-kc^2) (mpmath).
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! assert(abs(cel1(1e-9) - (22.109560198066302)) < 1e-15 * 22, 'cel1(1e-9) = ln(4/kc)+...');
+%! assert(abs(cel1(1e-300) - (692.1618222593336)) < 1e-15 * 692, 'cel1(1e-300)');
+%! assert(abs(cel1(2) - (1.0782578237498216)) < 1e-15, 'cel1(2): kc > 1 is m = -3');
+%! assert(abs(cel(0.5, -0.5, 1, 1) - (-1.0782578237498216)) < 1e-15 * 1.1, 'cel with p < 0 = principal value Re Pi(1.5|0.75)');
+%! assert(abs(cel(0.7, -5, 1, 1) - (-0.092277884964284496)) < 1e-15, 'cel with p = -5');
+%! assert(abs(cel(1e-9, 0.3, 1.5, -0.7) - (-46.045402351061091)) < 1e-15 * 47, 'general cel at kc = 1e-9');
+%! assert(cel(0.3, 1, 1, 1) == cel1(0.3) && cel(-0.3, 1, 1, 1) == cel1(0.3), 'cel depends on kc^2 only');
+%! assert(isinf(cel1(0)) && cel1(0) > 0, 'cel1(0) = K(1) = Inf');
+%! kc = [1e-12 0.3 0.9 2.5];  p = [-0.4 0.7 -3 1e-3];
+%! assert(all(abs(cel(kc, p, 1, 0) + p .* cel(kc, p, 0, 1) - cel1(kc)) < 1e-14 .* max(1, cel1(kc))), 'cel(1,0) + p cel(0,1) = K');

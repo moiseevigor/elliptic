@@ -523,3 +523,56 @@ class TestAdversarialRound:
         assert abs(_s(elliptic.arclength_ellipse(2.0, 3.0, 1.0, 0.1))
                    + _s(elliptic.arclength_ellipse(2.0, 3.0, 0.1, 1.0))) < 1e-13
         assert abs(_s(elliptic.arclength_ellipse(2.0, 2.0, 1.0, 0.1)) - (-1.8)) < 1e-13
+
+
+# =====================================================================
+# R. Second adversarial round — fuzz vs mpmath (dps=40) over parameter
+#    endpoints, extreme scales, poles and period multiples.  Every
+#    reference was evaluated at the EXACT DOUBLE the library receives:
+#    near singularities the decimal input and its double rounding differ
+#    enough to move the answer at 1e-9.  scipy reaches machine precision
+#    on every case below; each was an implementation loss, now fixed.
+# =====================================================================
+class TestAdversarialRound2:
+    M1 = float(np.nextafter(1.0, 0.0))
+
+    def test_F_near_pole_m_to_1_and_m_equal_1(self):
+        assert abs(_s(elliptic.elliptic12(math.pi/2 - 1e-9, self.M1)[0]) - 19.65993026560449767) < 1e-12*20
+        assert _s(elliptic.elliptic12(0.0, 1.0)[0]) == 0.0
+        assert abs(_s(elliptic.elliptic12(1e-16, 1.0)[0]) - 1e-16) < 1e-31
+
+    def test_third_kind_endpoint_poles(self):
+        assert abs(_s(elliptic.elliptic3(math.pi/2 - 1e-6, 0.3, 1.0)) - 1195228.2584444625825) < 1e-12*1.2e6
+        assert abs(_s(elliptic.elliptic3(math.pi/2 - 1e-6, 1 - 1e-8, 0.9)) - 88.615055050793590585) < 1e-12*90
+
+    def test_carlson_disparate_scales_tiny_y_near_equal_double_zero(self):
+        assert abs(_s(elliptic.carlsonRJ(1e-20, 2e-20, 3e-20, 0.5)) - 43616756114.805842986) < 1e-12*4.4e10
+        assert abs(_s(elliptic.carlsonRJ(2.0, 3.0, 4.0, 1e-10)) - 7.179193296087372323) < 1e-13*7.2
+        assert abs(_s(elliptic.carlsonRC(3.0, 1e-10)) - 7.3643213780616827229) < 1e-13*7.4
+        assert abs(_s(elliptic.carlsonRC(1.0000000000001, 1.0)) - 0.99999999999998334665) < 1e-14
+        assert math.isinf(_s(elliptic.carlsonRF(0.0, 0.0, 1.0)))
+        assert math.isinf(_s(elliptic.carlsonRD(0.0, 0.0, 1.0)))
+        assert math.isinf(_s(elliptic.carlsonRJ(0.0, 0.0, 1.0, 2.0)))
+
+    def test_ellipj_m_to_1(self):
+        assert abs(_s(elliptic.ellipj(9.375277798108883, self.M1)[1]) - 0.00016958935096417269446) < 1e-13*1.7e-4
+        assert abs(_s(elliptic.ellipj(7.0, 1 - 1e-12)[1]) - 0.0018237622775256289351) < 1e-13*1.8e-3
+
+    def test_inverse_E_tiny_negative_z(self):
+        for m in (0.0, 0.5, 1 - 1e-8):
+            z = -1e-9 * float(ellipe(m))
+            phi = _s(elliptic.inverselliptic2(z, m))
+            assert abs(float(ellipeinc(phi, m)) - z) < 1e-13 * abs(z), f"m={m}"
+
+    def test_complex_F_tiny_psi_and_small_m(self):
+        assert abs(_s(elliptic.elliptic12i(math.pi/2 + 1e-9j, 0.9)[0]).imag - 3.1622776601683798848e-9) < 1e-12*3.2e-9
+        F = _s(elliptic.elliptic12i(math.pi/2 + 1e-9j, self.M1)[0])
+        assert abs(F - complex(19.754694640120759063, 0.095049319491958534055)) < 1e-9*20
+        F = _s(elliptic.elliptic12i(0.4 + 0.3j, 1e-4)[0])
+        assert abs(F - complex(0.39999936996865927219, 0.30000195549059365219)) < 1e-13
+
+    def test_weierstrass_near_m1_lattice(self):
+        e1, e2, e3, z = 0.5000001, 0.5, -1.0000001, 13.391953465243201
+        assert abs(_s(elliptic.weierstrassP(z, e1, e2, e3)) - 0.51848214450600943279) < 1e-12
+        assert abs(_s(elliptic.weierstrassZeta(z, e1, e2, e3)) - -5.4787546526901492279) < 1e-12*5.5
+        assert abs(_s(elliptic.weierstrassSigma(z, e1, e2, e3)) - 1.822626274365935705e-13) < 1e-12*1.8e-13

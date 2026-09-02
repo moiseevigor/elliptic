@@ -37,6 +37,9 @@ origSize = size(x);
 x = x(:).';  y = y(:).';  z = z(:).';
 
 RF = carlsonRF_core(x, y, z);
+% Two zero arguments: the integral diverges (DLMF 19.16.1); the duplication
+% loop just stalls and returned a finite 2e6 for R_F(0, 0, 1).
+RF((x == 0) + (y == 0) + (z == 0) >= 2) = Inf;
 RF = reshape(RF, origSize);
 
 
@@ -49,7 +52,9 @@ cr = 0.0027;
 
 x0 = x;  y0 = y;  z0 = z;
 
-for iter = 1:20
+% The adaptive break decides; the cap only guards pathological input
+% (20 was too few for R_F(0, 1e-16, 1) and every K(m) at tiny m).
+for iter = 1:200
     lam = sqrt(x.*y) + sqrt(y.*z) + sqrt(z.*x);
     x   = (x + lam) ./ 4;
     y   = (y + lam) ./ 4;

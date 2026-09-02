@@ -74,9 +74,11 @@ function Z = weierZ_core(z, e1, e2, e3)
 % exactly (theta1'(v+pi)/theta1(v+pi) is pi-periodic, the linear term does
 % the rest), so no period reduction is needed either.
 
-m_param = (e2 - e3) ./ (e1 - e3);
-KK  = ellipke(m_param);
-KKp = ellipke(1 - m_param);
+m_param  = (e2 - e3) ./ (e1 - e3);
+mp_param = (e1 - e2) ./ (e1 - e3);    % 1-m without cancellation
+one = ones(size(m_param));  zed = zeros(size(m_param));
+KK  = carlsonRF(zed, mp_param, one);
+KKp = carlsonRF(zed, m_param,  one);
 omega1 = KK ./ sqrt(e1 - e3);
 q = exp(-pi .* KKp ./ KK);
 v = pi .* z ./ (2 .* omega1);

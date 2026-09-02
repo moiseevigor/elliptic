@@ -104,8 +104,10 @@ I = find(u==pi/2 & m==1 | u==pi/2 & c==1);
 s = sin(u);
 s2 = s.^2;
 co = cos(u);
-d2 = 1 - m.*s2;
-p = 1 - c.*s2;
+% (1-m) + m cos^2 and (1-c) + c cos^2: no cancellation near the endpoint
+% poles (Pi(pi/2-1e-6 | m, c=1) was off by 3e-5).
+d2 = (1 - m) + m.*co.^2;
+p = (1 - c) + c.*co.^2;
 danger = (d2 < 0.25) | (p < 0.25);
 P = zeros(size(u));
 
@@ -158,8 +160,8 @@ return;
 function g = g(u,m,c)
 %  g = 1/((1 - c*sin(u)^2)*sqrt(1 - m*sin(u)^2));
 
- sn2 = sin(u).^2;
- g = 1./((1 - c.*sn2).*sqrt(1 - m.*sn2));
+ cs2 = cos(u).^2;
+ g = 1./(((1 - c) + c.*cs2).*sqrt((1 - m) + m.*cs2));
 return;
 
 
@@ -229,5 +231,5 @@ function Pi = gpu_elliptic3(u, m, c)
 
 
 function gv = g_gpu(u, m, c)
-    sn2 = sin(u).^2;
-    gv  = 1 ./ ((1 - c.*sn2) .* sqrt(1 - m.*sn2));
+    cs2 = cos(u).^2;
+    gv  = 1 ./ (((1 - c) + c.*cs2) .* sqrt((1 - m) + m.*cs2));

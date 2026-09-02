@@ -89,26 +89,31 @@ cot2 = cot(phi).^2;
 b = -(cot2 + m.*sinh(psi).^2.*csc(phi).^2-1+m);
 c = -(1-m).*cot2;
 
-% The constant term -(1-m)*cot(phi)^2 is <= 0, so the two roots always
-% straddle zero and the admissible one is X1 = -b/2 + sqrt(b^2/4-c).  Near
-% phi = pi/2 that form cancels catastrophically (both terms are ~ |b|/2
-% while X1 -> 0), so for b > 0 use the algebraically equal
-% X1 = -c/(b/2+sqrt(...)), which keeps full precision.
-sq = sqrt(b.^2/4-c);
-X1 = -b/2 + sq;
-ratio = X1 ./ cot2;                     % == tan(phi)^2 * cot(lambda)^2
-Ib = find(b > 0);
-X1(Ib)    = -c(Ib)./(b(Ib)/2 + sq(Ib));
-ratio(Ib) = (1-m(Ib))./(b(Ib)/2 + sq(Ib));
+% Positive root X1 = cot(lambda)^2 of X^2 + bX + c = 0 and tan(mu)^2, both
+% without cancellation.  Writing X1 = cot(phi)^2 + Y, Y solves
+%     Y^2 + B'Y - C' = 0,  B' = cot2 + (1-m) - m sinh^2 csc^2,
+%                          C' = cot2 * m sinh^2 csc^2 >= 0,
+% and A&S 17.4.11's tan(mu)^2 = (tan(phi)^2 cot(lambda)^2 - 1)/m = Y/(m cot2)
+% collapses to
+%     tan(mu)^2 = 2 sinh^2 csc^2 / (B' + sqrt(B'^2 + 4C'))        (B' >= 0)
+%               = (|B'| + sqrt(B'^2 + 4C')) / (2 m cot2)          (B' <  0)
+% -- m cancels analytically in the first form, so m -> 0 (and m = 0 exactly)
+% is handled to full precision.  The old (ratio-1)/m lost sqrt(eps/m) digits
+% and returned Im F = 0 for psi = 1e-9.
+s2c2 = sinh(psi).^2.*csc(phi).^2;
+Bp   = cot2 + (1-m) - m.*s2c2;
+Cp   = cot2.*m.*s2c2;
+root = sqrt(Bp.^2 + 4*Cp);
+pos  = Bp >= 0;
+Y      = zeros(size(Bp));  tan2mu = Y;
+Y(pos)  = 2*Cp(pos)./(Bp(pos) + root(pos));
+Y(~pos) = 0.5*(-Bp(~pos) + root(~pos));
+tan2mu(pos)  = 2*s2c2(pos)./(Bp(pos) + root(pos));
+tan2mu(~pos) = 0.5*(-Bp(~pos) + root(~pos))./(m(~pos).*cot2(~pos));
+X1 = cot2 + Y;
 
 lambda = acot( sqrt(X1) );
-% tan(mu)^2 = (tan(phi)^2*cot(lambda)^2 - 1)/m, evaluated from RATIO rather
-% than from LAMBDA: at phi = pi/2 the root X1 underflows, LAMBDA rounds to
-% exactly pi/2 and cot(LAMBDA) loses every digit of it -- that is what used
-% to drop the whole imaginary part of the result there.
-m_calc = m;
-m_calc(m_calc == 0) = 1;
-mu = atan( sqrt( max((ratio - 1)./m_calc, 0) ) );
+mu     = atan( sqrt(tan2mu) );
 
 % change of variables taking into account periodicity ceil to the right
 lambda = (-1).^floor(phi/pi*2).*lambda + pi*ceil(phi/pi-0.5+eps);

@@ -50,27 +50,32 @@ def elliptic12i(u, m):
     b      = -(cot2 + m_f * sinh2 * csc2 - 1.0 + m_f)
     c      = -(1.0 - m_f) * cot2
 
-    disc = xp.sqrt(xp.maximum(b**2 / 4.0 - c, xp.zeros_like(c)))
+    # Positive root X1 = cot^2(lambda) of X^2 + bX + c = 0 and tan^2(mu),
+    # both without cancellation.  Writing X1 = cot^2(phi) + Y, Y solves
+    #     Y^2 + B'Y - C' = 0,  B' = cot^2 + (1-m) - m sinh^2 csc^2,
+    #                          C' = cot^2 * m sinh^2 csc^2 >= 0,
+    # and A&S 17.4.11's tan^2(mu) = (tan^2 phi cot^2 lambda - 1)/m = Y/(m cot^2)
+    # collapses to
+    #     tan^2(mu) = 2 sinh^2 csc^2 / (B' + sqrt(B'^2 + 4C'))        (B' >= 0)
+    #               = (|B'| + sqrt(B'^2 + 4C')) / (2 m cot^2)         (B' <  0)
+    # -- m cancels analytically in the first form, so m -> 0 (and m = 0
+    # exactly) is handled to full precision.  The old (ratio - 1)/m lost
+    # sqrt(eps/m) digits and returned Im F = 0 for psi = 1e-9.
+    s2c2 = sinh2 * csc2
+    Bp   = cot2 + (1.0 - m_f) - m_f * s2c2
+    Cp   = cot2 * m_f * s2c2
+    root = xp.sqrt(Bp * Bp + 4.0 * Cp)
+    pos  = Bp >= 0.0
+    Y    = xp.where(pos, 2.0 * Cp / xp.where(pos, Bp + root, xp.ones_like(Bp)),
+                         0.5 * (-Bp + root))
+    X    = cot2 + Y
+    m_cot = xp.where(pos, xp.ones_like(cot2), m_f * cot2)
+    tan2mu = xp.where(pos,
+                      2.0 * s2c2 / xp.where(pos, Bp + root, xp.ones_like(Bp)),
+                      0.5 * (-Bp + root) / xp.where(pos, xp.ones_like(m_cot), m_cot))
 
-    # c <= 0, so the roots straddle zero and -b/2 + disc is the non-negative
-    # one.  Near phi = pi/2 that form cancels catastrophically (both terms
-    # ~ |b|/2 while the root ~ 0), so use the equal -c/(b/2 + disc) when b > 0.
-    den = xp.where(b > 0, b / 2.0 + disc, xp.ones_like(b))
-    X = xp.where(b > 0, -c / den, -b / 2.0 + disc)
-    ratio = xp.where(
-        b > 0,
-        (1.0 - m_f) / den,
-        (-b / 2.0 + disc) / cot2,
-    )
-
-    lam = xp.arctan(1.0 / xp.sqrt(xp.maximum(X, xp.zeros_like(X)) + 1e-300))
-    # tan(mu)² = (tan(phi)²·cot(lam)² - 1)/m, taken from *ratio* rather than
-    # from lam: at phi = pi/2 the root X underflows, lam rounds to exactly
-    # pi/2 and cot(lam) loses every digit of it, collapsing Im to zero.
-    m_calc = xp.where(m_f == 0.0, xp.ones_like(m_f), m_f)
-    mu = xp.arctan(
-        xp.sqrt(xp.maximum((ratio - 1.0) / m_calc, xp.zeros_like(ratio)))
-    )
+    lam = xp.arctan(1.0 / xp.sqrt(X + 1e-300))
+    mu  = xp.arctan(xp.sqrt(tan2mu))
 
     # Account for periodicity
     lam = (

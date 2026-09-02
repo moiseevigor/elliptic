@@ -55,7 +55,9 @@ def _elliptic12_xp(xp, u, m):
 
     s   = xp.sin(u_r)
     c   = xp.cos(u_r)
-    d2  = 1.0 - m * s * s
+    # (1-m) + m cos^2 avoids the cancellation in 1 - m sin^2 when m -> 1
+    # and phi -> pi/2 (F(pi/2-1e-9 | 1-eps/2) was off by 4e-3).
+    d2  = (1.0 - m) + m * c * c
 
     RF  = _rf_xp(xp, c * c, d2, xp.ones_like(u_r))
     RD  = _rd_xp(xp, c * c, d2, xp.ones_like(u_r))
@@ -89,7 +91,9 @@ def _elliptic12_xp(xp, u, m):
 
     crossed_pole_m1 = um1 >= math.pi * 0.5
     u_m1_safe = xp.where(crossed_pole_m1, xp.zeros_like(u), u)
-    F_m1_finite = xp.log(xp.tan(math.pi * 0.25 + 0.5 * u_m1_safe))
+    # atanh(sin u) is exact at u = 0 and odd; log(tan(pi/4 + u/2)) gave
+    # F(0|1) = -1.1e-16 and the wrong sign at u = 1e-16.
+    F_m1_finite = xp.arctanh(xp.sin(u_m1_safe))
     F_m1 = xp.where(
         crossed_pole_m1,
         xp.full_like(F_m1_finite, math.inf) * sgn,

@@ -50,9 +50,11 @@ def _ellipj_xp(xp, u, m):
 
     # Forward AGM: store ratio = (a-b)/(a+b) = c_new/a_new for back-sub
     ratios = []
+    bratios = []                      # b_{n+1}/a_{n+1} = 2 sqrt(ab)/(a+b)
     for _ in range(_AGM_ITERS):
         ab_sum = a + b
         ratios.append((a - b) / ab_sum)
+        bratios.append(2.0 * xp.sqrt(a * b) / ab_sum)
         b = xp.sqrt(a * b)
         a = ab_sum * 0.5
 
@@ -68,8 +70,12 @@ def _ellipj_xp(xp, u, m):
 
     # Descending Landen back-substitution (all elements, fixed 25 steps)
     for i in range(_AGM_ITERS - 1, -1, -1):
-        arg  = xp.clip(ratios[i] * xp.sin(phin), -1.0, 1.0)
-        phin = 0.5 * (xp.arcsin(arg) + phin)
+        # arcsin(r sin phi) = atan2(r sin phi, sqrt(cos^2 phi + (b/a)^2 sin^2 phi))
+        # using a^2 - c^2 = b^2 for the AGM triple: no arcsin near +/-1, which
+        # lost ~7 digits when m -> 1 (cn(9.4 | 1-eps/2) was 5e-10 off).
+        sp = xp.sin(phin); cp = xp.cos(phin)
+        phin = 0.5 * (xp.arctan2(ratios[i] * sp,
+                                 xp.sqrt(cp * cp + (bratios[i] * sp) ** 2)) + phin)
 
     period_mod2 = period - 2.0 * xp.floor(period * 0.5)
     quasi_sign = 1.0 - 2.0 * period_mod2

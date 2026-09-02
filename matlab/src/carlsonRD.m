@@ -33,6 +33,7 @@ origSize = size(x);
 x = x(:).';  y = y(:).';  z = z(:).';
 
 RD = carlsonRD_core(x, y, z);
+RD((x == 0) & (y == 0)) = Inf;          % diverges (DLMF 19.16.5)
 RD = reshape(RD, origSize);
 
 
@@ -44,7 +45,7 @@ cr    = 0.0015;   % convergence: tighter than RF because RD is 3/2 order
 S     = zeros(size(x));
 fac   = ones(size(x));    % 4^{-n}
 
-for iter = 1:30
+for iter = 1:200   % adaptive break decides; cap guards pathological input
     lam  = sqrt(x.*y) + sqrt(y.*z) + sqrt(z.*x);
     sz   = sqrt(z);
     S    = S + fac ./ (sz .* (z + lam));

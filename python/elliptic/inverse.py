@@ -38,6 +38,11 @@ def inverselliptic2(E_val, m, tol=1e-12):
     _, E1, _ = _elliptic12_xp(xp, half_pi, m)
     two_E1 = 2.0 * E1
 
+    # Oddness first: E(-phi) = -E(phi).  Folding a tiny negative z through
+    # 2*E1 - (z + 2*E1) lost all its digits (rel 1e-7 at z = -1e-9*E1).
+    sgn   = xp.where(E_val < 0.0, -xp.ones_like(E_val), xp.ones_like(E_val))
+    E_val = xp.abs(E_val)
+
     # Step 1 — strip full periods:  phi = phi_base + k*pi
     k = xp.floor(E_val / two_E1)
     z_red = E_val - k * two_E1          # in [0, 2*E1)
@@ -55,11 +60,13 @@ def inverselliptic2(E_val, m, tol=1e-12):
         res = E_cur - z_red2
         denom = xp.sqrt(xp.clip(1.0 - m * xp.sin(phi) ** 2, 0.0, None))
         safe_denom = xp.where(denom > tol, denom, xp.ones_like(denom))
-        step = xp.where(xp.abs(res) > tol, res / safe_denom, xp.zeros_like(res))
+        # unconditional step: gating on |res| > tol froze the solver at an
+        # absolute 1e-12, i.e. only ~3 relative digits for |z| ~ 1e-9
+        step = res / safe_denom
         phi = xp.clip(phi - step, 0.0, math.pi * 0.5)
 
     # Step 3 — undo fold: phi_in_period = pi - phi (if over), else phi
     phi = xp.where(over, math.pi - phi, phi)   # in [0, pi)
 
-    # Step 4 — undo period strips: each strip adds pi to phi
-    return phi + k * math.pi
+    # Step 4 — undo period strips and the sign
+    return sgn * (phi + k * math.pi)

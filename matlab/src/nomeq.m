@@ -33,6 +33,9 @@ if ~isreal(m)
     error('Input arguments must be real.')
 end
 
-NomeQ = exp(-pi*ellipke(1-m,tol)./ellipke(m,tol));
+% K'(m) = K(1-m) = R_F(0, m, 1) evaluated from the EXACT argument m:
+% ellipke(1-m) rounds 1-m first and lost ~eps/m relative digits
+% (q(1e-16) was 11% off, q(1e-17) came back 0).
+NomeQ = exp(-pi*carlsonRF(zeros(size(m)), m, ones(size(m)))./ellipke(m,tol));
 
 % END FUNCTION nomeq()

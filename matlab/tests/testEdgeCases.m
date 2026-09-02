@@ -601,3 +601,70 @@
 %! % Q7: reversed arc intervals are signed, circles included.
 %! assert(abs(arclength_ellipse(2,3,1,0.1) + arclength_ellipse(2,3,0.1,1)) < 1e-13, 'ellipse arc not odd under reversal');
 %! assert(abs(arclength_ellipse(2,2,1,0.1) - (-1.8)) < 1e-13, 'reversed circle arc must be -a*(t1-t0)');
+
+% ---------------------------------------------------------------------
+% R. Second adversarial round (fuzz vs mpmath dps=40 over parameter
+%    endpoints, extreme scales, poles and period multiples).  Every
+%    reference was evaluated at the EXACT DOUBLE the library receives --
+%    near singularities the decimal input differs from its double by
+%    enough to move the answer at 1e-9.  Each block is a counterexample a
+%    prior version failed; scipy reaches machine precision on all of them.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! m1 = 1 - eps/2;
+%! % R1: m -> 1 near phi = pi/2 (Delta^2 formed as (1-m) + m cos^2)
+%! assert(abs(elliptic12(pi/2-1e-9, m1) - 19.65993026560449767) < 1e-12*20, 'F(pi/2-1e-9 | 1-eps/2)');
+%! % R2: m = 1 exactly: F must be exactly 0 at 0 and odd
+%! assert(elliptic12(0, 1) == 0, 'F(0|1) must be exactly 0');
+%! assert(abs(elliptic12(1e-16, 1) - 1e-16) < 1e-31, 'F(1e-16|1) must be 1e-16');
+%! % R3: third kind at the endpoint poles
+%! assert(abs(elliptic3(pi/2-1e-6, 0.3, 1) - 1195228.2584444625825) < 1e-12*1.2e6, 'Pi(pi/2-1e-6 | .3, c=1)');
+%! assert(abs(elliptic3(pi/2-1e-6, 1-1e-8, 0.9) - 88.615055050793590585) < 1e-12*90, 'Pi(pi/2-1e-6 | 1-1e-8, .9)');
+
+%!test
+%! clear
+%! % R4: Carlson -- disparate scales, tiny y, near-equal args, double zeros
+%! assert(abs(carlsonRJ(1e-20,2e-20,3e-20,0.5) - 43616756114.805842986) < 1e-12*4.4e10, 'RJ disparate scales');
+%! assert(abs(carlsonRJ(2,3,4,1e-10) - 7.179193296087372323) < 1e-13*7.2, 'RJ small p');
+%! assert(abs(carlsonRC(3,1e-10) - 7.3643213780616827229) < 1e-13*7.4, 'RC(3,1e-10)');
+%! assert(abs(carlsonRC(1.0000000000001,1) - 0.99999999999998334665) < 1e-14, 'RC(1+1e-13,1)');
+%! assert(isinf(carlsonRF(0,0,1)) && isinf(carlsonRD(0,0,1)) && isinf(carlsonRJ(0,0,1,2)), 'two zero args must be Inf');
+
+%!test
+%! clear
+%! % R5: Jacobi functions at m -> 1 (atan2 Landen step)
+%! assert(abs(ellipj(9.375277798108883, 1-eps/2) - 0) >= 0);   % smoke: callable
+%! [~,cn] = ellipj(9.375277798108883, 1-eps/2);
+%! assert(abs(cn - 0.00016958935096417269446) < 1e-13*1.7e-4, 'cn(9.375 | 1-eps/2)');
+%! [~,cn] = ellipj(7, 1-1e-12);
+%! assert(abs(cn - 0.0018237622775256289351) < 1e-13*1.8e-3, 'cn(7 | 1-1e-12)');
+
+%!test
+%! clear
+%! % R6: inverse E for tiny negative z (oddness first, relative stop)
+%! for m = [0 0.5 1-1e-8]
+%!     [~,E1] = ellipke(m);  z = -1e-9*E1;
+%!     [~,Eb] = elliptic12(inverselliptic2(z, m), m);
+%!     assert(abs(Eb - z) < 1e-13*abs(z), 'inverselliptic2 tiny negative z at m=%g', m);
+%! end
+
+%!test
+%! clear
+%! % R7: complex F -- cancellation-free tan^2(mu): tiny psi and small m
+%! assert(abs(imag(elliptic12i(pi/2 + 1e-9i, 0.9)) - 3.1622776601683798848e-9) < 1e-12*3.2e-9, 'Im F(pi/2+1e-9i | .9)');
+%! F = elliptic12i(pi/2 + 1e-9i, 1-eps/2);
+%! assert(abs(F - (19.754694640120759063 + 0.095049319491958534055i)) < 1e-9*20, 'F(pi/2+1e-9i | 1-eps/2)');
+%! F = elliptic12i(0.4 + 0.3i, 1e-4);
+%! assert(abs(F - (0.39999936996865927219 + 0.30000195549059365219i)) < 1e-13, 'F(0.4+0.3i | 1e-4)');
+
+%!test
+%! clear
+%! % R8: nome at tiny m (K' from the exact argument m); Weierstrass with the
+%! % period computed from 1-m = (e1-e2)/(e1-e3) on a near-m=1 lattice
+%! assert(abs(nomeq(1e-16) - 6.2500000000000001819e-18) < 1e-13*6.25e-18, 'q(1e-16)');   % pi*K'/K ~ 40 eps amplification
+%! assert(abs(nomeq(1e-17) - 6.25e-19) < 1e-13*6.25e-19, 'q(1e-17)');
+%! e1 = 0.5000001; e2 = 0.5; e3 = -1.0000001;  z = 13.391953465243201;
+%! assert(abs(weierstrassP(z,e1,e2,e3)     - 0.51848214450600943279)     < 1e-12, 'P near-1 lattice');
+%! assert(abs(weierstrassZeta(z,e1,e2,e3)  - -5.4787546526901492279)  < 1e-12*5.5, 'Zeta near-1 lattice');
+%! assert(abs(weierstrassSigma(z,e1,e2,e3) - 1.822626274365935705e-13) < 1e-12*1.8e-13, 'Sigma near-1 lattice');

@@ -46,8 +46,9 @@ def weierstrassP(z, e1, e2, e3):
 def _weierP_xp(xp, z, e1, e2, e3):
     from .ellipj import _ellipj_xp
     m  = (e2 - e3) / (e1 - e3)
+    mp = (e1 - e2) / (e1 - e3)          # 1-m without cancellation
     scale = xp.sqrt(e1 - e3)
-    K = _rf_xp(xp, xp.zeros_like(m), 1.0 - m, xp.ones_like(m))
+    K = _rf_xp(xp, xp.zeros_like(m), mp, xp.ones_like(m))
     omega1 = K / scale
     period = xp.round(z / (2.0 * omega1))
     z_reduced = z - 2.0 * period * omega1
@@ -88,9 +89,11 @@ def _lattice_theta_xp(xp, z, e1, e2, e3):
     th1/th1p0 where both drop the same factor.
     """
     m_param = (e2 - e3) / (e1 - e3)
+    mp_param = (e1 - e2) / (e1 - e3)    # 1-m without cancellation: near
+    # m -> 1 lattices, 1.0 - m loses the digits omega1 and eta1 depend on
     zero = xp.zeros_like(m_param)
     one = xp.ones_like(m_param)
-    K = _rf_xp(xp, zero, 1.0 - m_param, one)
+    K = _rf_xp(xp, zero, mp_param, one)
     Kp = _rf_xp(xp, zero, m_param, one)
     omega1 = K / xp.sqrt(e1 - e3)
     q = xp.exp(-math.pi * Kp / K)
@@ -183,8 +186,9 @@ def weierstrassPPrime(z, e1, e2, e3):
     xp, z, e1, e2, e3 = _broadcast4(z, e1, e2, e3)
     from .ellipj import _ellipj_xp
     m     = (e2 - e3) / (e1 - e3)
+    mp    = (e1 - e2) / (e1 - e3)
     root_scale = xp.sqrt(e1 - e3)
-    K = _rf_xp(xp, xp.zeros_like(m), 1.0 - m, xp.ones_like(m))
+    K = _rf_xp(xp, xp.zeros_like(m), mp, xp.ones_like(m))
     omega1 = K / root_scale
     period = xp.round(z / (2.0 * omega1))
     z_reduced = z - 2.0 * period * omega1

@@ -35,6 +35,7 @@ origSize = size(x);
 x = x(:).';  y = y(:).';  z = z(:).';  p = p(:).';
 
 RJ = carlsonRJ_core(x, y, z, p);
+RJ((x == 0) + (y == 0) + (z == 0) >= 2) = Inf;   % diverges (DLMF 19.16.2)
 RJ = reshape(RJ, origSize);
 
 
@@ -48,7 +49,10 @@ fac  = ones(size(x));
 
 p0   = p;    % save original p for δ computation
 
-for iter = 1:30
+% Each duplication divides the argument-ratio exponent (base 4) by one; the
+% adaptive break below decides, the cap only guards pathological input.
+% A cap of 30 covered ratios to ~1e16 only (RJ(1e-20,2e-20,3e-20,.5) 11% off).
+for iter = 1:200
     lam  = sqrt(x.*y) + sqrt(y.*z) + sqrt(z.*x);
     % R_C argument for sum term (DLMF 19.36.3)
     alpha = (p .* (sqrt(x) + sqrt(y) + sqrt(z)) + sqrt(x.*y.*z)).^2;
@@ -105,8 +109,12 @@ if any(gt)
     RC(gt) = atan(d) ./ sqrt(y(gt) - x(gt));
 end
 if any(lt)
-    d      = sqrt((x(lt) - y(lt)) ./ x(lt));   % DLMF 19.2.18: (x-y)/x, not (x-y)/y
-    RC(lt) = atanh(d) ./ sqrt(x(lt) - y(lt));
+    % log((sqrt(x)+sqrt(x-y))/sqrt(y))/sqrt(x-y) == atanh(sqrt(1-y/x))/sqrt(x-y)
+    % without the 1 - sqrt(1-eps) cancellation (RC(3,1e-10) lost 8 digits).
+    % ... as log1p: log((sx+sxy)/sy) = log1p(((x-y)/(sx+sy) + sxy)/sy); the
+    % plain log lost 9 digits again for tiny x - y (RC(1+1e-13, 1)).
+    xl = x(lt);  yl = y(lt);  sx = sqrt(xl);  sy = sqrt(yl);  sxy = sqrt(xl - yl);
+    RC(lt) = log1p(((xl - yl)./(sx + sy) + sxy) ./ sy) ./ sxy;
 end
 
 

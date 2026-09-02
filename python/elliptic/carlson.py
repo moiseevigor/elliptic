@@ -1,7 +1,7 @@
 """Carlson symmetric elliptic integrals RF, RD, RJ, RC.
 
 All use Carlson's duplication algorithm with fixed iteration counts
-(20 for RF, 30 for RD/RJ) so they are JAX-traceable and run natively on
+(20 for RF, 30 for RD, 60 for RJ) so they are JAX-traceable and run natively on
 any array backend (NumPy, PyTorch CUDA, JAX).
 
 References
@@ -48,7 +48,16 @@ def _rc_xp(xp, x, y):
     rc_gt  = xp.arctan(xp.sqrt(xp.clip(diff / x_safe, 0.0, None))) / xp.sqrt(yd_safe)
     lt_active = (diff < -tol) & (y > 0) & (x > 0)
     lt_ratio = xp.where(lt_active, -diff / x_safe, xp.full_like(diff, 0.5))
-    rc_lt  = xp.arctanh(xp.sqrt(xp.clip(lt_ratio, 0.0, None))) / xp.sqrt(yd_safe2)
+    # x > y: log((sqrt(x)+sqrt(x-y))/sqrt(y))/sqrt(x-y) -- algebraically
+    # arctanh(sqrt(1-y/x))/sqrt(x-y), but without the 1 - sqrt(1-eps)
+    # cancellation that lost 8 digits at RC(3, 1e-10).
+    lt_y   = xp.where(lt_active, y, xp.ones_like(y))
+    lt_x   = xp.where(lt_active, x, xp.full_like(x, 2.0))
+    # ... and as log1p, since log((sx+sxy)/sy) = log1p(((x-y)/(sx+sy) + sxy)/sy):
+    # the plain log lost 9 digits again when x - y was tiny (RC(1+1e-13, 1)).
+    sx, sy = xp.sqrt(lt_x), xp.sqrt(lt_y)
+    sxy    = xp.sqrt(xp.clip(lt_x - lt_y, 0.0, None))
+    rc_lt  = xp.log1p(((lt_x - lt_y) / (sx + sy) + sxy) / sy) / xp.sqrt(yd_safe2)
     rc_eq  = 1.0 / xp.sqrt(x_safe)
     rc_x0  = (math.pi * 0.5) / xp.sqrt(y_safe)
 
@@ -77,7 +86,12 @@ def carlsonRF(x, y, z):
     y = xp.asarray(y, dtype=xp.float64)
     z = xp.asarray(z, dtype=xp.float64)
     x, y, z = xp.broadcast_arrays(x, y, z)
-    return _rf_xp(xp, x, y, z)
+    out = _rf_xp(xp, x, y, z)
+    # Two zero arguments: the integral diverges (DLMF 19.16.1); the fixed
+    # duplication count otherwise returns a finite number.
+    two0 = ((x == 0).astype(xp.float64) + (y == 0).astype(xp.float64)
+            + (z == 0).astype(xp.float64)) >= 2
+    return xp.where(two0, xp.full_like(out, math.inf), out)
 
 
 def _rf_xp(xp, x, y, z):
@@ -113,7 +127,8 @@ def carlsonRD(x, y, z):
     y = xp.asarray(y, dtype=xp.float64)
     z = xp.asarray(z, dtype=xp.float64)
     x, y, z = xp.broadcast_arrays(x, y, z)
-    return _rd_xp(xp, x, y, z)
+    out = _rd_xp(xp, x, y, z)
+    return xp.where((x == 0) & (y == 0), xp.full_like(out, math.inf), out)  # DLMF 19.16.5
 
 
 def _rd_xp(xp, x, y, z):
@@ -168,13 +183,19 @@ def carlsonRJ(x, y, z, p):
             "principal value (DLMF 19.20.14); use the transformation to "
             "a q > 0 argument before calling."
         )
-    return _rj_xp(xp, x, y, z, p)
+    out = _rj_xp(xp, x, y, z, p)
+    two0 = ((x == 0).astype(xp.float64) + (y == 0).astype(xp.float64)
+            + (z == 0).astype(xp.float64)) >= 2
+    return xp.where(two0, xp.full_like(out, math.inf), out)  # DLMF 19.16.2
 
 
 def _rj_xp(xp, x, y, z, p):
     S   = xp.zeros_like(x)
     fac = xp.ones_like(x)
-    for _ in range(30):
+    # 60 duplications: each halves the argument-ratio exponent (base 4), so
+    # the series is valid for max/min argument ratios up to ~4^54 = 3e32.
+    # 30 covered only ~1e16 -- RJ(1e-20, 2e-20, 3e-20, 0.5) was 11% off.
+    for _ in range(60):
         lam   = xp.sqrt(x * y) + xp.sqrt(y * z) + xp.sqrt(z * x)
         alpha = (p * (xp.sqrt(x) + xp.sqrt(y) + xp.sqrt(z)) + xp.sqrt(x * y * z)) ** 2
         beta  = p * (p + lam) ** 2

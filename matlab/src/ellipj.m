@@ -127,7 +127,11 @@ if ~isempty(I)
         i = i - 1;
         mask = n(K) >= i;
         if any(mask)
-          phin(mask) = 0.5*(asin(c(i+1,K(mask)).*sin(phin(mask))./a(i+1,K(mask))) + phin(mask));
+          % asin(c sin/a) = atan2(c sin, sqrt(a^2 cos^2 + b^2 sin^2)) using
+          % a^2 - c^2 = b^2: no asin near +/-1, which lost ~7 digits as m -> 1.
+          sp = sin(phin(mask));  cp = cos(phin(mask));
+          phin(mask) = 0.5*(atan2(c(i+1,K(mask)).*sp, ...
+                sqrt((a(i+1,K(mask)).*cp).^2 + (b(i+1,K(mask)).*sp).^2)) + phin(mask));
         end
 	end
     quasi_sign = 1 - 2 .* mod(period, 2);
@@ -239,7 +243,8 @@ function [sn,cn,dn,am] = gpu_ellipj(u, m, tol)
         phin = gpuArray((2 .^ n) .* a_final .* u_reduced);
         for jj = ii-1:-1:1
             active = gpuArray(double(n >= jj));
-            phin_new = 0.5*(asin(c(:,jj+1).*sin(phin)./a(:,jj+1)) + phin);
+            sp = sin(phin);  cp = cos(phin);
+            phin_new = 0.5*(atan2(c(:,jj+1).*sp, sqrt((a(:,jj+1).*cp).^2 + (b(:,jj+1).*sp).^2)) + phin);
             phin = phin + active .* (phin_new - phin);
         end
 

@@ -97,6 +97,9 @@ z = E; mu = 1-m;
 % phi in [0, pi/2].  Reduce first, using
 %   E(phi + k*pi | m) = E(phi | m) + 2k*E(m)      (period)
 %   E(pi - phi  | m) = 2*E(m) - E(phi | m)        (reflection)
+% Oddness first: folding a tiny negative z through 2*E1 - (z + 2*E1) lost
+% all its digits (rel 1e-7 at z = -1e-9*E1).
+signZ = sign(z);  z = abs(z);
 twoE1 = 2*E1;
 k     = floor(z./twoE1);
 z_red = z - k.*twoE1;                       % in [0, 2*E1)
@@ -117,13 +120,13 @@ invE(:) = min(max(invE(:), 0), pi/2);
 for iter=1:100
     [~, Ecur] = elliptic12(invE(:),m,tol);
     res = Ecur - z_red;
-    if max(abs(res)) < 1e-14, break; end
+    if all(abs(res) <= 4*eps*max(abs(z_red), realmin)), break; end   % relative
     invE(:) = invE(:) - res./max(sqrt( 1-m.*sin(invE(:)).^2 ), 1e-15);
     invE(:) = min(max(invE(:), 0), pi/2);
 end
 
 % undo the reflection, then the period strips
 invE(over) = pi - invE(over);
-invE(:) = invE(:) + k*pi;
+invE(:) = signZ .* (invE(:) + k*pi);
 return;
 

@@ -86,6 +86,34 @@ ellipses alike; DLMF citations corrected (19.25.14 for incomplete third kind,
 19.25.5/19.25.9 for F/E); nondegenerate `ellipticBD` anchors at
 `m = 0.2, 0.7, 0.999`.
 
+## Adversarial review round 2 (self-review, 2026-08-16)
+
+A second, independent adversarial pass fuzzed every public function of both
+ports against mpmath at 40 digits over parameter endpoints (`m -> 0`,
+`m -> 1`, `m = 1`), extreme argument scales, near-pole and near-lattice
+arguments, exact period multiples +/- ulps, and complex arguments across the
+branch point.  Each candidate was classified by evaluating scipy at the same
+double inputs: where scipy reaches machine precision the loss is ours.
+Nine implementation defects resulted, all fixed and pinned
+(`testEdgeCases.m` block R, `test_edge_cases.py::TestAdversarialRound2`):
+
+| Defect | Failure | Fix |
+|---|---|---|
+| `1 - m sin^2` / `1 - n sin^2` formed by subtraction (`elliptic12` py, `elliptic3` both) | `F(pi/2-1e-9 \| 1-eps/2)` off 4e-3; `Pi(pi/2-1e-6 \| m, n=1)` off 3e-5 | form `(1-m) + m cos^2`, `(1-n) + n cos^2` |
+| `F(phi \| 1) = log(tan(pi/4+phi/2))` (both) | `F(0\|1) = -1.1e-16`, wrong sign at `1e-16` | `atanh(sin phi)` |
+| `(ratio-1)/m` in the A&S 17.4.11 decomposition (both) | `Im F(pi/2 + 1e-9 i)` returned 0; `sqrt(eps/m)` loss for small m | closed cancellation-free `tan^2(mu) = 2 sinh^2 csc^2 / (B' + sqrt(B'^2 + 4C'))`, m cancels analytically |
+| Landen back-substitution `asin(c sin/a)` near +/-1 (both) | `cn(9.4 \| 1-eps/2)` off 5e-10 | `atan2(c sin, sqrt(a^2 cos^2 + b^2 sin^2))` via `a^2 - c^2 = b^2` |
+| `R_C` arctanh branch for `y << x` and `log(1+tiny)` (both) | `RC(3,1e-10)` off 3e-9; `RC(1+1e-13,1)` off 3e-10 -- contaminated `R_J` and `J` | `log1p(((x-y)/(sqrt x + sqrt y) + sqrt(x-y))/sqrt y)/sqrt(x-y)` |
+| `R_J` duplication capped at 30 (both) | `RJ(1e-20,2e-20,3e-20,.5)` 11% off | 60 fixed (py, ratio limit ~3e32) / adaptive to 200 (MATLAB) |
+| two zero Carlson arguments (both) | `RF(0,0,1) = 2e6` | `Inf` (DLMF 19.16) |
+| inverse `E`: fold of tiny negative z; tol-gated Newton (both) | rel 1e-7 at `z = -1e-9 E1` | oddness first; unconditional / relative-stop Newton |
+| `1 - m` from lattice roots by subtraction; MATLAB `nomeq` via `ellipke(1-m)`; MATLAB `weierstrassP` reducing inside `ellipj` | `q(1e-16)` 11% off, `q(1e-17) = 0`; `P(2 omega1 + 1e-9)` off 40% on near-m=1 lattices | `1-m = (e1-e2)/(e1-e3)`; `K' = R_F(0, m, 1)`; reduce by `2 omega1` before `ellipj` |
+
+Reference-construction lesson recorded for future rounds: anchors must be
+evaluated at the *exact double* the library receives (`mpf(float(x))`), not
+at the decimal the test author typed -- near singularities the two differ at
+the 1e-9 level (`F(pi/2 - 1e-9 \| 1-eps/2)`: 19.6599302656 vs 19.6599302792).
+
 ## Deliberate limits and residual risk
 
 - CUDA/OpenCL hardware was not available during this audit. GPU source paths
@@ -99,6 +127,14 @@ ellipses alike; DLMF citations corrected (19.25.14 for incomplete third kind,
   complex input explicitly instead of silently discarding data.
 - `elliptic3` deliberately rejects real paths that cross a third-kind pole;
   Cauchy principal-value continuation is not implemented.
+- Near-pole and near-lattice conditioning: `F(phi|m)` with `m -> 1` at
+  `phi -> pi/2` and the Weierstrass functions within `~1e-9 omega1` of a
+  lattice point are evaluated to the input's conditioning floor
+  (`2 eps |z| / |z - 2k omega1|`, i.e. ~1e-6 relative at `1e-9 omega1`).
+  This is a property of the double input, not of the algorithm; the same
+  inputs move the true value by that much.
+- `R_J` in the python port uses 60 fixed duplications (JAX-traceable), valid
+  for max/min argument ratios up to ~3e32; MATLAB iterates adaptively.
 - Jacobi phase reduction is double precision: the residual phase carries an
   absolute uncertainty ~`|u|*eps`, so `ellipj` holds full precision to
   `|u| ~ 1e12`, degrades linearly beyond, and has lost the phase entirely by

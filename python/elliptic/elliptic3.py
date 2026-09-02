@@ -68,8 +68,10 @@ def elliptic3(u, m, n):
     s = xp.sin(u_red)
     c = xp.cos(u_red)
     s2 = s * s
-    d2 = 1.0 - m * s2
-    p = 1.0 - n * s2
+    # (1-m) + m cos^2 and (1-n) + n cos^2: no cancellation near the
+    # endpoint poles (Pi(pi/2-1e-6 | m, n=1) was off by 3e-5).
+    d2 = (1.0 - m) + m * c * c
+    p = (1.0 - n) + n * c * c
     one = xp.ones_like(s)
 
     RF = _rf_xp(xp, c * c, d2, one)

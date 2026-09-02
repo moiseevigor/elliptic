@@ -28,10 +28,10 @@ def nomeq(m):
 def inversenomeq(q):
     """Inverse nome: parameter m from nome q.
 
-    Uses a fixed-iteration bisection against the library's own Carlson-based
-    ``nomeq`` implementation. In double precision the representable range is
-    roughly q ∈ [0, 0.779]; beyond this, m(q) exceeds 1 - 2⁻⁵³ and cannot be
-    represented.
+    Closed form m = (theta2(0,q)/theta3(0,q))^4 (DLMF 20.9.1), exact at every
+    scale. In double precision the representable range is q ∈ [0, q_max] with
+    q_max = nomeq(nextafter(1, 0)) ≈ 0.7789; beyond this m(q) exceeds 1 - 2⁻⁵³
+    and cannot be represented.
 
     Parameters
     ----------

@@ -97,7 +97,10 @@ phi = sub_kpi(phi, k);                                    % now in (-pi/2, pi/2]
 
 s  = sin(phi);
 c  = cos(phi);
-d2 = 1 - m .* s.^2;    % Δ²
+% Δ² = (1-m) + m cos² instead of 1 - m sin²: the latter cancels near
+% phi = pi/2 as m -> 1 (relative 2.5e-9 at m = 1-1e-8, which R_D turned into
+% 3e-10 in D(phi|m) and hence in jacobiEDJ at large u).
+d2 = (1 - m) + m .* c.^2;    % Δ²
 d  = sqrt(d2);          % Δ
 
 % s³/3 factor

@@ -60,7 +60,10 @@ def ellipticBDJ(phi, m, n=None):
 
     s    = xp.sin(phi)
     c    = xp.cos(phi)
-    d2   = 1.0 - m * s * s
+    # Delta^2 = (1-m) + m cos^2, not 1 - m sin^2: the latter cancels near
+    # phi = pi/2 as m -> 1 (relative 2.5e-9 at m = 1-1e-8; R_D turned it
+    # into 3e-10 in D(phi|m) and hence in jacobiEDJ at large u).
+    d2   = (1.0 - m) + m * c * c
     s3o3 = s * s * s / 3.0
 
     one  = xp.ones_like(phi)

@@ -698,3 +698,15 @@ class TestAdversarialRound6:
         kc = np.array([1e-12, 0.3, 0.9, 2.5]); p = np.array([-0.4, 0.7, -3.0, 1e-3])
         K = np.asarray(elliptic.cel1(kc))
         assert np.all(np.abs(np.asarray(elliptic.cel(kc, p, 1.0, 0.0)) + p * np.asarray(elliptic.cel(kc, p, 0.0, 1.0)) - K) < 1e-14 * np.maximum(1, K))
+
+    def test_round6c_bdj_delta_jacobiEDJ_complexZ_arclength(self):
+        """mpmath at exact doubles: Delta^2 = (1-m) + m cos^2 in ellipticBDJ,
+        jacobiEDJ reduces u before the amplitude, complex Z uses the exact
+        complete integrals, arclength on mixed arrays."""
+        assert abs(_s(elliptic.ellipticBDJ(math.pi/2 - 2e-4, 1 - 1e-8)[1]) - (8.1529993379146678)) < 2e-12 * 9
+        Eu, Du, _ = elliptic.jacobiEDJ(1520.3427441800743, 0.999999990458008)
+        assert abs(_s(Eu) - 143.00000694616405) < 2e-12 and abs(_s(Du) - 1377.3427503765037) < 2e-12
+        Z = _s(elliptic.elliptic12i(complex(-1.053, -0.8215), 1 - 2**-53)[2])
+        assert abs(Z - complex(-1.1405612347714637, -0.39945642654606886)) < 1e-14                  # was 1e-11: K taken at double(pi/2)
+        v = np.asarray(elliptic.arclength_ellipse(np.array([5, 785.9, 3]), np.array([10, 495.8, 3]), np.array([0, 5.279, 0]), np.array([1, -6.134, 2])))
+        assert np.all(np.abs(v - np.array([8.8662512353670695, -7494.1448816975323, 6])) < 1e-14 * np.array([9, 7495, 6]))

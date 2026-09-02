@@ -791,3 +791,21 @@
 %! assert(isinf(cel1(0)) && cel1(0) > 0, 'cel1(0) = K(1) = Inf');
 %! kc = [1e-12 0.3 0.9 2.5];  p = [-0.4 0.7 -3 1e-3];
 %! assert(all(abs(cel(kc, p, 1, 0) + p .* cel(kc, p, 0, 1) - cel1(kc)) < 1e-14 .* max(1, cel1(kc))), 'cel(1,0) + p cel(0,1) = K');
+
+%% ---------------------------------------------------------------------
+%% W. Round 6c (sweep of the remaining outputs).  mpmath at exact doubles.
+%%    - ellipticBDJ formed Delta^2 = 1 - m sin^2, which cancels near phi = pi/2
+%%      as m -> 1; jacobiEDJ also took am(u) at |u| ~ 1e3 before reducing, so
+%%      D_u(1520|1-1e-8) was off by 3e-10.  Both are at the eps*|u| floor now.
+%%    - arclength_ellipse branched with if(a<b) on arrays (all-elements
+%%      semantics): mixed arrays fell through to the circle formula.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! [~, Dv] = ellipticBDJ(pi/2 - 2e-4, 1 - 1e-8);
+%! assert(abs(Dv - (8.1529993379146678)) < 2e-12 * 9, 'D(pi/2-2e-4 | 1-1e-8): Delta^2 must not cancel');
+%! [Eu, Du] = jacobiEDJ(1520.3427441800743, 0.999999990458008);
+%! assert(abs(Eu - 143.00000694616405) < 2e-12 && abs(Du - 1377.3427503765037) < 2e-12, 'jacobiEDJ at u = 1520 near m = 1 (was 3e-10 off)');
+%! v = arclength_ellipse([5 785.9 3], [10 495.8 3], [0 5.279 0], [1 -6.134 2]);
+%! assert(all(abs(v - [8.8662512353670695 -7494.1448816975323 6]) < 1e-14 * [9 7495 6]), 'arclength_ellipse elementwise on mixed arrays');
+%! assert(abs(arclength_ellipse(5, 10, [0 0.5], [1 1.5])(1) - 8.8662512353670695) < 1e-14, 'scalar axes with array angles');

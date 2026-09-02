@@ -10,6 +10,7 @@ from __future__ import annotations
 import numpy as np
 
 from ._xputils import get_xp, is_numpy
+from .carlson import _rf_xp, _rd_xp
 from .elliptic12 import _elliptic12_xp
 from .ellipj import _ellipj_xp
 
@@ -100,7 +101,12 @@ def elliptic12i(u, m):
     Ei  = (b1 + 1j * b2) / den + E1 + 1j * (-E2 + F2)
 
     # Z = E - (E_complete / K) * F
-    K_m, E_m, _ = _elliptic12_xp(xp, xp.full_like(m_f, np.pi * 0.5), m_f)
+    # Complete integrals from the exact Carlson forms, not F(double(pi/2)|m):
+    # cos(double(pi/2)) = 6e-17 is not 0 and K was 5.8e-9 relative short at
+    # m = 1 - eps/2, which Z inherited (1.8e-11).  E = RF - (m/3) RD (DLMF 19.25.1).
+    zed = xp.zeros_like(m_f);  one = xp.ones_like(m_f)
+    K_m = _rf_xp(xp, zed, 1.0 - m_f, one)
+    E_m = K_m - m_f / 3.0 * _rd_xp(xp, zed, 1.0 - m_f, one)
     Zi   = Ei - (E_m / K_m) * Fi
 
     # Small-m Maclaurin series (through m^2).  The A&S 17.4.11 decomposition

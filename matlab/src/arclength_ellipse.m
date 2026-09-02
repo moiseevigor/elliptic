@@ -96,23 +96,33 @@ if nargin == 2,
  theta1 = 2*pi;
 end
 
+% Broadcast scalars to a common size, then branch ELEMENTWISE.  The previous
+% if(a<b) / elseif(a>b) on arrays used all-elements semantics, so any mixed
+% array fell through to the circle formula for every element.
+sz = size(a);
+for x = {b, theta0, theta1}
+    if numel(x{1}) > 1, sz = size(x{1}); end
+end
+a = a + zeros(sz);  b = b + zeros(sz);  theta0 = theta0 + zeros(sz);  theta1 = theta1 + zeros(sz);
+
 % Default solution for a==b (circles)
 arclength = a.*(theta1-theta0);
 
-% Ellipses (a<b or a>b)
-if(a<b)
-    % Theta measured from a axis = semi-MINOR axis
-    % Use standard formulation for E(phi,m)
-    [F1, E1] = elliptic12( theta1, 1 - (a./b).^2 );
-    [F0, E0] = elliptic12( theta0, 1 - (a./b).^2 );
-    arclength = b.*(E1 - E0);
-elseif(a>b)
-    % Theta measured from a axis = semi-MAJOR axis
-    % Standard formulation will not work ((1-(a/b)^2) < 0); instead use PI/2 - phi and b/a instead of a/b
-    [F1, E1] = elliptic12( pi/2 - theta1, 1 - (b./a).^2 );
-    [F0, E0] = elliptic12( pi/2 - theta0, 1 - (b./a).^2 );
-    % d(PI/2 - phi)/dphi = -1, so reverse operands in this difference to flip sign:
-    arclength = a.*(E0 - E1);
+% Ellipses: theta measured from the a axis
+lt = a < b;                   % a is the semi-MINOR axis: standard E(phi|m)
+if any(lt(:))
+    m = 1 - (a(lt)./b(lt)).^2;
+    [~, E1] = elliptic12(theta1(lt), m);
+    [~, E0] = elliptic12(theta0(lt), m);
+    arclength(lt) = b(lt).*(E1 - E0);
+end
+gt = a > b;                   % a is the semi-MAJOR axis: (1-(a/b)^2) < 0, use pi/2 - phi and b/a
+if any(gt(:))
+    m = 1 - (b(gt)./a(gt)).^2;
+    [~, E1] = elliptic12(pi/2 - theta1(gt), m);
+    [~, E0] = elliptic12(pi/2 - theta0(gt), m);
+    % d(pi/2 - phi)/dphi = -1, so reverse the operands to flip the sign:
+    arclength(gt) = a(gt).*(E0 - E1);
 end
 
 return;

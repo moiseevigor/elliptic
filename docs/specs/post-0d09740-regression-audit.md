@@ -185,6 +185,10 @@ for theta1).  The remaining cross-port gap is `sn, cn, dn` at `|u| ~ 1e5`
 `eps*|u|` in both ports; this is the documented limit of `ellipj`.
 
 | 6.9 | `cel` (both ports) | evaluated through `m = 1 - kc^2`, which loses `kc` entirely below ~1e-8: `cel1(1e-9)` was Inf (MATLAB) / 2e6 (Python) against `ln(4/kc) = 22.1`; MATLAB also rejected `kc > 1` (`m < 0`) and both returned Inf for `p < 0` | Bulirsch's own kc-native algorithm (Numer. Math. 13, 1969) in both ports: any real `kc`, `p < 0` is the Cauchy principal value (`= Re Pi(1-p | m)`, checked against mpmath), bit-identical across ports, 1e-16 from `kc = 1e-300` to 100 |
+| 6.10 | `elliptic12i.py` (Jacobi Zeta output) | complete `K`, `E` taken as `F(double(pi/2)|m)`: `cos(double(pi/2)) = 6e-17`, K 5.8e-9 relative short at `m = 1-eps/2`, Z off by 1.8e-11 | exact Carlson complete forms `R_F(0,1-m,1)`, `R_F - (m/3) R_D` |
+| 6.11 | `ellipticBDJ` (both ports) | `Delta^2 = 1 - m sin^2 phi` cancels near `phi = pi/2` as `m -> 1` (relative 2.5e-9 at `m = 1-1e-8`), which `R_D` turned into 3e-10 in `D(phi|m)` | `Delta^2 = (1-m) + m cos^2 phi` |
+| 6.12 | `jacobiEDJ` (both ports) | took `am(u)` at `|u| ~ 1e3` (rounding `eps*|am|`) and only then reduced, where the map `phi -> D` is steep (`1/sqrt(1-m)`): `D_u(1520|1-1e-8)` off by 3e-10 on top of 6.11 | reduce `u` by `2K` first, amplitude of the reduced argument, add `2k` times the complete integrals; now at the `eps*|u|` floor (`dD_u/du = sn^2 <= 1`) |
+| 6.13 | `arclength_ellipse.m` | `if (a < b) ... elseif (a > b)` on arrays uses all-elements semantics: any mixed array fell through to the circle formula `a (theta1 - theta0)` for every element | elementwise masks after broadcasting scalars (the Python port was already elementwise) |
 
 Also in this round: every MATLAB docstring `Example:` block now runs as a
 test (`testDocExamples.m`) and the Python docstrings run under

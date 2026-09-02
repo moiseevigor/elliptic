@@ -40,6 +40,7 @@ end
 %!     'ellipj NaN',     @() nthargout(1:4, @ellipj, [0.3 0.5 0.7 NaN], [0.2 NaN 0.4 0.5]);
 %!     'theta NaN',      @() theta(1, [0.3 0.5], [0.2 NaN]);
 %!     'elliptic3 NaN',  @() elliptic3([0.3 0.5], [0.2 NaN], 0.3);
+%!     'elliptic3 c<0 / near pole', @() elliptic3([1 1 1 4 1.5707 1.2 0.4], [0.5 0.5 0.5 0.9 1-1e-9 0.999999 0.3], [-0.5 -3 -100 -100 0.3 0.999999 0.5]);
 %!   };
 %!   for t = 1:rows(tests)
 %!     name = tests{t,1}; f = tests{t,2};

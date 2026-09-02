@@ -151,16 +151,7 @@ end
 % are replaced by Inf below.
 near = find(danger);
 if ~isempty(near)
-    c_eval = c(near);
-    d2_eval = d2(near);
-    p_eval = p(near);
-    endpoint = (u(near)==pi/2 & (m(near)==1 | c(near)==1));
-    c_eval(endpoint) = 0;
-    d2_eval(endpoint) = 1;
-    p_eval(endpoint) = 1;
-    RF = carlsonRF(co(near).^2, d2_eval, ones(size(near)));
-    RJ = carlsonRJ(co(near).^2, d2_eval, ones(size(near)), p_eval);
-    P(near) = s(near).*RF + c_eval.*s(near).^3.*RJ./3;
+    P(near) = elliptic3_carlson(u(near), m(near), c(near));
 end
 P(s == 0) = 0;
 Pi(:) = P;
@@ -168,6 +159,23 @@ Pi(:) = P;
 % special values u==pi/2 & m==1 | u==pi/2 & c==1
 Pi(I) = inf;
 return;
+
+
+function P = elliptic3_carlson(u, m, c)
+%ELLIPTIC3_CARLSON  Pi(u|m,c) by DLMF 19.25.14 for 0 <= u <= pi/2 (row inputs).
+%   Used for the elements the 20-node rule cannot resolve (denominators
+%   below 0.25 at the endpoint, or c < 0) by BOTH the serial core and the
+%   GPU path: the OpenCL kernel is the quadrature only, and on the L4 it
+%   returned Pi(1|0.5,-100) 3.8e-9 off because it had no such fallback.
+s  = sin(u);  co = cos(u);
+d2 = (1 - m) + m.*co.^2;
+p  = (1 - c) + c.*co.^2;
+endpoint = (u == pi/2 & (m == 1 | c == 1));   % keep the eager evaluation finite; caller sets Inf
+c(endpoint) = 0;  d2(endpoint) = 1;  p(endpoint) = 1;
+RF = carlsonRF(co.^2, d2, ones(size(u)));
+RJ = carlsonRJ(co.^2, d2, ones(size(u)), p);
+P  = s.*RF + c.*s.^3.*RJ./3;
+P(s == 0) = 0;
 
 
 function g = g(u,m,c)
@@ -216,9 +224,25 @@ function Pi = gpu_elliptic3(u, m, c)
     origSize = size(u);
     I_inf = find(u(:).' == pi/2 & m(:).' == 1 | u(:).' == pi/2 & c(:).' == 1);
 
-    u_g = gpuArray(u(:).');
-    m_g = gpuArray(m(:).');
-    c_g = gpuArray(c(:).');
+    uu = u(:).';  mm = m(:).';  cc = c(:).';
+    % Same hybrid as the serial core: the kernel is the 20-node rule, which is
+    % full precision only while both endpoint denominators stay >= 0.25 and
+    % c >= 0; the rest goes through the Carlson form on the host.
+    co2 = cos(uu).^2;
+    danger = ((1 - mm) + mm.*co2 < 0.25) | ((1 - cc) + cc.*co2 < 0.25) | (cc < 0) | isnan(uu) | isnan(mm) | isnan(cc);
+    Pi = zeros(origSize);
+    if any(danger)
+        Pi(danger) = elliptic3_carlson(uu(danger), mm(danger), cc(danger));
+        Pi(isnan(uu) | isnan(mm) | isnan(cc)) = NaN;
+    end
+    if ~any(~danger)
+        Pi(I_inf) = inf;
+        return;
+    end
+    reg = ~danger;
+    u_g = gpuArray(uu(reg));
+    m_g = gpuArray(mm(reg));
+    c_g = gpuArray(cc(reg));
 
     t = [ 0.9931285991850949,  0.9639719272779138, ...
           0.9122344282513259,  0.8391169718222188, ...
@@ -238,8 +262,7 @@ function Pi = gpu_elliptic3(u, m, c)
     end
     P = u_g/2 .* P;
 
-    Pi = zeros(origSize);
-    Pi(:) = gather(P);
+    Pi(reg) = gather(P);
     Pi(I_inf) = inf;
 
 

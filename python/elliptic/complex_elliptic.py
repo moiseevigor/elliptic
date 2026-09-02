@@ -78,11 +78,13 @@ def elliptic12i(u, m):
     lam = xp.arctan(1.0 / xp.sqrt(X + 1e-300))
     mu  = xp.arctan(xp.sqrt(tan2mu))
 
-    # Account for periodicity
-    lam = (
-        (-1.0) ** xp.floor(phi / np.pi * 2.0) * lam
-        + np.pi * xp.ceil(phi / np.pi - 0.5 + 1e-14)
-    )
+    # Periodicity: with k = floor(2 phi/pi) the quadrant sign is (-1)^k and
+    # the period term is pi*ceil(k/2), derived from the SAME k.  The previous
+    # pi*ceil(phi/pi - 0.5 + 1e-14) counted the period from a separately
+    # rounded quantity, and for phi within 3e-14 below pi/2 it added a period
+    # the sign term had not crossed: Re F came out 3K instead of K.
+    kq = xp.floor(phi / np.pi * 2.0)
+    lam = (-1.0) ** kq * lam + np.pi * xp.ceil(kq / 2.0)
     mu = xp.sign(psi) * xp.real(mu)
 
     F1, E1, _ = _elliptic12_xp(xp, lam, m_f)

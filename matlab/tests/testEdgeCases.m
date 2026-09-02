@@ -809,3 +809,44 @@
 %! v = arclength_ellipse([5 785.9 3], [10 495.8 3], [0 5.279 0], [1 -6.134 2]);
 %! assert(all(abs(v - [8.8662512353670695 -7494.1448816975323 6]) < 1e-14 * [9 7495 6]), 'arclength_ellipse elementwise on mixed arrays');
 %! assert(abs(arclength_ellipse(5, 10, [0 0.5], [1 1.5])(1) - 8.8662512353670695) < 1e-14, 'scalar axes with array angles');
+
+%% ---------------------------------------------------------------------
+%% X. inversenomeq / nome2m near q = 1.  Above q_max = 0.7789534 the true
+%%    1-m = m(exp(pi^2/ln q)) is below eps/2, so the correctly rounded double
+%%    is exactly 1; the unconverged 30-term series returned m > 1 (1.034 at
+%%    q = 0.999, 1+1.6e-15 at q = 0.9).  nome2m captured its whole input array
+%%    in the fzero objective and errored on any array.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! assert(isequal(inversenomeq([0.78 0.9 0.999]), [1 1 1]), 'inversenomeq rounds to exactly 1 above q_max');
+%! assert(all(inversenomeq([0.5 0.7 0.7789]) <= 1), 'no overshoot below q_max');
+%! assert(abs(inversenomeq(0.5) - 0.99998952213731039) < 4e-16, 'inversenomeq(0.5) (mpmath mfrom)');
+%! q = [1e-12 0.05 0.3 0.5];          % q > 0.5 puts 1-m below 1e-5, where q(m) is ill-conditioned in double
+%! m = nome2m(q);
+%! assert(isequal(size(m), size(q)) && max(abs(nomeq(m) - q) ./ q) < 1e-11, 'nome2m on an array, round trip');
+%! assert(nome2m(0.999) == 1, 'nome2m near q = 1');
+
+%% ---------------------------------------------------------------------
+%% Y. elliptic12i period term just below pi/2, and elliptic123 for m > 1.
+%%    lambda = (-1)^k lambda + pi*ceil(phi/pi - 0.5 + eps) counted the period
+%%    from a separately rounded quantity: for phi within a few ulps below
+%%    pi/2 (asin(sqrt(3)) is 2 ulps below) Re F came out 3K instead of K,
+%%    which elliptic123 inherited as K(3) = 3.003 (mpmath: 1.001).  The
+%%    complete m > 1 case now uses the DLMF 19.7.3 closed forms instead of
+%%    evaluating elliptic12i exactly on its branch point (sqrt(eps)-conditioned).
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! F = elliptic12i(1.5707963267948961 + 0.5i, 1/3);
+%! assert(abs(F - (1.7339168852579344 + 0.62666316872107993i)) < 2e-15 * 2, 'F two ulps below pi/2 (was 3K + ...)');
+%! F = elliptic12i(asin(sqrt(3)), 1/3);
+%! assert(abs(real(F) - 1.73391688525794) < 1e-7 && abs(imag(F) + 2.02895910274881) < 1e-7, 'F at the branch point (sqrt(eps)-conditioned there)');
+%! [K, E] = elliptic123(3);
+%! assert(abs(K - (1.0010773804561062 - 1.1714200841467699i)) < 1e-15 * 2 && abs(E - (0.47522393535101711 + 1.0130180585994313i)) < 1e-15 * 2, 'K(3), E(3) closed forms (were 3x off in the real part)');
+%! [K, E] = elliptic123(pi/2, 3);
+%! assert(abs(K - (1.0010773804561062 - 1.1714200841467699i)) < 1e-15 * 2 && abs(E - (0.47522393535101711 + 1.0130180585994313i)) < 1e-15 * 2, 'elliptic123(pi/2, 3) routes to the complete closed form');
+%! [K, E] = elliptic123(5);
+%! assert(abs(K - (0.74220623671119323 - 1.0094529099892116i)) < 3e-16 && abs(E - (0.36075866393790281 + 1.6257306716064185i)) < 3e-15, 'K(5), E(5)');
+%! [F, E] = elliptic123(1.2, 3);
+%! assert(abs(F - (1.0010773804561062 - 0.89956974520736591i)) < 1e-14 && abs(E - (0.47522393535101711 + 0.50673122232331459i)) < 1e-14, 'F(1.2|3), E(1.2|3) (m > 1, real part was 3x off)');

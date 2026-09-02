@@ -710,3 +710,11 @@ class TestAdversarialRound6:
         assert abs(Z - complex(-1.1405612347714637, -0.39945642654606886)) < 1e-14                  # was 1e-11: K taken at double(pi/2)
         v = np.asarray(elliptic.arclength_ellipse(np.array([5, 785.9, 3]), np.array([10, 495.8, 3]), np.array([0, 5.279, 0]), np.array([1, -6.134, 2])))
         assert np.all(np.abs(v - np.array([8.8662512353670695, -7494.1448816975323, 6])) < 1e-14 * np.array([9, 7495, 6]))
+
+    def test_elliptic12i_period_just_below_half_pi(self):
+        """pi*ceil(phi/pi - 0.5 + 1e-14) added a period for phi within 3e-14
+        below pi/2: Re F came out 3K instead of K (mpmath at the exact double)."""
+        F = _s(elliptic.elliptic12i(complex(1.5707963267948961, 0.5), 1/3)[0])
+        assert abs(F - complex(1.7339168852579344, 0.62666316872107993)) < 4e-15
+        F = _s(elliptic.elliptic12i(complex(math.pi/2 - 1e-12, -2.0), 0.5)[0])
+        assert abs(F.real - 0.3901536583) < 1e-9                     # left of the cut, not 2K - ...

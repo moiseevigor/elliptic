@@ -115,8 +115,14 @@ X1 = cot2 + Y;
 lambda = acot( sqrt(X1) );
 mu     = atan( sqrt(tan2mu) );
 
-% change of variables taking into account periodicity ceil to the right
-lambda = (-1).^floor(phi/pi*2).*lambda + pi*ceil(phi/pi-0.5+eps);
+% Periodicity: with k = floor(2 phi/pi) the quadrant sign is (-1)^k and the
+% period term is pi*ceil(k/2), derived from the SAME k.  The previous
+% pi*ceil(phi/pi - 0.5 + eps) counted the period from a separately rounded
+% quantity, and for phi within a few ulps below pi/2 (e.g. asin(sqrt(3)) as
+% used by elliptic123 for m > 1) it added a period the sign term had not
+% crossed: Re F came out 3K instead of K.
+kq     = floor(phi/pi*2);
+lambda = (-1).^kq.*lambda + pi*ceil(kq/2);
 mu     = sign(psi).*real(mu);
 
 [F1(:),E1(:)] = elliptic12(lambda, m, tol);

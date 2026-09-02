@@ -189,6 +189,17 @@ for theta1).  The remaining cross-port gap is `sn, cn, dn` at `|u| ~ 1e5`
 | 6.11 | `ellipticBDJ` (both ports) | `Delta^2 = 1 - m sin^2 phi` cancels near `phi = pi/2` as `m -> 1` (relative 2.5e-9 at `m = 1-1e-8`), which `R_D` turned into 3e-10 in `D(phi|m)` | `Delta^2 = (1-m) + m cos^2 phi` |
 | 6.12 | `jacobiEDJ` (both ports) | took `am(u)` at `|u| ~ 1e3` (rounding `eps*|am|`) and only then reduced, where the map `phi -> D` is steep (`1/sqrt(1-m)`): `D_u(1520|1-1e-8)` off by 3e-10 on top of 6.11 | reduce `u` by `2K` first, amplitude of the reduced argument, add `2k` times the complete integrals; now at the `eps*|u|` floor (`dD_u/du = sn^2 <= 1`) |
 | 6.13 | `arclength_ellipse.m` | `if (a < b) ... elseif (a > b)` on arrays uses all-elements semantics: any mixed array fell through to the circle formula `a (theta1 - theta0)` for every element | elementwise masks after broadcasting scalars (the Python port was already elementwise) |
+| 6.14 | `elliptic12i` (both ports) | the period term `pi*ceil(phi/pi - 0.5 + eps)` (Python: `+ 1e-14`) was counted from a separately rounded quantity: for `phi` a few ulps (Python: 3e-14) below `pi/2` it added a period the sign term `(-1)^floor(2phi/pi)` had not crossed, and `Re F` came out `3K` instead of `K`.  `asin(sqrt(3))` lands 2 ulps below `pi/2`, so `elliptic123` inherited `K(3) = 3.003` (mpmath 1.001) | period `pi*ceil(k/2)` from the same `k = floor(2phi/pi)` |
+| 6.15 | `elliptic123.m` (complete `m > 1`) | evaluated `elliptic12i(asin(sqrt(m)), 1/m)`, i.e. exactly on the branch point of `F(.|1/m)`, where the decomposition is `sqrt(eps)`-conditioned (1e-8 after 6.14) | DLMF 19.7.3 closed forms `K(m) = (K(1/m) - i K(1-1/m))/sqrt(m)` and the matching `E`; `elliptic123(pi/2, m)` routes there too |
+| 6.16 | `inversenomeq` (both ports), `nome2m.m` | above `q_max = 0.7789534` the 30-term theta series is not converged: MATLAB returned `m > 1` (1.034 at `q = 0.999`), Python raised; `nome2m` captured its whole input array in the `fzero` objective and errored on any array (bracket also covered only `q < 0.62`) | the true `1 - m` is below `eps/2` there, so both ports return exactly 1 (clamped `<= 1` below); `nome2m` is an alias of `inversenomeq` |
+
+Deliberate limits found in this sweep: complex `sn, cn, dn` near the poles
+`u = iK'` and Weierstrass functions near lattice points carry the
+conditioning `eps*K'/|u - iK'|` of the rounded half-period (1e-11 at a
+distance 0.05); `elliptic12i` exactly at its branch point
+`pi/2 + i acosh(1/sqrt(m))` is `sqrt(eps)`-conditioned (1e-8) because the
+function has a square-root singularity there; `theta` at `|v| ~ 1e3` and
+`jacobiThetaEta` at `|u| ~ 1e4` carry `eps*|v|` from the argument itself.
 
 Also in this round: every MATLAB docstring `Example:` block now runs as a
 test (`testDocExamples.m`) and the Python docstrings run under

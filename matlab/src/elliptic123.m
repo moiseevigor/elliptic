@@ -139,10 +139,15 @@ if any(m<0)
 end
 
 
-% Reciprocal-modulus transformation: http://dlmf.nist.gov/19.7#E4
+% Reciprocal-modulus transformation, complete case (DLMF 19.7.3):
+%   K(m) = (K(1/m) - i K(1-1/m)) / sqrt(m),  m > 1
+% evaluated from the real complete integrals.  Going through
+% elliptic12i(asin(sqrt(m)), 1/m) puts the argument exactly on the branch
+% point of F(.|1/m), where the decomposition is sqrt(eps)-conditioned and the
+% result was off by 1e-8 (and, before the period fix in elliptic12i, by 2K).
 if any(m>1)
   mm=m(m>1);
-  F(m>1)=(1./sqrt(mm)).*(elliptic12i(asin(sqrt(mm)),1./mm));
+  F(m>1)=(ellipke(1./mm) - 1i*ellipke(1-1./mm))./sqrt(mm);
 end
 
 if any(m<=1&m>=0)
@@ -161,11 +166,14 @@ if nargout>1
     E(m<0)=sqrt(1-mm).*EE;
   end
 
-  % Reciprocal-modulus transformation: http://dlmf.nist.gov/19.7#E4
+  % Complete case of DLMF 19.7.4 at the branch point, where (A&S 17.4.16 with
+  % lambda = mu = pi/2)  F_b = K(m') - i K(1-m'),  E_b = E(m') - i (K(1-m') - E(1-m')),
+  % m' = 1/m, and  E(m) = sqrt(m) E_b - ((m-1)/sqrt(m)) F_b.
   if any(m>1)
-    mm=m(m>1);
-    [FF,EE]=elliptic12i(asin(sqrt(mm)),1./mm);
-    E(m>1)=((1./sqrt(mm))-sqrt(mm)).*FF+sqrt(mm).*EE;
+    mm=m(m>1);  mp=1./mm;
+    [Kp, Ep] = ellipke(mp);  [Kq, Eq] = ellipke(1-mp);
+    Fb = Kp - 1i*Kq;  Eb = Ep - 1i*(Kq - Eq);
+    E(m>1)=((1./sqrt(mm))-sqrt(mm)).*Fb+sqrt(mm).*Eb;
   end
 
   if any(m<=1&m>=0)
@@ -237,6 +245,12 @@ if any(mpos_ind)
   bb=b(mpos_ind);
 
   F(mpos_ind)=(1./sqrt(mm)).*(elliptic12i(asin(sqrt(mm).*sin(bb)),1./mm));
+  % sqrt(m) sin b = 1 is the branch point of F(.|1/m) (sqrt(eps)-conditioned
+  % there): that is the complete integral, take the closed form instead.
+  cpl = abs(sin(bb)) >= 1 - eps;                  % b = pi/2 (mod pi): asin(sqrt(m)) is that branch point
+  if any(cpl)
+    Fc = elliptic12c(mm(cpl));  Fi = F(mpos_ind);  Fi(cpl) = sign(sin(bb(cpl))).*Fc;  F(mpos_ind) = Fi;
+  end
   warning('elliptic123:F_bm_largem','Complex part may be missing and/or incorrect for ellipticF(b,m>1).');
 
 end
@@ -293,6 +307,10 @@ if nargout>1
 
     [FF,EE]=elliptic12i(asin(sqrt(mm).*sin(bb)),1./mm); %cannot display complex part
     E(mpos_ind)=((1./sqrt(mm))-sqrt(mm)).*FF+sqrt(mm).*EE;
+    cpl = abs(sin(bb)) >= 1 - eps;                  % complete: closed form (see elliptic12c)
+    if any(cpl)
+      [~, Ec] = elliptic12c(mm(cpl));  Ei = E(mpos_ind);  Ei(cpl) = sign(sin(bb(cpl))).*Ec;  E(mpos_ind) = Ei;
+    end
     warning('elliptic123:BadComplex','Complex part may be missing');
 
   end

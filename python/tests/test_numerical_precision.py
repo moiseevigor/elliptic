@@ -304,10 +304,15 @@ class TestIssueRegressions:
         Eu, Du, _ = jacobiEDJ(0.5, 0.5)
         assert math.isfinite(_f(Eu)) and math.isfinite(_f(Du))
 
-    def test_issue_inversenomeq_clear_error_above_qmax(self):
-        """inversenomeq formerly raised brentq's cryptic 'f(a) f(b) same sign'."""
+    def test_issue_inversenomeq_rounds_to_one_above_qmax(self):
+        """Above q_max = 0.7789534 the true 1-m is below eps/2, so the correctly
+        rounded double is exactly 1.0 (formerly a ValueError; MATLAB returned
+        m > 1 from the unconverged series)."""
+        assert _f(inversenomeq(0.9)) == 1.0 and _f(inversenomeq(0.999)) == 1.0
+        assert _f(inversenomeq(0.78)) == 1.0
+        assert 0.0 < 1.0 - _f(inversenomeq(0.7)) < 1e-10        # true 1-m = 1.5e-11
         with pytest.raises(ValueError, match="q must be"):
-            inversenomeq(0.9)
+            inversenomeq(1.0)
 
     def test_issue_inversenomeq_round_trip(self):
         """Round-trip nomeq → inversenomeq for valid q."""

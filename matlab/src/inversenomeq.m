@@ -55,12 +55,18 @@ end
 % This replaces the old interpolation tables, which were documented as
 % unreliable for q < 1e-5 and q > 0.76; the series is exact at every scale
 % down to m(1e-30) = 1.6e-29.
+% Above q_max = 0.778953424877990 the true 1-m = m(exp(pi^2/ln q)) ~ 16 exp(-pi^2/ln(1/q))
+% is below eps/2, so the correctly rounded double is exactly 1; the 30-term
+% series is not converged there and returned m > 1 (1.034 at q = 0.999).
+q_max = 0.778953424877990;
 s2 = ones(size(q));                 % sum q^(n(n+1)), n >= 0
 s3 = ones(size(q));                 % theta3 = 1 + 2*sum q^(n^2)
+qs = min(q, q_max);
 for n = 1:30
-    s2 = s2 + q.^(n*(n+1));
-    s3 = s3 + 2*q.^(n^2);
+    s2 = s2 + qs.^(n*(n+1));
+    s3 = s3 + 2*qs.^(n^2);
 end
-m(:) = 16*q .* (s2./s3).^4;
+m(:) = min(16*qs .* (s2./s3).^4, 1);
+m(q > q_max) = 1;
 
 % END FUNCTION inversenomeq()

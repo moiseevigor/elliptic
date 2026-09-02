@@ -60,7 +60,7 @@ def _cel_xp(xp, kc, p, a, b):
     p = xp.where(pos, sp, pn)
     b = xp.where(pos, b / sp, bn)
     a = xp.where(pos, a, an)
-    active = xp.ones_like(k, dtype=xp.bool)
+    active = k == k                      # all-True boolean of the right backend/shape
     for _ in range(40):
         f = a
         a = xp.where(active, a + b / p, a)

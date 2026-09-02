@@ -133,22 +133,27 @@ if ~isempty(I)
     K_vals = pi ./ (2 .* a_fin);                                    % K(m) for each unique m
     u_work = signU .* u(I);                                         % == abs(u(I))
     k_per  = floor(u_work ./ pi);                                   % number of full half-periods
-    % Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at
-    % eps*|u_r| instead of eps*|u| (pi_lo = pi - double(pi) = 1.2246467991473532e-16).
-    phin0  = (u_work - k_per .* pi) - k_per .* 1.2246467991473532e-16;   % reduced to [0, pi)
+    phin0  = sub_kpi(u_work, k_per);                                % reduced to [0, pi), error eps*|phin0| (see SUB_KPI)
     K_per  = 2 .* k_per .* K_vals(K);                               % period correction for F
 
 	phin = zeros(1,mmax);     C  = zeros(1,mmax);
-	Cp = C;  e  = zeros(1,mmax);  phin(:) = phin0;
+	Cp = C;  phin(:) = phin0;
+	% Landen scale 2^(n-2) in closed form: F = phi_{n-1} / (2^(n-1) a_n).  Assigning
+	% it inside the loop left e = 0 when no step ran (n <= 1, i.e. m in
+	% [eps^2, ~5e-16]) and F, E came out Inf.  n = 0 (c_0 <= tol) also needs 1/2.
+	e = 2 .^ (max(n(K), 1) - 2);
 	c2 = c.^2;
 	e_vals = 2.^(0:mn-1);                                          % pre-compute powers of 2
-	for i = 1:mn                                                    % Descending Landen Transformation
+	for i = 1:mn                                                    % Descending Landen Transformation (C: mn terms, see below)
+        % E/K = 1 - sum_{j>=0} 2^(j-1) c_j^2 (A&S 17.6.4) needs one term more than
+        % the Landen descent: stopping C at i = n-1 dropped 2^(n-2) c_{n-1}^2, up to
+        % 1e-14 near m -> 1 (c_{n-1} ~ 1e-8), and E(u|1-4e-15) was off by 1.4e-13.
+        maskC = n(K) >= i;
+        C(maskC) = C(maskC) + e_vals(i)*c2(i,K(maskC));
         mask = n(K) > i;
         if any(mask)
             phin(mask) = atan(b(i,K(mask))./a(i,K(mask)).*tan(phin(mask))) + ...
                 pi.*ceil(phin(mask)/pi - 0.5) + phin(mask);
-            e(mask) = e_vals(i);
-            C(mask) = C(mask)  + e_vals(i)*c2(i,K(mask));
             Cp(mask)= Cp(mask) + c(i+1,K(mask)).*sin(phin(mask));
         end
 	end
@@ -262,7 +267,7 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
         mn = max(n);
         % Precompute e from n (avoids GPU assignment in Landen loop)
         e_vals = 2 .^ (0:mn-1);
-        e = gpuArray(e_vals(max(n-1, 1))(:));  % column, e(j)=e_vals(n(j)-1)
+        e = gpuArray(2 .^ (max(n(:), 1) - 2));  % column, 2^(n-2); n <= 1 -> 1/2 (no Landen step)
 
         % Mirror the serial issue-#35 fix: reduce the phase before the
         % Landen descent and restore 2*k*K afterwards.  The previous GPU
@@ -272,9 +277,7 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
         K_vals = pi ./ (2 .* a_fin);
         u_work = signU .* u(I);
         k_per = floor(u_work ./ pi);
-        % Cody-Waite split of pi, as in the CPU path: without the tail term the
-        % reduced phase is off by k*1.2e-16 (4e-11 at u = 1e6), which Z and E see.
-        phin = gpuArray((u_work - k_per .* pi) - k_per .* 1.2246467991473532e-16);
+        phin = gpuArray(sub_kpi(u_work, k_per));   % exact k*pi split, as in the CPU path
         K_per = 2 .* gpuArray(k_per) .* K_vals;
         C    = gpuArray(zeros(mmax, 1));
         Cp   = gpuArray(zeros(mmax, 1));
@@ -285,7 +288,7 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
             phin_new = atan(b(:,jj)./a(:,jj).*tan(phin)) + ...
                 pi.*ceil(phin/pi - 0.5) + phin;
             phin = phin + active .* (phin_new - phin);
-            C  = C  + active .* e_vals(jj) .* c2(:,jj);
+            C  = C  + gpuArray(double(n >= jj)) .* e_vals(jj) .* c2(:,jj);   % one term more than the descent (A&S 17.6.4)
             Cp = Cp + active .* c(:,jj+1) .* sin(phin);
         end
 

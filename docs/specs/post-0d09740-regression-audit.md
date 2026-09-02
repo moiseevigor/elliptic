@@ -159,6 +159,35 @@ function serially and chunked for `N` in `{cs-1, cs, 2cs, 3cs, 3cs+7}`
 probe (identity `gpuArray/gather`) now agrees with the CPU path to 0.0 on
 4005 points including the large-`u` near-`m = 1` cases.
 
+## Adversarial review round 6 (cross-port parity sweep at extreme m, 2026-09-02)
+
+Attack: 3000 random points with `m` drawn from `U(0,1)`, `1 - 10^U(-16,-3)`
+and `10^U(-16,-3)`, `u` from `U(-3,3)` and `U(-1e5,1e5)`, characteristic
+`n` from `U(0,0.999)`; both ports evaluated on the identical doubles and
+every disagreement above 1e-13 was adjudicated with mpmath at the exact
+inputs.  Eight defects, several older than the April refactor:
+
+| # | Function | Defect | Fix |
+|---|----------|--------|-----|
+| 6.1 | `elliptic12.m` (CPU + GPU) | `m` in `[eps^2, ~5e-16]`: the AGM converges in one step, no Landen step ran, the scale `e` stayed 0 and `F = E = Inf` | scale `2^(n-2)` in closed form (`n <= 1 -> 1/2`) |
+| 6.2 | `theta.m`, `theta_prime.m`, `jacobiThetaEta.m` | nome from `ellipke(1-m)`: `1-m` rounds first, `q` was 30% off at `m ~ 1e-16` and `theta1` off by 1e-5 | `K'(m) = R_F(0, m, 1)` from the exact `m`, as `nomeq` already did |
+| 6.3 | `elliptic12.m` (CPU + GPU) | `E/K = 1 - sum 2^(j-1) c_j^2` stopped one AGM term early (`2^(n-2) c_{n-1}^2 ~ 1e-14` near `m -> 1`); `E(-1.65|1-4e-15)` off by 1.4e-13 | the C sum takes `n` terms, the descent still `n-1` |
+| 6.4 | all `k*pi` reductions (both ports) | the "Cody-Waite" split used `double(pi)` as the head, so `k*pi` itself rounded by `eps*|u|` (2.3e-10 at `u = 1e6`); Jacobi Zeta at `u = 8e4` was off by 1.5e-11 | `sub_kpi` / `_xputils.sub_kpi`: 25-bit `PI_A`, `PI_B` (products exact for `k < 2^28`) plus `PI_C`; verified to 4e-16 over 20000 random `k < 2^27` |
+| 6.5 | `elliptic3.m` | the reflection `Pi(pi-u) = 2 Pi(pi/2) - Pi(u)` used `elliptic3(double(pi/2))`: `cos(double(pi/2)) = 6e-17`, and near `m = 1` the sliver `6e-17/(sqrt(1-m)(1-c))` is 2e-7 (relative 3e-10) | complete integral from the exact Carlson form `R_F(0,1-m,1) + (c/3) R_J(0,1-m,1,1-c)` |
+| 6.6 | `carlsonRJ.m`, `carlson.py` | series term `E3 = XYZ + 2 E2 P + 3 P^3`; DLMF 19.36.2 has `4 P^3`.  With the 0.0015 stopping tolerance the O(eps^4) residual was 1e-13 relative (Python masked it by running 100 duplications) | coefficient corrected; checked in exact arithmetic: residual 3e-22 |
+| 6.7 | `ellipticBDJ` (both ports) | `n > 1` with the phase beyond the pole: MATLAB returned complex `J` silently, Python 1.147 (principal value 0.859); `n = 1` returned NaN from `0 * inf` in the period term | error (MATLAB / NumPy) or NaN (traced backends) beyond the pole; the complete `J(n|m)` is only added where a period was removed |
+| 6.8 | `elliptic3.m` | rejected `c < 0` although the integral is standard there and the Python port accepts it | `c <= 1` accepted; `c < 0` routed to the Carlson branch (the 20-node rule loses digits as `1/(1+|c| sin^2)` narrows) |
+
+After the fixes the same 3000-point sweep agrees with mpmath to `< 2e-15`
+relative on F, E, Z, Pi, theta1 in both ports (previously up to 3e-10, 1e-5
+for theta1).  The remaining cross-port gap is `sn, cn, dn` at `|u| ~ 1e5`
+(1e-11): the `4K` period is not a constant, so `u - 4kK` rounds by
+`eps*|u|` in both ports; this is the documented limit of `ellipj`.
+
+Also in this round: every MATLAB docstring `Example:` block now runs as a
+test (`testDocExamples.m`) and the Python docstrings run under
+`pytest --doctest-modules` (one example printed a 0-d array and was fixed).
+
 ## Deliberate limits and residual risk
 
 - CUDA/OpenCL hardware was not available during this audit. GPU source paths

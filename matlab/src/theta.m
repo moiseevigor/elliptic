@@ -64,7 +64,9 @@ end
 % Evaluate the q-series directly on v.  The old route v -> u = 2Kv/pi ->
 % jacobiThetaEta -> v = pi*u/(2K) round-tripped the argument and lost eps*|v|
 % (2e-10 at v ~ 1e8); THETA_SERIES also avoids the k*v product rounding.
-q = exp(-pi .* ellipke(1-m) ./ ellipke(m));
+% K'(m) = R_F(0, m, 1) from the exact m: ellipke(1-m) rounds 1-m first and the
+% nome was 30% off at m ~ 1e-16 (theta1 off by 1e-5); see NOMEQ.
+q = exp(-pi .* carlsonRF(zeros(size(m)), m, ones(size(m))) ./ ellipke(m));
 q(~(q < 1)) = 0;                          % m == 1: series diverges -> NaN below
 Th(:) = theta_series(type, v, q, tol);
 Th(m == 1) = NaN;

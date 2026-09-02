@@ -213,7 +213,7 @@ def _rj_xp(xp, x, y, z, p):
     Z  = (A - z) / A
     P  = -(X + Y + Z) / 2.0
     E2 = X*Y + X*Z + Y*Z - 3.0*P**2
-    E3 = X*Y*Z + 2.0*E2*P + 3.0*P**3
+    E3 = X*Y*Z + 2.0*E2*P + 4.0*P**3   # DLMF 19.36.2 (3P^3 was wrong; masked here by the fixed 100 duplications)
     E4 = (2.0*X*Y*Z + E2*P + 3.0*P**3) * P
     E5 = X*Y*Z * P**2
     poly = (1.0 - 3.0*E2/14.0 + E3/6.0 + 9.0*E2**2/88.0

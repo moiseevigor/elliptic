@@ -32,7 +32,7 @@ def arclength_ellipse(a, b, theta0=0.0, theta1=None):
     --------
     Full perimeter of ellipse with a=5, b=10 (matches Mathematica):
 
-    >>> arclength_ellipse(5, 10)  # doctest: +ELLIPSIS
+    >>> float(arclength_ellipse(5, 10))  # doctest: +ELLIPSIS
     48.4422...
 
     Notes

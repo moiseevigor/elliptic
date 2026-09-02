@@ -79,7 +79,7 @@ Z  = (A - z) ./ A;
 P  = -(X + Y + Z) ./ 2;    % (A-p)/A
 
 E2 = X.*Y + X.*Z + Y.*Z - 3.*P.^2;
-E3 = X.*Y.*Z + 2.*E2.*P + 3.*P.^3;
+E3 = X.*Y.*Z + 2.*E2.*P + 4.*P.^3;   % DLMF 19.36.2 (was 3P^3: O(eps^4) truncation, 1e-13 relative)
 E4 = (2.*X.*Y.*Z + E2.*P + 3.*P.^3) .* P;
 E5 = X.*Y.*Z.*P.^2;
 

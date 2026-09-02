@@ -17,10 +17,8 @@ from __future__ import annotations
 import math
 import numpy as np
 
-from ._xputils import get_xp, check_range
+from ._xputils import get_xp, check_range, sub_kpi
 
-_PI_HI = 3.141592653589793          # double nearest pi
-_PI_LO = 1.2246467991473532e-16     # pi - _PI_HI
 from .carlson import _rf_xp, _rd_xp, _rf_numpy, _rd_numpy
 
 
@@ -51,7 +49,7 @@ def _elliptic12_xp(xp, u, m):
     # Period reduction: F(u+kπ|m) = F(u|m) + 2k·K(m), Z period π
     k   = xp.round(u / math.pi)
     # Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at eps*|u_r| instead of eps*|u|
-    u_r = (u - k * _PI_HI) - k * _PI_LO      # reduced to (-π/2, π/2]
+    u_r = sub_kpi(u, k)                      # reduced to (-π/2, π/2], error eps*|u_r|
 
     # Complete integrals K(m), E(m) via Carlson
     z0  = xp.zeros_like(m)

@@ -8,7 +8,7 @@
 %!     assert(false, "Module out of range didn't throw an error.");
 %! catch err
     % Verify that the error message contains the expected string
-%!     assert(~isempty(strfind(err.message, 'M and C must be in the range [0, 1].')), ...
+%!     assert(~isempty(strfind(err.message, 'M must be in the range [0, 1] and C <= 1.')), ...
 %!         'Unexpected error message: %s', err.message);
 %! end
 

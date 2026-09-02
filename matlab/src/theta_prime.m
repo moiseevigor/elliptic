@@ -89,7 +89,7 @@ if any(m < 0) || any(m > 1)
 end
 
 K  = ellipke(m);
-Kp = ellipke(1 - m);
+Kp = carlsonRF(zeros(size(m)), m, ones(size(m)));   % K(1-m) from the exact m (see NOMEQ)
 q  = exp(-pi .* Kp ./ K);
 q(~(q < 1)) = 0;                  % m == 1 guard
 [th, thp] = theta_series(j, z, q, tol);

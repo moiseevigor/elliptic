@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 import numpy as np
 
-from ._xputils import get_xp, is_numpy
+from ._xputils import get_xp, is_numpy, sub_kpi
 from .carlson import _rf_xp, _rj_xp
 
 
@@ -63,7 +63,7 @@ def elliptic3(u, m, n):
     ua     = xp.abs(u)
     k_per  = xp.floor(ua / math.pi)
     # Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at eps*|u_r| instead of eps*|u|
-    r      = (ua - k_per * 3.141592653589793) - k_per * 1.2246467991473532e-16   # in [0, pi)
+    r      = sub_kpi(ua, k_per)                                  # in [0, pi), error eps*|r|
     refl   = r > math.pi * 0.5
     u_red  = xp.where(refl, math.pi - r, r)             # in [0, pi/2]
     s = xp.sin(u_red)

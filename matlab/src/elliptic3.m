@@ -30,8 +30,8 @@ if nargin<3, error('Not enough input arguments.'); end
 if ~isreal(u) || ~isreal(m) || ~isreal(c)
     error('Input arguments must be real.')
 end
-if any(m < 0) || any(m > 1) || any(c < 0) || any(c > 1),
-  error('M and C must be in the range [0, 1].');
+if any(m < 0) || any(m > 1) || any(c > 1),
+  error('M must be in the range [0, 1] and C <= 1.');
 end
 % Reduce the phase to [0, pi/2] using oddness and the quasi-period
 % (the integrand is pi-periodic and even about every multiple of pi/2):
@@ -43,9 +43,7 @@ end
 if any(u(:) < 0) || any(u(:) > pi/2)
     signU = sign(u);  ua = abs(u);
     k_per = floor(ua ./ pi);
-    % Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at
-    % eps*|u_r| instead of eps*|u| (pi_lo = pi - double(pi) = 1.2246467991473532e-16).
-    r     = (ua - k_per .* pi) - k_per .* 1.2246467991473532e-16;   % in [0, pi)
+    r     = sub_kpi(ua, k_per);                                     % in [0, pi), error eps*|r| (see SUB_KPI)
     refl  = r > pi/2;
     ur    = r;  ur(refl) = pi - r(refl); % in [0, pi/2]
     Pred  = elliptic3(ur, m, c);
@@ -56,7 +54,12 @@ if any(u(:) < 0) || any(u(:) > pi/2)
     corr = zeros(size(ur));
     idx  = (k_per > 0) | refl;
     if any(idx(:))
-        Pcpl = elliptic3(pi/2 + zeros(size(u)), m, c);
+        % Exact complete integral Pi(c|m) = R_F(0,1-m,1) + (c/3) R_J(0,1-m,1,1-c)
+        % (DLMF 19.25.?) -- NOT elliptic3(pi/2,...): cos(double(pi/2)) = 6e-17 is
+        % not 0, and near m = 1 the sliver between double(pi/2) and pi/2 is
+        % 6e-17/(sqrt(1-m)(1-c)) ~ 2e-7 (relative 3e-10 in the reflected value).
+        Pcpl = carlsonRF(zeros(size(u)), 1 - m, ones(size(u))) + ...
+               c ./ 3 .* carlsonRJ(zeros(size(u)), 1 - m, ones(size(u)), 1 - c);
         corr(idx) = 2 .* k_per(idx) .* Pcpl(idx) + 2 .* refl(idx) .* Pcpl(idx);
     end
     Pi = signU .* (corr + (1 - 2 .* refl) .* Pred);
@@ -110,7 +113,9 @@ co = cos(u);
 % poles (Pi(pi/2-1e-6 | m, c=1) was off by 3e-5).
 d2 = (1 - m) + m.*co.^2;
 p = (1 - c) + c.*co.^2;
-danger = (d2 < 0.25) | (p < 0.25);
+% c < 0 (allowed, as in the Python port): the integrand 1/(1 + |c| sin^2)
+% narrows as |c| grows and the 20-node rule loses digits, so use Carlson.
+danger = (d2 < 0.25) | (p < 0.25) | (c < 0);
 P = zeros(size(u));
 
 regular = find(~danger);

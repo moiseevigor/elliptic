@@ -83,7 +83,7 @@ KK = ellipke(m);
 % q^(n^2) and is accurate to full double precision; the previous AGM-product
 % form lost ~11 digits of the overall normalisation and needed a deliberate
 % perturbation of u and m at the odd half-periods to stay finite.
-q = exp(-pi .* ellipke(1-m) ./ KK);
+q = exp(-pi .* carlsonRF(zeros(size(m)), m, ones(size(m))) ./ KK);   % K(1-m) from the exact m (see NOMEQ)
 q(~(q < 1)) = 0;                      % m == 1 (and NaN) handled below
 v = pi .* u ./ (2 .* KK);
 
@@ -152,7 +152,7 @@ function [Th,H] = gpu_jacobiThetaEta(u, m, tol)
     if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 
     KK = ellipke(m);
-    q  = exp(-pi .* ellipke(1-m) ./ KK);
+    q  = exp(-pi .* carlsonRF(zeros(size(m)), m, ones(size(m))) ./ KK);   % K(1-m) from the exact m (see NOMEQ)
     q(~(q < 1)) = 0;
     v  = pi .* u ./ (2 .* KK);
     qmax = max([q(:); 0]);

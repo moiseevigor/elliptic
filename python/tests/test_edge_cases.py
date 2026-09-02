@@ -640,3 +640,45 @@ class TestAdversarialRound4:
         # equal neighbours are the legitimate degenerate lattices (m = 1 / m = 0)
         assert math.isfinite(_s(elliptic.weierstrassP(0.5, 1.0, 1.0, -2.0)))
         assert math.isfinite(_s(elliptic.weierstrassP(0.5, 1.0, 0.0, 0.0)))
+
+
+# =====================================================================
+# U. Round 6: cross-port parity sweep at extreme m (anchors: mpmath at the
+#    exact double inputs).  The k*pi reduction now uses a 25-bit split of pi
+#    (k*float(pi) rounded by eps*|u|), the RJ series E3 coefficient is
+#    4 P^3 (DLMF 19.36.2), ellipticBDJ rejects n > 1 beyond the pole and
+#    handles n = 1, and the Python-only tiny-m / theta-nome paths are pinned.
+# =====================================================================
+class TestAdversarialRound6:
+    def test_tiny_m_band(self):
+        F, E, _ = elliptic.elliptic12(np.array([1.0, 1.0]), np.array([3e-16, 5e-16]))
+        assert np.all(np.isfinite(F)) and np.all(np.isfinite(E))
+        assert abs(F[0] - 1.0) < 5e-16 and abs(E[0] - 0.99999999999999996) < 5e-16
+        assert abs(F[1] - 1.0000000000000001) < 5e-16 and abs(E[1] - 0.99999999999999993) < 5e-16
+
+    def test_theta_nome_from_exact_m(self):
+        assert abs(_s(elliptic.theta(1, 34401.9, 1.6e-16)) - 0.00011178415088289534) < 1e-13 * 1.1e-4
+        assert abs(_s(elliptic.theta_prime(1, 6577.39, 1.5e-16)[0]) - (-9.8878892558450512e-5)) < 1e-13 * 1e-4
+
+    def test_E_near_m1_and_large_u_pi_split(self):
+        F, E, _ = elliptic.elliptic12(-1.65181, 0.99999999999999578)
+        assert abs(_s(E) - (-1.0032798131910099)) < 5e-14 and abs(_s(F) - (-32.666065762173088)) < 1e-14 * 33
+        u, m = 80101.48788857895, 0.9999533239086507          # 25497*pi + 0.3
+        F, E, Z = elliptic.elliptic12(u, m)
+        assert abs(_s(Z) - 0.2477141143165845) < 2e-14           # eps*|u| = 1.8e-11 before the split
+        assert abs(_s(E) - 51001.284415600044) < 1e-14 * 51001
+        assert abs(_s(F) - 324959.38078465716) < 1e-14 * 324959
+        _, _, Z = elliptic.elliptic12(1000000.123, 1 - 2**-53)
+        assert abs(_s(Z) - (-0.220434859492317)) < 2e-14
+        assert abs(_s(elliptic.elliptic3(-2.70143, 1 - 2**-53, 0.9723)) - (-1249.3300419938347)) < 1e-14 * 1249
+
+    def test_RJ_series_and_characteristic_domain(self):
+        assert abs(_s(elliptic.carlsonRJ(0.1, 0.2, 1, 3.0)) - 1.1311524759367163) < 5e-15 * 1.13
+        assert abs(_s(elliptic.carlsonRJ(0.292, 0.646, 1, 1.354)) - 1.2806109121365949) < 5e-15 * 1.28
+        assert abs(_s(elliptic.ellipticBDJ(1.0, 0.5, 1.0)[2]) - 0.64877476917835824) < 5e-15      # was NaN (0 * inf)
+        assert abs(_s(elliptic.ellipticBDJ(0.5, 0.5, 1.5)[2]) - 0.052791966372572887) < 5e-16
+        with pytest.raises(ValueError, match="principal"):
+            elliptic.ellipticBDJ(1.0, 0.5, 1.5)                  # beyond the pole: returned 1.147 silently
+        for c, ref in [(-0.5, 0.9560406633267465), (-3.0, 0.66684868942035313), (-100.0, 0.1523863772236308)]:
+            assert abs(_s(elliptic.elliptic3(1.0, 0.5, c)) - ref) < 5e-16
+        assert abs(_s(elliptic.elliptic3(4.0, 0.9, -100.0)) - 0.4921742710224714) < 5e-15

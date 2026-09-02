@@ -721,3 +721,53 @@
 %! assert(abs(t - (1.0637286984176921296)) < 2e-15, 'theta4 at v=1.2e8');
 %! assert(abs(tp - (0.0045203629452149075654)) < 2e-14, 'theta4'' at v=1.2e8');
 %! assert(abs(theta(4, v, 0.4) - (1.0637286984176921296)) < 2e-15, 'theta() at v=1.2e8');
+
+%% ---------------------------------------------------------------------
+%% U. Round 6 (cross-port parity sweep at extreme m, 2026-09-02).  Every
+%%    anchor is mpmath at the EXACT double inputs.
+%%    - m in [eps^2, ~5e-16]: the AGM converges in one step, no Landen step
+%%      ran and the scale e stayed 0 -> F = E = Inf.
+%%    - theta nome from ellipke(1-m): 1-m rounds, q was 30% off at m ~ 1e-16.
+%%    - E/K sum stopped one AGM term early: E off by 1.4e-13 near m -> 1.
+%%    - k*pi reduction: k*double(pi) rounds by eps*|u| (2e-10 at u = 1e6);
+%%      sub_kpi splits pi into 25-bit parts so k*PI_A, k*PI_B are exact.
+%%    - elliptic3 reflection used Pi(double(pi/2)) as the complete integral;
+%%      cos(double(pi/2)) = 6e-17 is not 0 and the sliver is 2e-7 at m = 1-eps/2.
+%%    - carlsonRJ series: E3 = XYZ + 2 E2 P + 4 P^3 (DLMF 19.36.2), not 3 P^3.
+%%    - ellipticBDJ: n > 1 beyond the pole gave complex J silently; n = 1 gave NaN.
+%%    - elliptic3 now accepts c < 0 (as the Python port does).
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! [F, E] = elliptic12([1 1], [3e-16 5e-16]);
+%! assert(all(isfinite(F)) && all(isfinite(E)), 'F, E must be finite for m ~ 3e-16 (were Inf)');
+%! assert(abs(F(1) - 1.0) < 5e-16 && abs(E(1) - 0.99999999999999996) < 5e-16, 'F(1|3e-16), E(1|3e-16)');
+%! assert(abs(F(2) - 1.0000000000000001) < 5e-16 && abs(E(2) - 0.99999999999999993) < 5e-16, 'F(1|5e-16), E(1|5e-16)');
+%! assert(abs(theta(1, 34401.9, 1.6e-16) - 0.00011178415088289534) < 1e-13 * 1.1e-4, 'theta1 at m = 1.6e-16 (nome from exact m)');
+%! assert(abs(theta_prime(1, 6577.39, 1.5e-16) - (-9.8878892558450512e-5)) < 1e-13 * 1e-4, 'theta_prime at m = 1.5e-16');
+%! [~, H] = jacobiThetaEta(6577.39 * 2 * ellipke(1.5e-16) / pi, 1.5e-16);
+%! assert(abs(H - (-9.8878892558450512e-5)) < 1e-12 * 1e-4, 'jacobiThetaEta eta at m = 1.5e-16');
+%! [F, E] = elliptic12(-1.65181, 0.99999999999999578);
+%! assert(abs(E - (-1.0032798131910099)) < 2e-14, 'E near m -> 1 (missing AGM term gave 1.4e-13)');
+%! assert(abs(F - (-32.666065762173088)) < 1e-14 * 33, 'F near m -> 1');
+%! u = 80101.48788857895;  m = 0.9999533239086507;         % 25497*pi + 0.3
+%! [F, E, Z] = elliptic12(u, m);
+%! assert(abs(Z - 0.2477141143165845) < 2e-14, 'Jacobi Zeta at u = 8e4 (k*pi split)');
+%! assert(abs(E - 51001.284415600044) < 1e-14 * 51001, 'E at u = 8e4');
+%! assert(abs(F - 324959.38078465716) < 1e-14 * 324959, 'F at u = 8e4');
+%! [~, ~, Z] = elliptic12(1000000.123, 1 - eps/2);
+%! assert(abs(Z - (-0.220434859492317)) < 2e-14, 'Jacobi Zeta at u = 1e6, m = 1-eps/2');
+%! assert(abs(elliptic3(-2.70143, 1 - eps/2, 0.9723) - (-1249.3300419938347)) < 1e-14 * 1249, 'elliptic3 reflection at m = 1-eps/2 (complete integral must be exact)');
+%! assert(abs(carlsonRJ(0.1, 0.2, 1, 3.0) - 1.1311524759367163) < 5e-15 * 1.13, 'RJ series E3 coefficient');
+%! assert(abs(carlsonRJ(0.292, 0.646, 1, 1.354) - 1.2806109121365949) < 5e-15 * 1.28, 'RJ series E3 coefficient');
+%! [~, ~, J] = ellipticBDJ(1, 0.5, 1);
+%! assert(abs(J - 0.64877476917835824) < 5e-15, 'J at n = 1 (was NaN)');
+%! [~, ~, J] = ellipticBDJ(0.5, 0.5, 1.5);
+%! assert(abs(J - 0.052791966372572887) < 5e-16, 'J at n = 1.5 below the pole');
+%! err = '';
+%! try, ellipticBDJ(1, 0.5, 1.5); catch e, err = e.message; end
+%! assert(~isempty(strfind(err, 'principal')), 'J at n = 1.5 beyond the pole must error, not return complex');
+%! assert(abs(elliptic3(1, 0.5, -0.5) - 0.9560406633267465) < 5e-16, 'elliptic3 with c = -0.5');
+%! assert(abs(elliptic3(1, 0.5, -3.0) - 0.66684868942035313) < 5e-16, 'elliptic3 with c = -3');
+%! assert(abs(elliptic3(1, 0.5, -100.0) - 0.1523863772236308) < 5e-16, 'elliptic3 with c = -100 (Carlson branch)');
+%! assert(abs(elliptic3(4, 0.9, -100.0) - 0.4921742710224714) < 5e-15, 'elliptic3 with c = -100, reduced phase');

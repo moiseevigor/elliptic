@@ -88,47 +88,12 @@ if any(m < 0) || any(m > 1)
     error('M must be in the range 0 <= M <= 1.');
 end
 
-th = theta(j, z, m);              % Moiseev's θ-function
-
-% Derivative directly from the defining q-series (A&S 16.27):
-%   θ1'(v) =  2 Σ (-1)^n (2n+1) q^((n+1/2)^2) cos((2n+1)v)
-%   θ2'(v) = -2 Σ        (2n+1) q^((n+1/2)^2) sin((2n+1)v)
-%   θ3'(v) = -4 Σ        n      q^(n^2)       sin(2nv)
-%   θ4'(v) = -4 Σ (-1)^n n      q^(n^2)       sin(2nv)
-% The previous logarithmic-derivative form th*(2K/pi)*(Z + cn.*dn./sn)
-% returned NaN (0*Inf) wherever the theta itself vanishes: θ1 at z = k*pi,
-% θ2 at z = pi/2 + k*pi.  The series has no such holes.
 K  = ellipke(m);
 Kp = ellipke(1 - m);
 q  = exp(-pi .* Kp ./ K);
 q(~(q < 1)) = 0;                  % m == 1 guard
-
-qmax = max([q(:); 0]);
-if qmax > 0
-    nT = min(1000, max(1, ceil(sqrt(log(tol) / log(qmax)))));
-else
-    nT = 1;
-end
-
-thp = zeros(size(z));
-switch j
-    case 1
-        for n = 0:nT
-            thp = thp + 2*(-1)^n * (2*n+1) .* q.^((n+0.5)^2) .* cos((2*n+1).*z);
-        end
-    case 2
-        for n = 0:nT
-            thp = thp - 2*(2*n+1) .* q.^((n+0.5)^2) .* sin((2*n+1).*z);
-        end
-    case 3
-        for n = 1:nT
-            thp = thp - 4*n .* q.^(n^2) .* sin(2*n.*z);
-        end
-    case 4
-        for n = 1:nT
-            thp = thp - 4*(-1)^n * n .* q.^(n^2) .* sin(2*n.*z);
-        end
-end
+[th, thp] = theta_series(j, z, q, tol);
+th(m == 1) = NaN;  thp(m == 1) = NaN;
+if j == 1, th(m == 0) = 0; end
 
 end
-

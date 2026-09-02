@@ -611,3 +611,32 @@ class TestAdversarialRound3:
         assert F0 == 0 and math.copysign(1.0, F0.real) < 0      # -0.0 preserved
         assert _s(elliptic.elliptic12i(0j, 0.5)[0]) == 0
         assert abs(_s(elliptic.carlsonRJ(2.798e-18, 5.954e-24, 9.634e-23, 1.134e21)) - 9.9678905686736778972e-12) < 1e-12 * 1e-11
+
+
+# =====================================================================
+# T. Theta at a huge argument; Weierstrass root ordering
+# =====================================================================
+class TestAdversarialRound4:
+    def test_theta_huge_argument(self):
+        """mpmath jtheta at the exact double v = 123456789.123: the products
+        (2n+1)*v rounded by eps*|k v| before the angle-addition recurrence."""
+        v = 123456789.123
+        t, tp = elliptic.theta_prime(1, v, 0.4)
+        assert abs(_s(t) - (0.84585020823346348431)) < 2e-15 and abs(_s(tp) - (0.015114923736622936955)) < 2e-14
+        assert abs(_s(elliptic.theta(1, v, 0.4)) - (0.84585020823346348431)) < 2e-15
+        t, tp = elliptic.theta_prime(2, v, 0.4)
+        assert abs(_s(t) - (0.014932290326334898348)) < 2e-15 and abs(_s(tp) - (-0.84241862816186020729)) < 2e-14
+        assert abs(_s(elliptic.theta(2, v, 0.4)) - (0.014932290326334898348)) < 2e-15
+        t, tp = elliptic.theta_prime(3, v, 0.4)
+        assert abs(_s(t) - (0.93627542467710214194)) < 2e-15 and abs(_s(tp) - (-0.004519191759268069986)) < 2e-14
+        assert abs(_s(elliptic.theta(3, v, 0.4)) - (0.93627542467710214194)) < 2e-15
+        t, tp = elliptic.theta_prime(4, v, 0.4)
+        assert abs(_s(t) - (1.0637286984176921296)) < 2e-15 and abs(_s(tp) - (0.0045203629452149075654)) < 2e-14
+        assert abs(_s(elliptic.theta(4, v, 0.4)) - (1.0637286984176921296)) < 2e-15
+
+    def test_weierstrass_root_order_is_enforced(self):
+        with pytest.raises(ValueError): elliptic.weierstrassP(0.5, 0.5, 1.0, -1.5)      # unsorted
+        with pytest.raises(ValueError): elliptic.weierstrassZeta(0.5, 1.0, 1.0, 1.0)     # e1 == e3
+        # equal neighbours are the legitimate degenerate lattices (m = 1 / m = 0)
+        assert math.isfinite(_s(elliptic.weierstrassP(0.5, 1.0, 1.0, -2.0)))
+        assert math.isfinite(_s(elliptic.weierstrassP(0.5, 1.0, 0.0, 0.0)))

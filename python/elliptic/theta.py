@@ -36,64 +36,93 @@ def _q_from_m_xp(xp, m):
 # Low-level series (flat 1-D numpy, v in radians, q scalar or array)
 # -----------------------------------------------------------------------
 
+def _trig_start(xp, v):
+    """sin/cos of v, 2v once; all higher multiples come from the angle-addition
+    recurrence.  Forming (2n+1)*v as a double product rounds by eps*|k v|,
+    which cost 1e-12 at v ~ 1e8 and 1e-8 at v ~ 1e11; the recurrence keeps
+    every term accurate to ~n*eps relative to the exact sin(v), cos(v)."""
+    s1 = xp.sin(v); c1 = xp.cos(v)
+    return s1, c1, 2.0 * s1 * c1, 1.0 - 2.0 * s1 * s1      # s1, c1, sin 2v, cos 2v
+
+
 def _th1(xp, v, q):
-    """θ₁(v, q)."""
+    """θ₁(v, q) = 2 Σ (-1)^n q^((n+1/2)^2) sin((2n+1)v)."""
+    sk, ck, s2, c2 = _trig_start(xp, v)
     s = xp.zeros_like(v)
     for n in range(_N_TERMS):
-        s = s + (-1)**n * q**((n + 0.5)**2) * xp.sin((2*n + 1) * v)
+        s = s + (-1)**n * q**((n + 0.5)**2) * sk
+        sk, ck = sk * c2 + ck * s2, ck * c2 - sk * s2
     return 2.0 * s
 
 
 def _th2(xp, v, q):
-    """θ₂(v, q)."""
+    """θ₂(v, q) = 2 Σ q^((n+1/2)^2) cos((2n+1)v)."""
+    sk, ck, s2, c2 = _trig_start(xp, v)
     s = xp.zeros_like(v)
     for n in range(_N_TERMS):
-        s = s + q**((n + 0.5)**2) * xp.cos((2*n + 1) * v)
+        s = s + q**((n + 0.5)**2) * ck
+        sk, ck = sk * c2 + ck * s2, ck * c2 - sk * s2
     return 2.0 * s
 
 
 def _th3(xp, v, q):
-    """θ₃(v, q)."""
+    """θ₃(v, q) = 1 + 2 Σ q^(n^2) cos(2nv)."""
+    _, _, s2, c2 = _trig_start(xp, v)
+    sk, ck = s2, c2                                  # sin 2v, cos 2v
     s = xp.ones_like(v)
     for n in range(1, _N_TERMS + 1):
-        s = s + 2.0 * q**(n**2) * xp.cos(2*n * v)
+        s = s + 2.0 * q**(n**2) * ck
+        sk, ck = sk * c2 + ck * s2, ck * c2 - sk * s2
     return s
 
 
 def _th4(xp, v, q):
-    """θ₄(v, q)."""
+    """θ₄(v, q) = 1 + 2 Σ (-1)^n q^(n^2) cos(2nv)."""
+    _, _, s2, c2 = _trig_start(xp, v)
+    sk, ck = s2, c2
     s = xp.ones_like(v)
     for n in range(1, _N_TERMS + 1):
-        s = s + 2.0 * (-1)**n * q**(n**2) * xp.cos(2*n * v)
+        s = s + 2.0 * (-1)**n * q**(n**2) * ck
+        sk, ck = sk * c2 + ck * s2, ck * c2 - sk * s2
     return s
 
 
 # Derivatives dθⱼ/dv
 def _dth1(xp, v, q):
+    sk, ck, s2, c2 = _trig_start(xp, v)
     s = xp.zeros_like(v)
     for n in range(_N_TERMS):
-        s = s + (-1)**n * (2*n+1) * q**((n + 0.5)**2) * xp.cos((2*n + 1) * v)
+        s = s + (-1)**n * (2*n+1) * q**((n + 0.5)**2) * ck
+        sk, ck = sk * c2 + ck * s2, ck * c2 - sk * s2
     return 2.0 * s
 
 
 def _dth2(xp, v, q):
+    sk, ck, s2, c2 = _trig_start(xp, v)
     s = xp.zeros_like(v)
     for n in range(_N_TERMS):
-        s = s - (2*n+1) * q**((n + 0.5)**2) * xp.sin((2*n + 1) * v)
+        s = s - (2*n+1) * q**((n + 0.5)**2) * sk
+        sk, ck = sk * c2 + ck * s2, ck * c2 - sk * s2
     return 2.0 * s
 
 
 def _dth3(xp, v, q):
+    _, _, s2, c2 = _trig_start(xp, v)
+    sk, ck = s2, c2
     s = xp.zeros_like(v)
     for n in range(1, _N_TERMS + 1):
-        s = s - 4.0 * n * q**(n**2) * xp.sin(2*n * v)
+        s = s - 4.0 * n * q**(n**2) * sk
+        sk, ck = sk * c2 + ck * s2, ck * c2 - sk * s2
     return s
 
 
 def _dth4(xp, v, q):
+    _, _, s2, c2 = _trig_start(xp, v)
+    sk, ck = s2, c2
     s = xp.zeros_like(v)
     for n in range(1, _N_TERMS + 1):
-        s = s - 4.0 * n * (-1)**n * q**(n**2) * xp.sin(2*n * v)
+        s = s - 4.0 * n * (-1)**n * q**(n**2) * sk
+        sk, ck = sk * c2 + ck * s2, ck * c2 - sk * s2
     return s
 
 

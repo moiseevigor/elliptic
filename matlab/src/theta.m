@@ -61,24 +61,15 @@ if any(m < 0) || any(m > 1),
   error('M must be in the range 0 <= M <= 1.');
 end
 
-K = ellipke(m);
-u = 2*K.*v/pi;
-
-switch type
-    case { '1', 1 }
-        [th, H] = jacobiThetaEta(u,m,tol);
-        Th(:) = H;
-        return;
-    case { '2', 2 }
-        [th, H] = jacobiThetaEta(u+K,m,tol);
-        Th(:) = H;
-        return;
-    case { '3', 3 }
-        Th(:) = jacobiThetaEta(u+K,m,tol);
-        return;
-    case { '4', 4 }
-        Th(:) = jacobiThetaEta(u,m,tol);
-        return;
+% Evaluate the q-series directly on v.  The old route v -> u = 2Kv/pi ->
+% jacobiThetaEta -> v = pi*u/(2K) round-tripped the argument and lost eps*|v|
+% (2e-10 at v ~ 1e8); THETA_SERIES also avoids the k*v product rounding.
+q = exp(-pi .* ellipke(1-m) ./ ellipke(m));
+q(~(q < 1)) = 0;                          % m == 1: series diverges -> NaN below
+Th(:) = theta_series(type, v, q, tol);
+Th(m == 1) = NaN;
+if type == 1
+    Th(m == 0) = 0;                       % theta_1(v, 0) = 0 exactly
 end
 
 % END FUNCTION theta()

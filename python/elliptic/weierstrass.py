@@ -35,6 +35,13 @@ def _broadcast4(z, e1, e2, e3):
             return xp.full_like(xp.asarray(ref, dtype=xp.float64), float(a))
         return xp.asarray(a, dtype=xp.float64)
     z, e1, e2, e3 = (dev(a) for a in args)
+    # Root ordering e1 >= e2 >= e3 with e1 > e3 (equal neighbours are the
+    # legitimate m = 0 / m = 1 degenerate lattices).  Unsorted roots used to
+    # fall through as m > 1 and return NaN silently; MATLAB errors there.
+    from ._xputils import is_numpy
+    ok = (e1 >= e2) & (e2 >= e3) & (e1 > e3)
+    if is_numpy(xp) and not bool(xp.all(ok | xp.isnan(e1 + e2 + e3))):
+        raise ValueError("Weierstrass roots must satisfy e1 >= e2 >= e3 with e1 > e3")
     z, e1, e2, e3 = xp.broadcast_arrays(z, e1, e2, e3)
     return xp, z, e1, e2, e3
 
@@ -109,13 +116,18 @@ def _lattice_theta_xp(xp, z, e1, e2, e3):
     th1p = xp.zeros_like(v)
     th1p0 = xp.zeros_like(v)
     th1ppp0 = xp.zeros_like(v)
+    # sin/cos of (2n+1)v by angle-addition from sin v, cos v: the products
+    # k*v round by eps*|k v| (1e-12 at v ~ 1e8) -- see theta._trig_start
+    sk, ck = xp.sin(v), xp.cos(v)
+    s2, c2 = 2.0 * sk * ck, 1.0 - 2.0 * sk * sk
     for n in range(31):
         qq = (-1.0) ** n * q ** ((n + 0.5) ** 2)
         k = 2 * n + 1
-        th1 = th1 + qq * xp.sin(k * v)
-        th1p = th1p + qq * k * xp.cos(k * v)
+        th1 = th1 + qq * sk
+        th1p = th1p + qq * k * ck
         th1p0 = th1p0 + qq * k
         th1ppp0 = th1ppp0 - qq * k ** 3
+        sk, ck = sk * c2 + ck * s2, ck * c2 - sk * s2
     eta1 = -math.pi ** 2 / (12.0 * omega1) * th1ppp0 / th1p0
     return omega1, eta1, th1, th1p, th1p0
 

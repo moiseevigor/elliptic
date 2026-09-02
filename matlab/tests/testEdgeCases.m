@@ -695,3 +695,29 @@
 %! assert(isnan(ellipj(0.3, NaN)), 'ellipj must propagate NaN');
 %! assert(elliptic12i(-0, 0.5) == 0 && elliptic12i(0, 0.5) == 0, 'F(0) must be exactly 0');
 %! assert(abs(carlsonRJ(2.798e-18, 5.954e-24, 9.634e-23, 1.134e21) - 9.9678905686736778972e-12) < 1e-12*1e-11, 'RJ at ratio 1.9e44');
+
+%% ---------------------------------------------------------------------
+%% T. Theta at a huge argument (mpmath jtheta at the exact double v).
+%%    Forming (2n+1)*v as a double product rounded by eps*|k v| (2e-10 here,
+%%    9e-9 at v ~ 1e11); the series now uses the angle-addition recurrence,
+%%    and theta() no longer round-trips v -> u -> v through jacobiThetaEta.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! v = 123456789.123;
+%! [t, tp] = theta_prime(1, v, 0.4);
+%! assert(abs(t - (0.84585020823346348431)) < 2e-15, 'theta1 at v=1.2e8');
+%! assert(abs(tp - (0.015114923736622936955)) < 2e-14, 'theta1'' at v=1.2e8');
+%! assert(abs(theta(1, v, 0.4) - (0.84585020823346348431)) < 2e-15, 'theta() at v=1.2e8');
+%! [t, tp] = theta_prime(2, v, 0.4);
+%! assert(abs(t - (0.014932290326334898348)) < 2e-15, 'theta2 at v=1.2e8');
+%! assert(abs(tp - (-0.84241862816186020729)) < 2e-14, 'theta2'' at v=1.2e8');
+%! assert(abs(theta(2, v, 0.4) - (0.014932290326334898348)) < 2e-15, 'theta() at v=1.2e8');
+%! [t, tp] = theta_prime(3, v, 0.4);
+%! assert(abs(t - (0.93627542467710214194)) < 2e-15, 'theta3 at v=1.2e8');
+%! assert(abs(tp - (-0.004519191759268069986)) < 2e-14, 'theta3'' at v=1.2e8');
+%! assert(abs(theta(3, v, 0.4) - (0.93627542467710214194)) < 2e-15, 'theta() at v=1.2e8');
+%! [t, tp] = theta_prime(4, v, 0.4);
+%! assert(abs(t - (1.0637286984176921296)) < 2e-15, 'theta4 at v=1.2e8');
+%! assert(abs(tp - (0.0045203629452149075654)) < 2e-14, 'theta4'' at v=1.2e8');
+%! assert(abs(theta(4, v, 0.4) - (1.0637286984176921296)) < 2e-15, 'theta() at v=1.2e8');

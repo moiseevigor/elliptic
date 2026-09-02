@@ -87,21 +87,8 @@ q = exp(-pi .* ellipke(1-m) ./ KK);
 q(~(q < 1)) = 0;                      % m == 1 (and NaN) handled below
 v = pi .* u ./ (2 .* KK);
 
-qmax = max([q(:); 0]);
-if qmax > 0
-    nTerms = min(1000, max(1, ceil(sqrt(log(tol) / log(qmax)))));
-else
-    nTerms = 1;
-end
-
-Th = ones(size(v));
-H  = zeros(size(v));
-for nn = 1:nTerms
-    Th = Th + 2*(-1)^nn .* q.^(nn^2) .* cos(2*nn .* v);
-end
-for nn = 0:nTerms
-    H = H + 2*(-1)^nn .* q.^((nn+0.5)^2) .* sin((2*nn+1) .* v);
-end
+Th = theta_series(4, v, q, tol);
+H  = theta_series(1, v, q, tol);
 
 % Special cases: m = {0, 1}
 m0 = find(abs(m) < 10*eps);

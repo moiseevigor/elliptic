@@ -117,11 +117,19 @@ invE(:) = min(max(invE(:), 0), pi/2);
 % Newton on E(phi|m) = z_red;  dE/dphi = sqrt(1 - m sin^2 phi).
 % Iterate to convergence rather than a fixed count (issue #12): four steps
 % are not enough near m -> 1, where the initial guess can be off by ~1.
+% Per-element convergence: a vector-wide break let converged elements take
+% extra Newton steps that depended on their batch mates (1 ulp).
+active = true(numel(invE), 1);   % column, like res
+mc = m(:);
 for iter=1:100
     [~, Ecur] = elliptic12(invE(:),m,tol);
-    res = Ecur - z_red;
-    if all(abs(res) <= 4*eps*max(abs(z_red), realmin)), break; end   % relative
-    invE(:) = invE(:) - res./max(sqrt( 1-m.*sin(invE(:)).^2 ), 1e-15);
+    res = Ecur(:) - z_red(:);
+    active = active & ~(abs(res) <= 4*eps*max(abs(z_red(:)), realmin));   % relative
+    if ~any(active), break; end
+    iv = invE(:);
+    step = zeros(numel(iv), 1);
+    step(active) = res(active)./max(sqrt( 1-mc(active).*sin(iv(active)).^2 ), 1e-15);
+    invE(:) = iv - step;
     invE(:) = min(max(invE(:), 0), pi/2);
 end
 

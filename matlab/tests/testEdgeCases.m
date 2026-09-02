@@ -850,3 +850,36 @@
 %! assert(abs(K - (0.74220623671119323 - 1.0094529099892116i)) < 3e-16 && abs(E - (0.36075866393790281 + 1.6257306716064185i)) < 3e-15, 'K(5), E(5)');
 %! [F, E] = elliptic123(1.2, 3);
 %! assert(abs(F - (1.0010773804561062 - 0.89956974520736591i)) < 1e-14 && abs(E - (0.47522393535101711 + 0.50673122232331459i)) < 1e-14, 'F(1.2|3), E(1.2|3) (m > 1, real part was 3x off)');
+
+%% ---------------------------------------------------------------------
+%% Z. Input shapes (round 6d).  Every function must give the same values for
+%%    a 2x3 matrix, a column, a row and a mixed scalar/array call as for the
+%%    scalar loop, and keep the input shape.  Found: ellipj re-read cn(I)
+%%    from its column-shaped output against the row m(I) (6x6 broadcast
+%%    error for column u), jacobiThetaEta returned a row for a matrix,
+%%    inverselliptic2's vector-wide Newton stop made values batch-dependent,
+%%    elliptic123 failed on any matrix.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! u = reshape(linspace(-2.5, 7.3, 6), 2, 3); m = reshape([0.1 0.5 0.9 0.999 0.3 0.7], 2, 3); n = reshape([0.2 -0.5 0.9 0.0 0.5 0.3], 2, 3);
+%! [sn, cn, dn, am] = ellipj(u(:), 0.5);
+%! assert(isequal(size(sn), [6 1]), 'ellipj column input');
+%! [s1, c1, d1, a1] = ellipj(u(3), 0.5);
+%! assert(sn(3) == s1 && cn(3) == c1 && dn(3) == d1 && am(3) == a1, 'ellipj column == scalar');
+%! [Th, H] = jacobiThetaEta(u, m);
+%! assert(isequal(size(Th), [2 3]) && isequal(size(H), [2 3]), 'jacobiThetaEta keeps the input shape');
+%! [t1, h1] = jacobiThetaEta(u(4), m(4));
+%! assert(Th(4) == t1 && H(4) == h1, 'jacobiThetaEta matrix == scalar');
+%! z = reshape(linspace(0.2, 3.1, 6), 2, 3);
+%! v = inverselliptic2(z, m);
+%! for i = 1:6, assert(v(i) == inverselliptic2(z(i), m(i)), 'inverselliptic2 must be batch-independent'); end
+%! [F, E] = elliptic123(u, m);
+%! assert(isequal(size(F), [2 3]), 'elliptic123 matrix input');
+%! for i = 1:6, [f, e] = elliptic123(u(i), m(i)); assert(abs(F(i) - f) < 1e-15 && abs(E(i) - e) < 1e-15, 'elliptic123 matrix == scalar'); end
+%! [F, E, P] = elliptic123(u(:), m(:), 0.3);
+%! assert(isequal(size(P), [6 1]), 'elliptic123 three outputs, column input');
+%! [Eu, Du, Ju] = jacobiEDJ(u(:), 0.5, 0.3);
+%! assert(isequal(size(Ju), [6 1]), 'jacobiEDJ column u, scalar m, n');
+%! [Eu1, Du1, Ju1] = jacobiEDJ(u(2), 0.5, 0.3);
+%! assert(Eu(2) == Eu1 && Du(2) == Du1 && Ju(2) == Ju1, 'jacobiEDJ column == scalar');

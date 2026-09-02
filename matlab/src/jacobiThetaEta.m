@@ -50,6 +50,7 @@ if length(m)==1, m = m(ones(size(u))); end
 if length(u)==1, u = u(ones(size(m))); end
 if ~isequal(size(m),size(u)), error('U and M must be the same size.'); end
 
+origSize = size(u);
 Th = zeros(size(u));
 H = Th;
 
@@ -103,6 +104,8 @@ if ( ~isempty(m1) )
     Th(m1) = NaN;
     H(m1)  = NaN;
 end
+Th = reshape(Th, origSize);   % the series works on rows; give back the input shape
+H  = reshape(H, origSize);
 
 
 function [Th,H] = parallel_jacobiThetaEta(u, m, tol, nWorkers, minChunk)

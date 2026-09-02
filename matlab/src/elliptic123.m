@@ -86,6 +86,13 @@ function [F,E,P]=elliptic123(a1,a2,a3)
 % Everyone is permitted to copy and distribute verbatim copies of this
 % script under terms and conditions of GNU GENERAL PUBLIC LICENSE.
 
+% The legacy kernels below preallocate row vectors and index with logical
+% masks; give them rows (any input shape) and restore the shape at the end.
+sz = size(a1);
+a1 = a1(:).';
+if nargin >= 2, a2 = a2(:).'; end
+if nargin >= 3, a3 = a3(:).'; end
+
 if nargout<3
 
   if nargin==1
@@ -113,9 +120,9 @@ else
 end
 
 % multidimensional input reshape
-F = reshape(F,size(a1));
-E = reshape(E,size(a1));
-if nargin==3, P = reshape(P,size(a1)); end
+F = reshape(F,sz);
+E = reshape(E,sz);
+if nargout==3, P = reshape(P,sz); end
 
 end
 

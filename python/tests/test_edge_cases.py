@@ -718,3 +718,34 @@ class TestAdversarialRound6:
         assert abs(F - complex(1.7339168852579344, 0.62666316872107993)) < 4e-15
         F = _s(elliptic.elliptic12i(complex(math.pi/2 - 1e-12, -2.0), 0.5)[0])
         assert abs(F.real - 0.3901536583) < 1e-9                     # left of the cut, not 2K - ...
+
+
+class TestInputShapes:
+    """Every function on a 2x3 array, on a flat vector with scalar partners,
+    and elementwise against scalar calls (the Octave port had four shape
+    defects of this kind; the NumPy port passes and this pins it)."""
+    def test_shapes_match_scalar_calls(self):
+        u = np.linspace(-2.5, 7.3, 6).reshape(2, 3); m = np.array([0.1, 0.5, 0.9, 0.999, 0.3, 0.7]).reshape(2, 3)
+        n = np.array([0.2, -0.5, 0.9, 0.0, 0.5, 0.3]).reshape(2, 3); q = np.array([0.01, 0.1, 0.3, 0.5, 0.05, 0.2]).reshape(2, 3)
+        z = np.linspace(0.2, 3.1, 6).reshape(2, 3); zc = u + 1j * np.linspace(-1.5, 1.5, 6).reshape(2, 3)
+        kc = np.array([0.1, 0.5, 0.9, 2.0, 1e-9, 0.3]).reshape(2, 3); p = np.array([1, 0.5, -0.5, 2, 0.3, 1.]).reshape(2, 3)
+        a = np.array([1, 0.5, -1, 2, 0.3, 1.]).reshape(2, 3); b = np.array([1, 2, 0.5, -1, 0.7, 0.2]).reshape(2, 3)
+        cases = [(elliptic.elliptic12, (u, m)), (elliptic.elliptic12i, (zc, m)), (elliptic.ellipj, (u, m)), (elliptic.ellipji, (zc, m)),
+                 (elliptic.elliptic3, (u, m, n)), (elliptic.ellipticBDJ, (u, m, n)), (elliptic.ellipticBD, (m,)), (elliptic.jacobiEDJ, (u, m, n)),
+                 (lambda v, mm: elliptic.theta(1, v, mm), (u, m)), (lambda v, mm: elliptic.theta_prime(3, v, mm), (u, m)), (elliptic.jacobiThetaEta, (u, m)),
+                 (elliptic.nomeq, (m,)), (elliptic.inversenomeq, (q,)), (elliptic.cel, (kc, p, a, b)), (elliptic.cel1, (kc,)),
+                 (elliptic.weierstrassP, (z, 1.5, -0.25, -1.25)), (elliptic.weierstrassZeta, (z, 1.5, -0.25, -1.25)), (elliptic.weierstrassSigma, (z, 1.5, -0.25, -1.25)),
+                 (elliptic.arclength_ellipse, (np.abs(a) + 0.1, np.abs(b) + 0.1, u, z)), (elliptic.inverselliptic2, (z, m)),
+                 (elliptic.carlsonRF, (np.abs(a), np.abs(b) + 0.1, z)), (elliptic.carlsonRJ, (np.abs(a), np.abs(b) + 0.1, z, np.abs(p) + 0.1))]
+        tup = lambda x: x if isinstance(x, tuple) else (x,)
+        for fn, args in cases:
+            outs = [np.asarray(o) for o in tup(fn(*args)) if o is not None]
+            assert all(o.shape == (2, 3) for o in outs)
+            for i in range(6):
+                sa = [(np.asarray(x).ravel()[i] if np.ndim(x) else x) for x in args]
+                so = [np.asarray(o) for o in tup(fn(*[complex(x) if np.iscomplexobj(x) else float(x) for x in sa])) if o is not None]
+                for o, s in zip(outs, so):
+                    x, y = o.ravel()[i], s.item()
+                    assert x == y or (np.isnan(x) and np.isnan(y)) or abs(x - y) <= 4e-16 * max(1, abs(y))
+            ca = [np.asarray(args[0]).ravel()] + [(np.asarray(x).ravel()[0] if np.ndim(x) else x) for x in args[1:]]
+            assert np.asarray(tup(fn(*ca))[0]).shape == (6,)

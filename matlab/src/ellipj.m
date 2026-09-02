@@ -138,8 +138,9 @@ if ~isempty(I)
     quasi_sign = 1 - 2 .* mod(period, 2);
 	am(I) = phin + period .* pi;
 	sn(I) = quasi_sign .* sin(phin);
-	cn(I) = quasi_sign .* cos(phin);
-	dn(I) = sqrt((1 - m(I)) + m(I).*cn(I).^2);
+	cn_v  = quasi_sign .* cos(phin);            % keep the row: cn(I) re-read from a column-shaped
+	cn(I) = cn_v;                                % output broadcast against the row m(I) (6x6 error)
+	dn(I) = sqrt((1 - m(I)) + m(I).*cn_v.^2);
 end
 
 % Special cases: m = {0, 1}

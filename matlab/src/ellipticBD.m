@@ -100,7 +100,11 @@ S = reshape(S, origSize);
 % -----------------------------------------------------------------------
 function [B, D, S] = gpu_ellipticBD(m, origSize)
 %GPU_ELLIPTICBD  GPU path.
-[B, D, S] = ellipticBD_core(gpuArray(m(:).'), origSize);
+% No OpenCL kernel: the Carlson duplication inside the core needs logical
+% indexing that ocl arrays lack, and carlsonRF's isreal() rejects them
+% (seen on an L4 with elliptic_config('gpu', true)).  Host arrays; identical
+% results to the CPU path.
+[B, D, S] = ellipticBD_core(m(:).', origSize);
 B = gather(B);  D = gather(D);  S = gather(S);
 
 

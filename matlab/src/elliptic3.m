@@ -68,9 +68,15 @@ end
 
 [mm,nm] = size(m);
 [mu,nu] = size(u);
-if length(m)==1, m = m(ones(size(u))); end
-if length(c)==1, c = c(ones(size(u))); end
-if length(u)==1, u = u(ones(size(m))); end
+% Broadcast scalars to the largest input (the old order expanded c from the
+% still-scalar u before u itself was expanded from m, so a scalar phase with a
+% parameter vector was rejected as 'must be the same size').
+sz = size(u);
+if numel(m) > 1, sz = size(m); elseif numel(c) > 1, sz = size(c); end
+if isempty(u) || isempty(m) || isempty(c), Pi = zeros(0, 0); if isempty(u), Pi = zeros(size(u)); elseif isempty(m), Pi = zeros(size(m)); else, Pi = zeros(size(c)); end; return; end
+if length(m)==1, m = m(ones(sz)); end
+if length(c)==1, c = c(ones(sz)); end
+if length(u)==1, u = u(ones(sz)); end
 if ~isequal(size(m), size(c), size(u)),
         error('U, M and C must be the same size.');
 end

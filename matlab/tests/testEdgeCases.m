@@ -918,3 +918,23 @@
 %! [Th, H] = jacobiThetaEta([0.3 0.5], [0.2 NaN]);
 %! assert(isnan(Th(2)) && isnan(H(2)) && Th(1) == jacobiThetaEta(0.3, 0.2), 'jacobiThetaEta isolates NaN in m');
 %! assert(isnan(inverselliptic2(0.4, NaN)) && isnan(elliptic12i(0.3 + 0.2i, NaN)), 'inverselliptic2 / elliptic12i NaN in m');
+
+%% ---------------------------------------------------------------------
+%% AB. Scalar first argument with a parameter vector (round 6f).  elliptic3
+%%     expanded c from the still-scalar u before u was expanded from m and
+%%     rejected the call as "must be the same size"; theta preallocated its
+%%     output before broadcasting; elliptic123 restored the shape of the
+%%     scalar phase.  Each result must equal the scalar-loop values.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! mv = [0.2 0.5 0.9];
+%! P = elliptic3(0.3, mv, 0.3);
+%! assert(isequal(size(P), [1 3]) && P(2) == elliptic3(0.3, 0.5, 0.3), 'elliptic3 scalar u, vector m');
+%! P = elliptic3(0.3, 0.5, [0.1 0.2 0.3]);
+%! assert(isequal(size(P), [1 3]) && P(3) == elliptic3(0.3, 0.5, 0.3), 'elliptic3 scalar u, m; vector c');
+%! t = theta(1, 0.3, mv);
+%! assert(isequal(size(t), [1 3]) && t(2) == theta(1, 0.3, 0.5), 'theta scalar v, vector m');
+%! [F, E] = elliptic123(0.3, mv);
+%! assert(isequal(size(F), [1 3]) && F(2) == elliptic123(0.3, 0.5), 'elliptic123 scalar b, vector m');
+%! assert(isempty(elliptic3([], 0.5, 0.3)) && isempty(theta(1, [], 0.5)) && isempty(elliptic3(0.3, [], 0.3)), 'empty inputs');

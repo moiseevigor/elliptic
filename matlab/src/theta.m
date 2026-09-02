@@ -47,11 +47,11 @@ if ~isreal(v) || ~isreal(m)
     error('Input arguments must be real.')
 end
 
-Th = zeros(size(v));
-H = Th;
-
+if isempty(v) || isempty(m), Th = zeros(size(v)); if isempty(m), Th = zeros(size(m)); end; return; end
 if length(m)==1, m = m(ones(size(v))); end
 if length(v)==1, v = v(ones(size(m))); end
+Th = zeros(size(v));   % after broadcasting (a scalar v with a vector m used to hit a size error)
+H = Th;
 if ~isequal(size(m),size(v)), error('V and M must be the same size.'); end
 
 % m = m(:).';    % make a row vector

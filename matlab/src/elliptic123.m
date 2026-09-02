@@ -99,6 +99,8 @@ if nargin >= 1 && (isempty(a1))
 end
 
 sz = size(a1);
+if nargin >= 2 && numel(a2) > numel(a1), sz = size(a2); end
+if nargin >= 3 && numel(a3) > max(numel(a1), numel(a2)), sz = size(a3); end
 a1 = a1(:).';
 if nargin >= 2, a2 = a2(:).'; end
 if nargin >= 3, a3 = a3(:).'; end

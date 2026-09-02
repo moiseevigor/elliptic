@@ -63,6 +63,17 @@ function [th, thp] = theta_prime(j, z, m, tol)
 %     Moiseev Igor,
 %     34106, SISSA, via Beirut n. 2-4,  Trieste, Italy
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 3 && (isempty(j) || isempty(z) || isempty(m))
+    sz = size(j);
+    if isempty(z), sz = size(z); end
+    if isempty(m), sz = size(m); end
+    th = zeros(sz);
+    thp = zeros(sz);
+    return;
+end
+
 if nargin < 4, tol = eps; end
 if nargin < 3, error('Not enough input arguments.'); end
 

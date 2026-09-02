@@ -27,6 +27,17 @@ function S = weierstrassSigma(z, e1, e2, e3)
 %       Functions", Dover, 1965, §18.3, 18.5.
 %   [2] NIST DLMF §23.2.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 4 && (isempty(z) || isempty(e1) || isempty(e2) || isempty(e3))
+    sz = size(z);
+    if isempty(e1), sz = size(e1); end
+    if isempty(e2), sz = size(e2); end
+    if isempty(e3), sz = size(e3); end
+    S = zeros(sz);
+    return;
+end
+
 if nargin < 4, error('weierstrassSigma: requires four arguments (z, e1, e2, e3).'); end
 if ~isreal(z) || ~isreal(e1) || ~isreal(e2) || ~isreal(e3)
     error('weierstrassSigma: all input arguments must be real.');

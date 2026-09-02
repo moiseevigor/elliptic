@@ -883,3 +883,31 @@
 %! assert(isequal(size(Ju), [6 1]), 'jacobiEDJ column u, scalar m, n');
 %! [Eu1, Du1, Ju1] = jacobiEDJ(u(2), 0.5, 0.3);
 %! assert(Eu(2) == Eu1 && Du(2) == Du1 && Ju(2) == Ju1, 'jacobiEDJ column == scalar');
+
+%% ---------------------------------------------------------------------
+%% AA. Empty, NaN and Inf inputs (round 6e).  Empty in -> empty out of the
+%%     same shape; a NaN element must come back as NaN without disturbing
+%%     its neighbours or aborting the call.  Found: nine functions rejected
+%%     [] against a scalar partner; nomeq aborted inside ellipke on a NaN
+%%     ("algorithm did not converge"); inversenomeq rejected NaN as "out of
+%%     [0,1)"; elliptic12i raised "must be real" because (-1)^NaN is complex
+%%     in Octave; the Carlson wrappers returned complex NaN for -Inf and
+%%     complex garbage for R_J with p < 0.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! assert(isempty(ellipticBDJ([], 0.5, 0.3)) && isempty(theta_prime(2, [], 0.5)) && isempty(cel([], 1, 1, 1)), 'empty inputs (1)');
+%! assert(isempty(weierstrassP([], 1.5, -0.25, -1.25)) && isempty(weierstrassZeta([], 1.5, -0.25, -1.25)) && isempty(weierstrassSigma([], 1.5, -0.25, -1.25)), 'empty inputs (2)');
+%! assert(isempty(carlsonRF([], 0.5, 1)) && isempty(carlsonRJ(1, 2, 3, [])) && isempty(carlsonRC([], 1)) && isempty(arclength_ellipse(2, 3, 0, [])) && isempty(elliptic123([], 0.5)), 'empty inputs (3)');
+%! assert(isequal(size(carlsonRD(zeros(0, 3), 1, 2)), [0 3]), 'empty keeps its shape');
+%! q = nomeq([0.3 NaN 0.7]);
+%! assert(isnan(q(2)) && ~any(isnan(q([1 3]))) && q(1) == nomeq(0.3), 'nomeq isolates NaN');
+%! m = inversenomeq([0.05 NaN 0.3]);
+%! assert(isnan(m(2)) && m(1) == inversenomeq(0.05) && m(3) == inversenomeq(0.3), 'inversenomeq isolates NaN');
+%! F = elliptic12i([0.3 NaN 0.7 Inf] + 0.2i, 0.5);
+%! assert(isnan(F(2)) && isnan(F(4)) && ~isnan(F(1)) && F(1) == elliptic12i(0.3 + 0.2i, 0.5), 'elliptic12i isolates NaN / Inf');
+%! assert(isnan(carlsonRF(-Inf, 0.5, 1)) && isreal(carlsonRF(-Inf, 0.5, 1)) && isnan(carlsonRF(-1, 2, 3)), 'Carlson: -Inf / negative -> real NaN');
+%! v = carlsonRF([1 NaN 2], 2, 3);
+%! assert(isnan(v(2)) && v(1) == carlsonRF(1, 2, 3), 'Carlson isolates NaN');
+%! err = ''; try, carlsonRJ(1, 2, 3, -1); catch e, err = e.message; end
+%! assert(~isempty(strfind(err, 'principal')), 'carlsonRJ p < 0 must error, not return complex');

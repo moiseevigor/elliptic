@@ -36,6 +36,14 @@ end
 % K'(m) = K(1-m) = R_F(0, m, 1) evaluated from the EXACT argument m:
 % ellipke(1-m) rounds 1-m first and lost ~eps/m relative digits
 % (q(1e-16) was 11% off, q(1e-17) came back 0).
-NomeQ = exp(-pi*carlsonRF(zeros(size(m)), m, ones(size(m)))./ellipke(m,tol));
+% NaN elements propagate; finite elements outside [0, 1] are a domain error
+% (ellipke used to abort with 'algorithm did not converge' on a single NaN).
+bad = isnan(m);
+if any(m(~bad) < 0) || any(m(~bad) > 1)
+    error('nomeq: m must be in the range 0 <= m <= 1.');
+end
+NomeQ = nan(size(m));
+mv = m(~bad);
+NomeQ(~bad) = exp(-pi*carlsonRF(zeros(size(mv)), mv, ones(size(mv)))./ellipke(mv,tol));
 
 % END FUNCTION nomeq()

@@ -749,3 +749,19 @@ class TestInputShapes:
                     assert x == y or (np.isnan(x) and np.isnan(y)) or abs(x - y) <= 4e-16 * max(1, abs(y))
             ca = [np.asarray(args[0]).ravel()] + [(np.asarray(x).ravel()[0] if np.ndim(x) else x) for x in args[1:]]
             assert np.asarray(tup(fn(*ca))[0]).shape == (6,)
+
+
+class TestEmptyNaNInf:
+    def test_cel_propagates_nan_kc(self):
+        """kc = NaN never became active in the Landen ascent (NaN == NaN is
+        False) and cel returned the untouched pi/2."""
+        assert math.isnan(_s(elliptic.cel(np.nan, 1.0, 1.0, 1.0)))
+        v = np.asarray(elliptic.cel(np.array([0.3, np.nan, 0.7]), 1.0, 1.0, 1.0))
+        assert np.isnan(v[1]) and not np.isnan(v[[0, 2]]).any()
+
+    def test_empty_and_nan_isolation(self):
+        for fn in (lambda x: elliptic.ellipticBDJ(x, 0.5, 0.3)[0], lambda x: elliptic.cel(x, 1.0, 1.0, 1.0), lambda x: elliptic.weierstrassP(x, 1.5, -0.25, -1.25),
+                   lambda x: elliptic.carlsonRF(x, 0.5, 1.0), lambda x: elliptic.nomeq(x), lambda x: elliptic.elliptic12i(x + 0.2j, 0.5)[0]):
+            assert np.asarray(fn(np.array([]))).size == 0
+            v = np.asarray(fn(np.array([0.3, np.nan, 0.7])))
+            assert np.isnan(v[1]) and not np.isnan(v[[0, 2]]).any()

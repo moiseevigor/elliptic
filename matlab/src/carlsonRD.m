@@ -23,6 +23,16 @@ function RD = carlsonRD(x, y, z)
 %   [2] B.C. Carlson, "Numerical Computation of Real or Complex Elliptic
 %       Integrals," Numer. Algorithms 10 (1995), 13–26.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 3 && (isempty(x) || isempty(y) || isempty(z))
+    sz = size(x);
+    if isempty(y), sz = size(y); end
+    if isempty(z), sz = size(z); end
+    RD = zeros(sz);
+    return;
+end
+
 if nargin < 3, error('carlsonRD: requires three arguments (x, y, z).'); end
 if ~isreal(x) || ~isreal(y) || ~isreal(z)
     error('carlsonRD: all input arguments must be real.');
@@ -32,7 +42,11 @@ end
 origSize = size(x);
 x = x(:).';  y = y(:).';  z = z(:).';
 
+% NaN, Inf and negative arguments give NaN (see carlsonRF).
+bad = ~(x >= 0 & y >= 0 & z > 0) | isinf(x) | isinf(y) | isinf(z);
+x(bad) = 1;  y(bad) = 1;  z(bad) = 1;
 RD = carlsonRD_core(x, y, z);
+RD(bad) = NaN;
 RD((x == 0) & (y == 0)) = Inf;          % diverges (DLMF 19.16.5)
 RD = reshape(RD, origSize);
 

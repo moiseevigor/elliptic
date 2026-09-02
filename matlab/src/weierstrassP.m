@@ -25,6 +25,17 @@ function P = weierstrassP(z, e1, e2, e3)
 %       Functions", Dover, 1965, §18.9.
 %   [2] NIST DLMF §23.6.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 4 && (isempty(z) || isempty(e1) || isempty(e2) || isempty(e3))
+    sz = size(z);
+    if isempty(e1), sz = size(e1); end
+    if isempty(e2), sz = size(e2); end
+    if isempty(e3), sz = size(e3); end
+    P = zeros(sz);
+    return;
+end
+
 if nargin < 4, error('weierstrassP: requires four arguments (z, e1, e2, e3).'); end
 if ~isreal(z) || ~isreal(e1) || ~isreal(e2) || ~isreal(e3)
     error('weierstrassP: all input arguments must be real.');

@@ -77,7 +77,9 @@ def _cel_xp(xp, kc, p, a, b):
         active = step
     C = math.pi / 2.0 * (b + a * em) / (em * (em + p))
     C = xp.where(zero_kc & (b != 0.0), xp.sign(b / xp.where(p == 0, xp.ones_like(p), p)) * math.inf, C)
-    return C
+    # kc = NaN never became active above (NaN == NaN is False) and returned
+    # the untouched pi/2; propagate it like every other input
+    return xp.where(k != k, xp.full_like(C, math.nan), C)
 
 
 def cel1(kc):

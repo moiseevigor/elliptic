@@ -45,9 +45,11 @@ end
 m = zeros(size(q));
 q = q(:).';    % make a row vector
 
-if ~all(q >= 0) || ~all(q < 1)
+bad = isnan(q);
+if ~all(q(~bad) >= 0) || ~all(q(~bad) < 1)
     error('Input arguments must be from the interval [0,1).')
 end
+q(bad) = 0;                         % computed as m(0) = 0, overwritten with NaN below
 
 % Closed form, DLMF 20.9.1:  m = (theta2(0,q)/theta3(0,q))^4
 %   theta2(0,q) = 2*q^(1/4) * sum q^(n(n+1)),  theta3(0,q) = 1 + 2*sum q^(n^2)
@@ -68,5 +70,6 @@ for n = 1:30
 end
 m(:) = min(16*qs .* (s2./s3).^4, 1);
 m(q > q_max) = 1;
+m(bad) = NaN;
 
 % END FUNCTION inversenomeq()

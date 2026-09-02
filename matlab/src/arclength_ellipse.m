@@ -86,6 +86,17 @@ function [arclength] = arclength_ellipse(a, b, theta0, theta1)
 %     Moiseev Igor
 
 %arguments
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 2 && (isempty(a) || isempty(b) || (nargin == 4 && (isempty(theta0) || isempty(theta1))))
+    sz = size(a);
+    if isempty(b), sz = size(b); end
+    if nargin == 4 && isempty(theta0), sz = size(theta0); end
+    if nargin == 4 && isempty(theta1), sz = size(theta1); end
+    arclength = zeros(sz);
+    return;
+end
+
 if nargin ~= 2 && nargin ~= 4,
  error('ARCLENGTH_ELLIPSE: Requires two or four inputs.')
  return

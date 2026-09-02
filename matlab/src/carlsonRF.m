@@ -27,6 +27,16 @@ function RF = carlsonRF(x, y, z)
 %   [2] B.C. Carlson, "Numerical Computation of Real or Complex Elliptic
 %       Integrals," Numer. Algorithms 10 (1995), 13–26.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 3 && (isempty(x) || isempty(y) || isempty(z))
+    sz = size(x);
+    if isempty(y), sz = size(y); end
+    if isempty(z), sz = size(z); end
+    RF = zeros(sz);
+    return;
+end
+
 if nargin < 3, error('carlsonRF: requires three arguments (x, y, z).'); end
 if ~isreal(x) || ~isreal(y) || ~isreal(z)
     error('carlsonRF: all input arguments must be real.');
@@ -36,7 +46,12 @@ end
 origSize = size(x);
 x = x(:).';  y = y(:).';  z = z(:).';
 
+% NaN, Inf and negative arguments give NaN (R_F is defined for x, y, z >= 0);
+% they used to reach the duplication and come back as complex NaN.
+bad = ~(x >= 0 & y >= 0 & z >= 0) | isinf(x) | isinf(y) | isinf(z);
+x(bad) = 1;  y(bad) = 1;  z(bad) = 1;
 RF = carlsonRF_core(x, y, z);
+RF(bad) = NaN;
 % Two zero arguments: the integral diverges (DLMF 19.16.1); the duplication
 % loop just stalls and returned a finite 2e6 for R_F(0, 0, 1).
 RF((x == 0) + (y == 0) + (z == 0) >= 2) = Inf;

@@ -88,6 +88,16 @@ function [F,E,P]=elliptic123(a1,a2,a3)
 
 % The legacy kernels below preallocate row vectors and index with logical
 % masks; give them rows (any input shape) and restore the shape at the end.
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 1 && (isempty(a1))
+    sz = size(a1);
+    F = zeros(sz);
+    E = zeros(sz);
+    P = zeros(sz);
+    return;
+end
+
 sz = size(a1);
 a1 = a1(:).';
 if nargin >= 2, a2 = a2(:).'; end

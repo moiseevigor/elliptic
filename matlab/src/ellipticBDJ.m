@@ -43,6 +43,17 @@ function [B, D, J] = ellipticBDJ(phi, m, n)
 %   [3] B.C. Carlson, "Numerical Computation of Real or Complex Elliptic
 %       Integrals," Numer. Algorithms 10 (1995), 13–26.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 2 && (isempty(phi) || isempty(m))
+    sz = size(phi);
+    if isempty(m), sz = size(m); end
+    B = zeros(sz);
+    D = zeros(sz);
+    J = zeros(sz);
+    return;
+end
+
 compute_J = (nargin >= 3);
 
 if nargin < 2, error('ellipticBDJ: requires at least two arguments (phi, m).'); end

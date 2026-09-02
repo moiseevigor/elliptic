@@ -122,6 +122,7 @@ mu     = atan( sqrt(tan2mu) );
 % used by elliptic123 for m > 1) it added a period the sign term had not
 % crossed: Re F came out 3K instead of K.
 kq     = floor(phi/pi*2);
+kq(~isfinite(kq)) = 0;             % (-1)^NaN, (-1)^Inf are complex NaN in Octave; keep lambda real so NaN propagates
 lambda = (-1).^kq.*lambda + pi*ceil(kq/2);
 mu     = sign(psi).*real(mu);
 

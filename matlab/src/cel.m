@@ -40,6 +40,17 @@ function C = cel(kc, p, a, b)
 %       elliptic functions," Numer. Math. 7 (1965), 78–90.
 %   [2] NIST DLMF §19.25  https://dlmf.nist.gov/19.25
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 4 && (isempty(kc) || isempty(p) || isempty(a) || isempty(b))
+    sz = size(kc);
+    if isempty(p), sz = size(p); end
+    if isempty(a), sz = size(a); end
+    if isempty(b), sz = size(b); end
+    C = zeros(sz);
+    return;
+end
+
 if nargin < 4, error('cel: requires four arguments (kc, p, a, b).'); end
 if ~isreal(kc) || ~isreal(p) || ~isreal(a) || ~isreal(b)
     error('cel: all arguments must be real.');

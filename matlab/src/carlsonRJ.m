@@ -25,6 +25,17 @@ function RJ = carlsonRJ(x, y, z, p)
 %   [2] B.C. Carlson, "Numerical Computation of Real or Complex Elliptic
 %       Integrals," Numer. Algorithms 10 (1995), 13–26.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 4 && (isempty(x) || isempty(y) || isempty(z) || isempty(p))
+    sz = size(x);
+    if isempty(y), sz = size(y); end
+    if isempty(z), sz = size(z); end
+    if isempty(p), sz = size(p); end
+    RJ = zeros(sz);
+    return;
+end
+
 if nargin < 4, error('carlsonRJ: requires four arguments (x, y, z, p).'); end
 if ~isreal(x) || ~isreal(y) || ~isreal(z) || ~isreal(p)
     error('carlsonRJ: all input arguments must be real.');
@@ -34,7 +45,17 @@ end
 origSize = size(x);
 x = x(:).';  y = y(:).';  z = z(:).';  p = p(:).';
 
+% p <= 0 is the Cauchy principal value (DLMF 19.20.14), not implemented -- the
+% duplication took sqrt of a negative and returned complex garbage.
+if any(p <= 0)
+    error(['carlsonRJ: p must be > 0. For p < 0 the integral is a Cauchy principal ' ...
+           'value (DLMF 19.20.14); use the transformation to a p > 0 argument before calling.']);
+end
+% NaN, Inf and negative x, y, z give NaN (see carlsonRF).
+bad = ~(x >= 0 & y >= 0 & z >= 0) | isinf(x) | isinf(y) | isinf(z) | isnan(p) | isinf(p);
+x(bad) = 1;  y(bad) = 1;  z(bad) = 1;  p(bad) = 1;
 RJ = carlsonRJ_core(x, y, z, p);
+RJ(bad) = NaN;
 RJ((x == 0) + (y == 0) + (z == 0) >= 2) = Inf;   % diverges (DLMF 19.16.2)
 RJ = reshape(RJ, origSize);
 

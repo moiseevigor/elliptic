@@ -29,6 +29,15 @@ function RC = carlsonRC(x, y)
 %   [2] B.C. Carlson, "Computing Elliptic Integrals by Duplication,"
 %       Numer. Math. 33 (1979), 1–16.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 2 && (isempty(x) || isempty(y))
+    sz = size(x);
+    if isempty(y), sz = size(y); end
+    RC = zeros(sz);
+    return;
+end
+
 if nargin < 2, error('carlsonRC: requires two arguments (x, y).'); end
 if ~isreal(x) || ~isreal(y)
     error('carlsonRC: all input arguments must be real.');
@@ -38,7 +47,11 @@ end
 origSize = size(x);
 x = x(:).';  y = y(:).';
 
+% NaN, Inf and negative x give NaN (y < 0 is the principal value, handled by the core).
+bad = ~(x >= 0) | isinf(x) | isnan(y) | isinf(y);
+x(bad) = 1;  y(bad) = 1;
 RC = carlsonRC_core(x, y);
+RC(bad) = NaN;
 RC = reshape(RC, origSize);
 
 

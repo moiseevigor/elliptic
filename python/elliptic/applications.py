@@ -2,7 +2,7 @@
 from __future__ import annotations
 import numpy as np
 
-from ._xputils import get_xp
+from ._xputils import get_xp, is_numpy
 from .elliptic12 import elliptic12
 
 
@@ -53,7 +53,7 @@ def arclength_ellipse(a, b, theta0=0.0, theta1=None):
 
     # Give ordinary NumPy callers an explicit domain error.  Traced backends
     # cannot branch on array values, so invalid elements are marked NaN below.
-    if xp is np and (np.any(a <= 0.0) or np.any(b <= 0.0)):
+    if is_numpy(xp) and (np.any(a <= 0.0) or np.any(b <= 0.0)):
         raise ValueError("ellipse semi-axes must be strictly positive")
 
     valid = (a > 0.0) & (b > 0.0)

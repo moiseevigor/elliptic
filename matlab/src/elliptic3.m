@@ -43,7 +43,9 @@ end
 if any(u(:) < 0) || any(u(:) > pi/2)
     signU = sign(u);  ua = abs(u);
     k_per = floor(ua ./ pi);
-    r     = ua - k_per .* pi;            % in [0, pi)
+    % Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at
+    % eps*|u_r| instead of eps*|u| (pi_lo = pi - double(pi) = 1.2246467991473532e-16).
+    r     = (ua - k_per .* pi) - k_per .* 1.2246467991473532e-16;   % in [0, pi)
     refl  = r > pi/2;
     ur    = r;  ur(refl) = pi - r(refl); % in [0, pi/2]
     Pred  = elliptic3(ur, m, c);

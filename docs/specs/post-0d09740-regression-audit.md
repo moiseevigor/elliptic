@@ -114,6 +114,29 @@ evaluated at the *exact double* the library receives (`mpf(float(x))`), not
 at the decimal the test author typed -- near singularities the two differ at
 the 1e-9 level (`F(pi/2 - 1e-9 \| 1-eps/2)`: 19.6599302656 vs 19.6599302792).
 
+## Adversarial review round 3 (dense fuzz + API abuse, 2026-08-16)
+
+Dense random fuzz (600 points/function/seed, m log-uniform to within 1e-14 of
+both endpoints, phases over +/-13 periods and at odd multiples of pi/2 with
+1e-9 jitter) against mpmath, plus a logic/API abuse probe (shapes, dtypes,
+NaN/Inf/-0 propagation, input mutation, vector-vs-scalar consistency,
+out-of-domain parameters, complex symmetries).  Everything numerical now sits
+at the input's conditioning floor; the logical findings were real:
+
+| Finding | Was | Fix |
+|---|---|---|
+| Phase reduction `u - k*pi` rounds `k*pi` (both ports, `elliptic12`/`elliptic3`/`ellipticBDJ`) | `eps*\|u\|` in the reduced phase; near pi/2 at m -> 1 amplified 1e5x into Z and Pi (1e-10) | Cody-Waite split `(u - k*PI_HI) - k*PI_LO` |
+| python `ellipj` with `m` outside [0,1] or NaN | returned sn(u \| 0.5) -- the interior placeholder leaked | `check_range` (raise on numpy, NaN mask on device backends) + NaN propagation; also `elliptic12`, `nomeq` |
+| MATLAB `elliptic12` with NaN `m` | crashed inside `unique()` ("subscripts must be...") | NaN in, NaN out, excluded from the grouping |
+| `elliptic12i(-0.0)` / `(0)` (both) | `eps` from the cot(phi) nudge | exact zero (sign preserved) |
+| python `R_J` argument ratios beyond 3e32 | 9e-12 at ratio 1.9e44 | 100 duplications (limit ~4e56) |
+
+Verified clean in the same round: no public function mutates its inputs;
+vector and scalar calls agree bit-for-bit over 300 random points including
+m in {0, 1, 1e-17, nextafter(1,0)}; matrix shapes are preserved by every
+function; empty input returns empty; F(conj u) = conj F(u), F(-u) = -F(u) and
+sn(conj u) = conj sn(u) hold exactly.
+
 ## Deliberate limits and residual risk
 
 - CUDA/OpenCL hardware was not available during this audit. GPU source paths

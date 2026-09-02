@@ -82,7 +82,9 @@ if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 % smaller than eps = 2.220446049250313e-16, if so we suppose it equal zero
 m(m<eps) = 0;
 
-I = find(m ~= 1 & m ~= 0);
+bad = isnan(m) | isnan(u);            % NaN in, NaN out (a NaN m used to crash unique())
+F(bad) = NaN;  E(bad) = NaN;  Z(bad) = NaN;
+I = find(m ~= 1 & m ~= 0 & ~bad);
 if ~isempty(I)
     % Group exact duplicates only.  uniquetol(1e-11) silently substituted a
     % neighbouring parameter and caused errors up to 1e-9 near m=1.
@@ -128,7 +130,9 @@ if ~isempty(I)
     K_vals = pi ./ (2 .* a(mn,:));                                  % K(m) for each unique m
     u_work = signU .* u(I);                                         % == abs(u(I))
     k_per  = floor(u_work ./ pi);                                   % number of full half-periods
-    phin0  = u_work - k_per .* pi;                                  % reduced to [0, pi)
+    % Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at
+    % eps*|u_r| instead of eps*|u| (pi_lo = pi - double(pi) = 1.2246467991473532e-16).
+    phin0  = (u_work - k_per .* pi) - k_per .* 1.2246467991473532e-16;   % reduced to [0, pi)
     K_per  = 2 .* k_per .* K_vals(K);                               % period correction for F
 
 	phin = zeros(1,mmax);     C  = zeros(1,mmax);

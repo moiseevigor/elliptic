@@ -2,7 +2,7 @@
 from __future__ import annotations
 import math
 import numpy as np
-from ._xputils import get_xp
+from ._xputils import get_xp, is_numpy
 from .elliptic12 import _elliptic12_xp
 
 
@@ -30,7 +30,7 @@ def inverselliptic2(E_val, m, tol=1e-12):
     m = xp.asarray(m, dtype=xp.float64)
     E_val, m = xp.broadcast_arrays(E_val, m)
 
-    if xp is np and np.any((m < 0.0) | (m > 1.0)):
+    if is_numpy(xp) and np.any((m < 0.0) | (m > 1.0)):
         raise ValueError("m must be in [0, 1]")
 
     # Complete integral E(m); each phi-period of π contributes 2*E1 to E.

@@ -1,7 +1,7 @@
 """Carlson symmetric elliptic integrals RF, RD, RJ, RC.
 
 All use Carlson's duplication algorithm with fixed iteration counts
-(20 for RF, 30 for RD, 60 for RJ) so they are JAX-traceable and run natively on
+(20 for RF, 30 for RD, 100 for RJ) so they are JAX-traceable and run natively on
 any array backend (NumPy, PyTorch CUDA, JAX).
 
 References
@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 import numpy as np
 
-from ._xputils import get_xp
+from ._xputils import get_xp, is_numpy
 
 
 # ---------------------------------------------------------------------------
@@ -178,7 +178,7 @@ def carlsonRJ(x, y, z, p):
     p = xp.asarray(p, dtype=xp.float64)
     x, y, z, p = xp.broadcast_arrays(x, y, z, p)
 
-    if xp is np and np.any(p <= 0.0):
+    if is_numpy(xp) and np.any(p <= 0.0):
         raise ValueError(
             "carlsonRJ: p must be > 0. For p < 0 the integral is a Cauchy "
             "principal value (DLMF 19.20.14); use the transformation to "
@@ -194,10 +194,10 @@ def carlsonRJ(x, y, z, p):
 def _rj_xp(xp, x, y, z, p):
     S   = xp.zeros_like(x)
     fac = xp.ones_like(x)
-    # 60 duplications: each halves the argument-ratio exponent (base 4), so
-    # the series is valid for max/min argument ratios up to ~4^54 = 3e32.
+    # 100 duplications: each divides the argument-ratio exponent (base 4) by
+    # one, so the series is valid for max/min argument ratios up to ~4^94 = 4e56.
     # 30 covered only ~1e16 -- RJ(1e-20, 2e-20, 3e-20, 0.5) was 11% off.
-    for _ in range(60):
+    for _ in range(100):
         lam   = xp.sqrt(x * y) + xp.sqrt(y * z) + xp.sqrt(z * x)
         alpha = (p * (xp.sqrt(x) + xp.sqrt(y) + xp.sqrt(z)) + xp.sqrt(x * y * z)) ** 2
         beta  = p * (p + lam) ** 2

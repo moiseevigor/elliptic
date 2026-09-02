@@ -160,4 +160,8 @@ if ~isempty(sm)
     Zi(sm) = Es - Ee(sm)./K(sm).*Fs;
 end
 
+% u == 0 exactly (incl. -0 and 0+0i): the cot(phi) nudge above would return eps
+z0 = find(u == 0);
+Fi(z0) = u(z0);  Ei(z0) = u(z0);  Zi(z0) = 0;
+
 % END FUNCTION ELLIPTIC12i()

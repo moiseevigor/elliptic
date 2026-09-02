@@ -55,7 +55,8 @@ def ellipticBDJ(phi, m, n=None):
     #   D(phi+k*pi|m)   = D(phi|m)   + 2k*D(m)
     #   J(phi+k*pi,n|m) = J(phi,n|m) + 2k*J(n|m)
     k   = xp.ceil(phi / math.pi - 0.5)
-    phi = phi - k * math.pi              # now in (-pi/2, pi/2]
+    # Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at eps*|u_r| instead of eps*|u|
+    phi = (phi - k * 3.141592653589793) - k * 1.2246467991473532e-16   # now in (-pi/2, pi/2]
 
     s    = xp.sin(phi)
     c    = xp.cos(phi)

@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 import numpy as np
 
-from ._xputils import get_xp
+from ._xputils import get_xp, is_numpy
 from .carlson import _rf_xp, _rj_xp
 
 
@@ -40,7 +40,7 @@ def elliptic3(u, m, n):
     # Eager NumPy calls can provide a precise domain error.  Traced backends
     # cannot branch on array values; their invalid elements naturally become
     # non-finite through the Carlson expression instead.
-    if xp is np and np.any(n > 1.0):
+    if is_numpy(xp) and np.any(n > 1.0):
         n_np = np.asarray(n)
         u_np = np.asarray(u)
         # Check whether the singularity sin²θ = 1/n lies in [0, u]
@@ -62,7 +62,8 @@ def elliptic3(u, m, n):
     sign_u = xp.where(u < 0, -xp.ones_like(u), xp.ones_like(u))
     ua     = xp.abs(u)
     k_per  = xp.floor(ua / math.pi)
-    r      = ua - k_per * math.pi                       # in [0, pi)
+    # Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at eps*|u_r| instead of eps*|u|
+    r      = (ua - k_per * 3.141592653589793) - k_per * 1.2246467991473532e-16   # in [0, pi)
     refl   = r > math.pi * 0.5
     u_red  = xp.where(refl, math.pi - r, r)             # in [0, pi/2]
     s = xp.sin(u_red)

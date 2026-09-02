@@ -576,3 +576,38 @@ class TestAdversarialRound2:
         assert abs(_s(elliptic.weierstrassP(z, e1, e2, e3)) - 0.51848214450600943279) < 1e-12
         assert abs(_s(elliptic.weierstrassZeta(z, e1, e2, e3)) - -5.4787546526901492279) < 1e-12*5.5
         assert abs(_s(elliptic.weierstrassSigma(z, e1, e2, e3)) - 1.822626274365935705e-13) < 1e-12*1.8e-13
+
+
+# =====================================================================
+# S. Third adversarial round: dense random fuzz + API abuse
+# =====================================================================
+class TestAdversarialRound3:
+    def test_cody_waite_reduction_point(self):
+        """u = 5.5*pi + 8e-10, m = 1-1.5e-13 (mpmath at the exact doubles): before
+        the Cody-Waite split, k*pi rounding cost eps*|u| in the reduced phase,
+        amplified ~1e5x by dZ/dphi near pi/2 at m -> 1."""
+        u, m = 17.27875959554386, 0.99999999999985
+        F, E, Z = elliptic.elliptic12(u, m)
+        assert abs(_s(F) - 177.65640489133312311) < 2e-9
+        assert abs(_s(E) - 11.000000000012911122) < 1e-12
+        assert abs(_s(Z) - (-0.00012790056416609388015)) < 1e-10
+        assert abs(_s(elliptic.elliptic3(u, m, 0.3)) - 248.50046674013002377) < 3e-9
+
+    def test_domain_and_nan_are_honest(self):
+        """Out-of-range m raises on numpy; NaN propagates and never becomes a
+        placeholder value (ellipj(0.3, 1.5) used to return sn(0.3 | 0.5))."""
+        for bad in (1.5, -1e-17, np.nextafter(1.0, 2.0)):
+            with pytest.raises(ValueError): elliptic.ellipj(0.3, bad)
+            with pytest.raises(ValueError): elliptic.elliptic12(0.3, bad)
+            with pytest.raises(ValueError): elliptic.nomeq(bad)
+        assert math.isnan(_s(elliptic.ellipj(0.3, float('nan'))[0]))
+        assert math.isnan(_s(elliptic.elliptic12(0.3, float('nan'))[0]))
+        v = elliptic.elliptic12(np.array([0.3, 0.5, 0.7]), np.array([0.2, np.nan, 0.4]))[0]
+        assert np.isnan(v[1]) and not np.isnan(v[[0, 2]]).any()
+
+    def test_exact_zero_complex_and_RJ_extreme_ratio(self):
+        # note: the Python literal -0.0+0j already evaluates to 0j; use complex(-0.0, 0.0)
+        F0 = _s(elliptic.elliptic12i(complex(-0.0, 0.0), 0.5)[0])
+        assert F0 == 0 and math.copysign(1.0, F0.real) < 0      # -0.0 preserved
+        assert _s(elliptic.elliptic12i(0j, 0.5)[0]) == 0
+        assert abs(_s(elliptic.carlsonRJ(2.798e-18, 5.954e-24, 9.634e-23, 1.134e21)) - 9.9678905686736778972e-12) < 1e-12 * 1e-11

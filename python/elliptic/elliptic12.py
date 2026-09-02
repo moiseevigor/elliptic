@@ -17,7 +17,10 @@ from __future__ import annotations
 import math
 import numpy as np
 
-from ._xputils import get_xp
+from ._xputils import get_xp, check_range
+
+_PI_HI = 3.141592653589793          # double nearest pi
+_PI_LO = 1.2246467991473532e-16     # pi - _PI_HI
 from .carlson import _rf_xp, _rd_xp, _rf_numpy, _rd_numpy
 
 
@@ -37,14 +40,18 @@ def elliptic12(u, m):
     u = xp.asarray(u, dtype=xp.float64)
     m = xp.asarray(m, dtype=xp.float64)
     u, m = xp.broadcast_arrays(u, m)
-    return _elliptic12_xp(xp, u, m)
+    valid = check_range(xp, m, 0.0, 1.0, 'm')
+    F, E, Z = _elliptic12_xp(xp, u, m)
+    nan = xp.full_like(F, math.nan)
+    return xp.where(valid, F, nan), xp.where(valid, E, nan), xp.where(valid, Z, nan)
 
 
 def _elliptic12_xp(xp, u, m):
     """Backend-native F, E, Z via Carlson forms.  u and m are 1-D xp arrays."""
     # Period reduction: F(u+kπ|m) = F(u|m) + 2k·K(m), Z period π
     k   = xp.round(u / math.pi)
-    u_r = u - k * math.pi          # reduced to (-π/2, π/2]
+    # Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at eps*|u_r| instead of eps*|u|
+    u_r = (u - k * _PI_HI) - k * _PI_LO      # reduced to (-π/2, π/2]
 
     # Complete integrals K(m), E(m) via Carlson
     z0  = xp.zeros_like(m)

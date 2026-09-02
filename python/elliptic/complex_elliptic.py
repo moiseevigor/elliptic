@@ -9,7 +9,7 @@ argument into two real-valued calls, then combine analytically.
 from __future__ import annotations
 import numpy as np
 
-from ._xputils import get_xp
+from ._xputils import get_xp, is_numpy
 from .elliptic12 import _elliptic12_xp
 from .ellipj import _ellipj_xp
 
@@ -33,7 +33,7 @@ def elliptic12i(u, m):
     m = xp.asarray(m, dtype=xp.float64)
     u_f, m_f = xp.broadcast_arrays(u, m)
 
-    if xp is np and np.any((m_f < 0.0) | (m_f > 1.0)):
+    if is_numpy(xp) and np.any((m_f < 0.0) | (m_f > 1.0)):
         raise ValueError("m must be in [0, 1]")
 
     phi = xp.real(u_f)
@@ -122,6 +122,9 @@ def elliptic12i(u, m):
     Fi = xp.where(small, F_ser, Fi)
     Ei = xp.where(small, E_ser, Ei)
     Zi = xp.where(small, Z_ser, Zi)
+    # u == 0 exactly (incl. -0.0): the cot(phi) nudge above would return eps
+    z0 = u_f == 0
+    Fi = xp.where(z0, u_f, Fi); Ei = xp.where(z0, u_f, Ei); Zi = xp.where(z0, xp.zeros_like(Zi), Zi)
     return Fi, Ei, Zi
 
 
@@ -147,7 +150,7 @@ def ellipji(u, m):
     m_f = xp.asarray(m, dtype=xp.float64)
     u_f, m_f = xp.broadcast_arrays(u_f, m_f)
 
-    if xp is np and np.any((m_f < 0.0) | (m_f > 1.0)):
+    if is_numpy(xp) and np.any((m_f < 0.0) | (m_f > 1.0)):
         raise ValueError("m must be in [0, 1]")
 
     phi = xp.real(u_f)

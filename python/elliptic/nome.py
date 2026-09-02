@@ -2,7 +2,7 @@
 from __future__ import annotations
 import math
 import numpy as np
-from ._xputils import get_xp
+from ._xputils import get_xp, check_range, is_numpy
 from .theta import _q_from_m_xp
 
 
@@ -21,6 +21,7 @@ def nomeq(m):
     """
     xp = get_xp(m)
     m = xp.asarray(m, dtype=xp.float64)
+    check_range(xp, m, 0.0, 1.0, 'm')      # traced backends already NaN-mask inside
     q = _q_from_m_xp(xp, m)
     return xp.where(m == 1.0, xp.ones_like(q), q)
 
@@ -49,7 +50,7 @@ def inversenomeq(q):
     m_hi_scalar = np.nextafter(1.0, 0.0)
     q_max = float(_q_from_m_xp(np, np.asarray(m_hi_scalar)))
 
-    if xp is np:
+    if is_numpy(xp):
         if np.any((q < 0.0) | (q >= 1.0)):
             raise ValueError("q must be in [0, 1)")
         if np.any(q > q_max):

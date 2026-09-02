@@ -91,7 +91,9 @@ function [B, D, J] = ellipticBDJ_core(phi, m, n, compute_J, origSize)
 %   D(φ+k·pi|m)   = D(φ|m)   + 2k·D(m)
 %   J(φ+k·pi,n|m) = J(φ,n|m) + 2k·J(n|m)
 k   = ceil(phi./pi - 0.5);
-phi = phi - k .* pi;      % now in (-pi/2, pi/2]
+% Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at
+% eps*|u_r| instead of eps*|u| (pi_lo = pi - double(pi) = 1.2246467991473532e-16).
+phi = (phi - k .* pi) - k .* 1.2246467991473532e-16;      % now in (-pi/2, pi/2]
 
 s  = sin(phi);
 c  = cos(phi);

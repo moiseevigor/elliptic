@@ -11,9 +11,10 @@ convergence tracking → fully data-parallel on CUDA / JAX.
 """
 from __future__ import annotations
 
+import math
 import numpy as np
 
-from ._xputils import get_xp
+from ._xputils import get_xp, check_range
 
 _AGM_ITERS = 25
 
@@ -34,7 +35,11 @@ def ellipj(u, m):
     u = xp.asarray(u, dtype=xp.float64)
     m = xp.asarray(m, dtype=xp.float64)
     u, m = xp.broadcast_arrays(u, m)
-    return _ellipj_xp(xp, u, m)
+    valid = check_range(xp, m, 0.0, 1.0, 'm') & ~xp.isnan(m) & ~xp.isnan(u)
+    sn, cn, dn, am = _ellipj_xp(xp, u, m)
+    nan = xp.full_like(sn, math.nan)
+    return (xp.where(valid, sn, nan), xp.where(valid, cn, nan),
+            xp.where(valid, dn, nan), xp.where(valid, am, nan))
 
 
 def _ellipj_xp(xp, u, m):

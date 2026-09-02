@@ -668,3 +668,30 @@
 %! assert(abs(weierstrassP(z,e1,e2,e3)     - 0.51848214450600943279)     < 1e-12, 'P near-1 lattice');
 %! assert(abs(weierstrassZeta(z,e1,e2,e3)  - -5.4787546526901492279)  < 1e-12*5.5, 'Zeta near-1 lattice');
 %! assert(abs(weierstrassSigma(z,e1,e2,e3) - 1.822626274365935705e-13) < 1e-12*1.8e-13, 'Sigma near-1 lattice');
+
+% ---------------------------------------------------------------------
+% S. Third adversarial round: dense random fuzz + API abuse.
+%    S1 Cody-Waite pi reduction: F/E/Z/Pi at u = 5.5*pi + 8e-10, m = 1-1.5e-13
+%       (mpmath at the exact double inputs).  Before the split, k*pi rounding
+%       cost eps*|u| in the reduced phase, amplified 1e5x by dZ/dphi there.
+%    S2 NaN in, NaN out (a NaN m used to crash elliptic12's grouping).
+%    S3 elliptic12i(-0) is -0 exactly (the cot nudge returned eps).
+%    S4 R_J at an argument ratio of 1.9e44 (fixed 100 duplications).
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! u = 17.27875959554386;  m = 0.99999999999985;
+%! [F,E,Z] = elliptic12(u, m);
+%! assert(abs(F - 177.65640489133312311) < 2e-9,  'F at 5.5pi+8e-10, m->1 (conditioning floor ~1e-9)');
+%! assert(abs(E - 11.000000000012911122) < 1e-12, 'E at 5.5pi+8e-10');
+%! assert(abs(Z - (-0.00012790056416609388015)) < 1e-10, 'Z at 5.5pi+8e-10: k*pi rounding used to cost 1e-9');
+%! assert(abs(elliptic3(u, m, 0.3) - 248.50046674013002377) < 3e-9, 'Pi at 5.5pi+8e-10');
+
+%!test
+%! clear
+%! assert(isnan(elliptic12(0.3, NaN)) && isnan(elliptic12(NaN, 0.5)), 'elliptic12 must propagate NaN');
+%! v = elliptic12([0.3 0.5 0.7], [0.2 NaN 0.4]);
+%! assert(isnan(v(2)) && ~any(isnan(v([1 3]))), 'NaN must not leak into neighbours');
+%! assert(isnan(ellipj(0.3, NaN)), 'ellipj must propagate NaN');
+%! assert(elliptic12i(-0, 0.5) == 0 && elliptic12i(0, 0.5) == 0, 'F(0) must be exactly 0');
+%! assert(abs(carlsonRJ(2.798e-18, 5.954e-24, 9.634e-23, 1.134e21) - 9.9678905686736778972e-12) < 1e-12*1e-11, 'RJ at ratio 1.9e44');

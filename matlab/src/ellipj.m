@@ -122,7 +122,8 @@ if ~isempty(I)
     period = floor((u(I) + K_vals) ./ (2 .* K_vals));
     u_reduced = u(I) - 2 .* period .* K_vals;
 	phin = zeros(1,mmax);
-	phin(:) = (2 .^ n(K)).*a(i,K).*u_reduced;
+	a_fin = reshape(a(sub2ind(size(a), n(K) + 1, K)), 1, mmax);   % per-element converged AGM row (K may be a column)
+	phin(:) = (2 .^ n(K)).*a_fin.*u_reduced;
 	while i > 1
         i = i - 1;
         mask = n(K) >= i;
@@ -234,7 +235,7 @@ function [sn,cn,dn,am] = gpu_ellipj(u, m, tol)
 
         % Reduce by the 2K quasi-period before the amplified Landen phase.
         % This mirrors the serial path and prevents large-argument phase loss.
-        a_final = gather(a(:,ii));
+        a_cpu = gather(a);  a_final = a_cpu(sub2ind(size(a_cpu), (1:mmax)', n + 1));   % per-element converged row
         K_vals = carlsonRF(zeros(size(mu)), 1-mu, ones(size(mu)));
         period = floor((u(I) + K_vals) ./ (2 .* K_vals));
         u_reduced = u(I) - 2 .* period .* K_vals;

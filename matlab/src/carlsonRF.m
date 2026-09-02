@@ -54,15 +54,18 @@ x0 = x;  y0 = y;  z0 = z;
 
 % The adaptive break decides; the cap only guards pathological input
 % (20 was too few for R_F(0, 1e-16, 1) and every K(m) at tiny m).
+% Per-element convergence: each element stops when IT has converged, so a
+% value never depends on what else is in the batch (a vector-wide break
+% made chunked and serial evaluations differ by an ulp).
+active = true(size(x));
 for iter = 1:200
     lam = sqrt(x.*y) + sqrt(y.*z) + sqrt(z.*x);
-    x   = (x + lam) ./ 4;
-    y   = (y + lam) ./ 4;
-    z   = (z + lam) ./ 4;
+    x(active) = (x(active) + lam(active)) ./ 4;
+    y(active) = (y(active) + lam(active)) ./ 4;
+    z(active) = (z(active) + lam(active)) ./ 4;
     A   = (x + y + z) ./ 3;
-    if max(max(abs(x - A)), max(max(abs(y - A)), abs(z - A))) < cr * min(A)
-        break;
-    end
+    active = active & (max([abs(x - A); abs(y - A); abs(z - A)], [], 1) >= cr * A);
+    if ~any(active), break; end
 end
 
 A  = (x + y + z) ./ 3;

@@ -52,22 +52,24 @@ p0   = p;    % save original p for δ computation
 % Each duplication divides the argument-ratio exponent (base 4) by one; the
 % adaptive break below decides, the cap only guards pathological input.
 % A cap of 30 covered ratios to ~1e16 only (RJ(1e-20,2e-20,3e-20,.5) 11% off).
+% Per-element convergence: each element stops when IT has converged, so a
+% value never depends on what else is in the batch (a vector-wide break
+% made chunked and serial evaluations differ by an ulp).
+active = true(size(x));
 for iter = 1:200
     lam  = sqrt(x.*y) + sqrt(y.*z) + sqrt(z.*x);
     % R_C argument for sum term (DLMF 19.36.3)
     alpha = (p .* (sqrt(x) + sqrt(y) + sqrt(z)) + sqrt(x.*y.*z)).^2;
     beta  = p .* (p + lam).^2;
-    S     = S + fac .* carlsonRC_core(alpha, beta);
-    fac   = fac ./ 4;
-    x     = (x + lam) ./ 4;
-    y     = (y + lam) ./ 4;
-    z     = (z + lam) ./ 4;
-    p     = (p + lam) ./ 4;
+    S(active)   = S(active) + fac(active) .* carlsonRC_core(alpha(active), beta(active));
+    fac(active) = fac(active) ./ 4;
+    x(active) = (x(active) + lam(active)) ./ 4;
+    y(active) = (y(active) + lam(active)) ./ 4;
+    z(active) = (z(active) + lam(active)) ./ 4;
+    p(active) = (p(active) + lam(active)) ./ 4;
     A     = (x + y + z + 2.*p) ./ 5;
-    rng   = max([abs(x-A); abs(y-A); abs(z-A); abs(p-A)]);
-    if rng < cr * min(A)
-        break;
-    end
+    active = active & (max([abs(x-A); abs(y-A); abs(z-A); abs(p-A)], [], 1) >= cr * A);
+    if ~any(active), break; end
 end
 
 A  = (x + y + z + 2.*p) ./ 5;

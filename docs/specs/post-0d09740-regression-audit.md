@@ -137,6 +137,28 @@ m in {0, 1, 1e-17, nextafter(1,0)}; matrix shapes are preserved by every
 function; empty input returns empty; F(conj u) = conj F(u), F(-u) = -F(u) and
 sn(conj u) = conj sn(u) hold exactly.
 
+## Adversarial review rounds 4-5 (theta recurrence, parallel and GPU paths, batch independence, 2026-09-02)
+
+Attack surface: the code paths the unit tests never exercised on a
+developer machine (parallel chunking, the GPU kernels under identity
+stubs) and the invariant "a value must not depend on what else is in the
+batch".
+
+| # | Attack | Result | Fix |
+|---|--------|--------|-----|
+| 4.1 | theta functions at large argument (`v ~ 1e8`) | `sin(k*v)` with `k*v` as a double product loses `eps*|k v|` (1e-12 at `v = 1e8`) in every series of `theta.m`, `theta_prime.m`, `jacobiThetaEta.m`, `weierstrassZeta.m`, `weierstrassSigma.m`, `theta.py`, `weierstrass.py` | one shared `theta_series.m` (all three MATLAB theta callers) and `theta._trig_start` (Python): `sin/cos((2n+1)v)` by angle-addition recurrence from `sin v, cos v`, so every term carries only the rounding of the reduced argument |
+| 4.2 | parallel chunk path: `N` an exact multiple of `chunk_size` | `par_worker` re-entered the parallel dispatcher from inside a worker (stub `get_nworkers` ignored the `parallel` flag) and recursed until SIGILL | recursion guard in `par_worker.m`: the worker forces `elliptic_config('parallel', false)` for the duration of its call (restored in `unwind_protect_cleanup`) |
+| 4.3 | chunked vs serial `elliptic3` on 1000 random points | 6 of 1000 differed by one ulp (rel 2.4e-16): the Carlson cores stopped on a whole-vector convergence test, so the number of duplication steps applied to an element depended on its batch mates | per-element convergence in `carlsonRF/RD/RJ.m`: an `active` mask freezes each element at its own converged step |
+| 4.4 | same attack on `elliptic12` and `ellipj` | the final AGM row used was `max(n)` over the batch (`a(mn,:)`), so K and the Landen back-substitution scale changed with batch composition | first converged row per element (`a(n+1)`) in both CPU and GPU paths |
+| 4.5 | GPU `elliptic12` at `u = 1e6`, `m = 1 - eps/2` vs CPU | Z off by 3.6e-11, E by 1.2e-10: the GPU phase reduction lacked the Cody-Waite tail term (`k * 1.22e-16 = 3.9e-11` at `k = 318310`) | tail term added to the GPU reduction, matching the CPU path |
+
+New test: `testParallel.m` block "chunking is exact" builds temporary
+`get_nworkers`/`parcellfun` stubs, evaluates every parallel-capable
+function serially and chunked for `N` in `{cs-1, cs, 2cs, 3cs, 3cs+7}`
+(`cs = chunk_size`) and requires bit-identical results.  The GPU-stub
+probe (identity `gpuArray/gather`) now agrees with the CPU path to 0.0 on
+4005 points including the large-`u` near-`m = 1` cases.
+
 ## Deliberate limits and residual risk
 
 - CUDA/OpenCL hardware was not available during this audit. GPU source paths

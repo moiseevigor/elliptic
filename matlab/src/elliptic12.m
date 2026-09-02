@@ -127,7 +127,10 @@ if ~isempty(I)
     % (-pi/2, pi/2]: u_work is |u|, and the Landen branch term
     % pi*ceil(phin/pi-0.5) below misfires when phin lands on -pi/2, which a
     % symmetric reduction hits for every u within an ulp of pi/2 + k*pi.
-    K_vals = pi ./ (2 .* a(mn,:));                                  % K(m) for each unique m
+    % first converged AGM row per unique m (a(n+1,:)), not the batch-wide last
+    % row: a value must not depend on what else is in the batch
+    a_fin  = reshape(a(sub2ind(size(a), n + 1, 1:mumax)), 1, mumax);
+    K_vals = pi ./ (2 .* a_fin);                                    % K(m) for each unique m
     u_work = signU .* u(I);                                         % == abs(u(I))
     k_per  = floor(u_work ./ pi);                                   % number of full half-periods
     % Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at
@@ -150,7 +153,7 @@ if ~isempty(I)
         end
 	end
 
-    Ff = phin ./ (a(mn,K).*e*2) + K_per;                           % F_reduced + period correction
+    Ff = phin ./ (a_fin(K).*e*2) + K_per;                          % F_reduced + period correction
     F(I) = Ff.*signU;                                               % Incomplete Ell. Int. of the First Kind
     Z(I) = Cp.*signU;                                               % Jacobi Zeta Function
     E(I) = (Cp + (1 - 1/2*C) .* Ff).*signU;                         % Incomplete Ell. Int. of the Second Kind
@@ -265,10 +268,13 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
         % Landen descent and restore 2*k*K afterwards.  The previous GPU
         % branch still evaluated the unreduced phase and therefore retained
         % the v4.1.0 regression even after the CPU path was repaired.
-        K_vals = pi ./ (2 .* a(:,mn));
+        a_cpu = gather(a);  a_fin = a_cpu(sub2ind(size(a_cpu), (1:mmax)', n + 1));   % per-element converged row
+        K_vals = pi ./ (2 .* a_fin);
         u_work = signU .* u(I);
         k_per = floor(u_work ./ pi);
-        phin = gpuArray(u_work - k_per .* pi);
+        % Cody-Waite split of pi, as in the CPU path: without the tail term the
+        % reduced phase is off by k*1.2e-16 (4e-11 at u = 1e6), which Z and E see.
+        phin = gpuArray((u_work - k_per .* pi) - k_per .* 1.2246467991473532e-16);
         K_per = 2 .* gpuArray(k_per) .* K_vals;
         C    = gpuArray(zeros(mmax, 1));
         Cp   = gpuArray(zeros(mmax, 1));
@@ -283,7 +289,7 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
             Cp = Cp + active .* c(:,jj+1) .* sin(phin);
         end
 
-        Ff = phin ./ (a(:,mn) .* e * 2) + K_per;
+        Ff = phin ./ (gpuArray(a_fin) .* e * 2) + K_per;
         F(I) = gather(Ff)                    .* signU;
         Z(I) = gather(Cp)                    .* signU;
         E(I) = gather(Cp + (1 - 0.5*C) .* Ff) .* signU;

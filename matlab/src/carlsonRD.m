@@ -45,19 +45,21 @@ cr    = 0.0015;   % convergence: tighter than RF because RD is 3/2 order
 S     = zeros(size(x));
 fac   = ones(size(x));    % 4^{-n}
 
-for iter = 1:200   % adaptive break decides; cap guards pathological input
+% Per-element convergence: each element stops when IT has converged, so a
+% value never depends on what else is in the batch (a vector-wide break
+% made chunked and serial evaluations differ by an ulp).
+active = true(size(x));
+for iter = 1:200   % per-element break decides; cap guards pathological input
     lam  = sqrt(x.*y) + sqrt(y.*z) + sqrt(z.*x);
     sz   = sqrt(z);
-    S    = S + fac ./ (sz .* (z + lam));
-    fac  = fac ./ 4;
-    x    = (x + lam) ./ 4;
-    y    = (y + lam) ./ 4;
-    z    = (z + lam) ./ 4;
+    S(active)   = S(active) + fac(active) ./ (sz(active) .* (z(active) + lam(active)));
+    fac(active) = fac(active) ./ 4;
+    x(active) = (x(active) + lam(active)) ./ 4;
+    y(active) = (y(active) + lam(active)) ./ 4;
+    z(active) = (z(active) + lam(active)) ./ 4;
     A    = (x + y + 3.*z) ./ 5;
-    rng  = max([abs(x-A); abs(y-A); abs(z-A)]);
-    if rng < cr * min(A)
-        break;
-    end
+    active = active & (max([abs(x-A); abs(y-A); abs(z-A)], [], 1) >= cr * A);
+    if ~any(active), break; end
 end
 
 A  = (x + y + 3.*z) ./ 5;

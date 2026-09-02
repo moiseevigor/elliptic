@@ -10,6 +10,13 @@ function [Fi,Ei,Zi] = elliptic12i(u,m,tol)
 %   ELLIPTIC12i uses the function ELLIPTIC12 to evaluate the values of
 %   corresponding integrals.
 %
+%   Branch convention: values follow the A&S 17.4.11 real decomposition
+%   F(phi+i*psi|m) = F(lambda|m) + i*F(mu|1-m).  On the line phi = pi/2
+%   (above the branch point pi/2 + i*acosh(1/sqrt(m))) this fixes
+%   Re F = K(m), which diverges as m -> 1.  Other systems (Mathematica,
+%   mpmath) may return values on a different sheet there; both satisfy
+%   the defining differential relation.
+%
 %   Example:
 %   [phi1,phi2] = meshgrid(-2*pi:3/20:2*pi, -2*pi:3/20:2*pi);
 %   phi = phi1 + phi2*i;
@@ -82,27 +89,41 @@ cot2 = cot(phi).^2;
 b = -(cot2 + m.*sinh(psi).^2.*csc(phi).^2-1+m);
 c = -(1-m).*cot2;
 
-% The constant term -(1-m)*cot(phi)^2 is <= 0, so the two roots always
-% straddle zero and the admissible one is X1 = -b/2 + sqrt(b^2/4-c).  Near
-% phi = pi/2 that form cancels catastrophically (both terms are ~ |b|/2
-% while X1 -> 0), so for b > 0 use the algebraically equal
-% X1 = -c/(b/2+sqrt(...)), which keeps full precision.
-sq = sqrt(b.^2/4-c);
-X1 = -b/2 + sq;
-ratio = X1 ./ cot2;                     % == tan(phi)^2 * cot(lambda)^2
-Ib = find(b > 0);
-X1(Ib)    = -c(Ib)./(b(Ib)/2 + sq(Ib));
-ratio(Ib) = (1-m(Ib))./(b(Ib)/2 + sq(Ib));
+% Positive root X1 = cot(lambda)^2 of X^2 + bX + c = 0 and tan(mu)^2, both
+% without cancellation.  Writing X1 = cot(phi)^2 + Y, Y solves
+%     Y^2 + B'Y - C' = 0,  B' = cot2 + (1-m) - m sinh^2 csc^2,
+%                          C' = cot2 * m sinh^2 csc^2 >= 0,
+% and A&S 17.4.11's tan(mu)^2 = (tan(phi)^2 cot(lambda)^2 - 1)/m = Y/(m cot2)
+% collapses to
+%     tan(mu)^2 = 2 sinh^2 csc^2 / (B' + sqrt(B'^2 + 4C'))        (B' >= 0)
+%               = (|B'| + sqrt(B'^2 + 4C')) / (2 m cot2)          (B' <  0)
+% -- m cancels analytically in the first form, so m -> 0 (and m = 0 exactly)
+% is handled to full precision.  The old (ratio-1)/m lost sqrt(eps/m) digits
+% and returned Im F = 0 for psi = 1e-9.
+s2c2 = sinh(psi).^2.*csc(phi).^2;
+Bp   = cot2 + (1-m) - m.*s2c2;
+Cp   = cot2.*m.*s2c2;
+root = sqrt(Bp.^2 + 4*Cp);
+pos  = Bp >= 0;
+Y      = zeros(size(Bp));  tan2mu = Y;
+Y(pos)  = 2*Cp(pos)./(Bp(pos) + root(pos));
+Y(~pos) = 0.5*(-Bp(~pos) + root(~pos));
+tan2mu(pos)  = 2*s2c2(pos)./(Bp(pos) + root(pos));
+tan2mu(~pos) = 0.5*(-Bp(~pos) + root(~pos))./(m(~pos).*cot2(~pos));
+X1 = cot2 + Y;
 
 lambda = acot( sqrt(X1) );
-% tan(mu)^2 = (tan(phi)^2*cot(lambda)^2 - 1)/m, evaluated from RATIO rather
-% than from LAMBDA: at phi = pi/2 the root X1 underflows, LAMBDA rounds to
-% exactly pi/2 and cot(LAMBDA) loses every digit of it -- that is what used
-% to drop the whole imaginary part of the result there.
-mu = atan( sqrt( max((ratio - 1)./m, 0) ) );
+mu     = atan( sqrt(tan2mu) );
 
-% change of variables taking into account periodicity ceil to the right
-lambda = (-1).^floor(phi/pi*2).*lambda + pi*ceil(phi/pi-0.5+eps);
+% Periodicity: with k = floor(2 phi/pi) the quadrant sign is (-1)^k and the
+% period term is pi*ceil(k/2), derived from the SAME k.  The previous
+% pi*ceil(phi/pi - 0.5 + eps) counted the period from a separately rounded
+% quantity, and for phi within a few ulps below pi/2 (e.g. asin(sqrt(3)) as
+% used by elliptic123 for m > 1) it added a period the sign term had not
+% crossed: Re F came out 3K instead of K.
+kq     = floor(phi/pi*2);
+kq(~isfinite(kq)) = 0;             % (-1)^NaN, (-1)^Inf are complex NaN in Octave; keep lambda real so NaN propagates
+lambda = (-1).^kq.*lambda + pi*ceil(kq/2);
 mu     = sign(psi).*real(mu);
 
 [F1(:),E1(:)] = elliptic12(lambda, m, tol);
@@ -123,8 +144,31 @@ b3 = cos_mu.^2 + m.*sin_lam.^2.*sin_mu.^2;
 Ei(:) = (b1 + sqrt(-1)*b2)./b3;
 Ei(:) = Ei(:) + E1(:) + sqrt(-1)*(-E2(:) + F2(:));
 
-[K,Ee] = ellipke(m);
+[K,Ee] = ellipke_safe(m);
 % complex values of zeta function
 Zi(:) = Ei(:) - Ee(:)./K(:).*Fi(:);
+
+% Small-m Maclaurin series (through m^2).  The A&S 17.4.11 decomposition
+% loses ~sqrt(eps/m) digits as m -> 0 (0.2 absolute at m = 1e-16); the
+% series is exact there and covers m = 0 itself:
+%   F = u + m(u/4 - sin2u/8) + m^2(9u/64 - 3sin2u/32 + 3sin4u/256) + O(m^3)
+%   E = u - m(u/4 - sin2u/8) - m^2(3u/64 -  sin2u/32 +  sin4u/256) + O(m^3)
+% Valid while |m sin^2 u| is small: switch on m*max(1, e^(2|psi|)) < 1e-4,
+% where the crossover error is ~2e-12 (measured against 40-digit mpmath).
+m_eff = m .* max(1, exp(2*abs(psi)));
+sm = find(m_eff < 1e-4);
+if ~isempty(sm)
+    uu = u(sm);  mm = m(sm);    % original u: phi carries the +eps nudge
+    s2 = sin(2*uu);  s4 = sin(4*uu);
+    Fs = uu + mm.*(uu/4 - s2/8) + mm.^2.*(9*uu/64 - 3*s2/32 + 3*s4/256);
+    Es = uu - mm.*(uu/4 - s2/8) - mm.^2.*(3*uu/64 - s2/32 + s4/256);
+    Fi(sm) = Fs;
+    Ei(sm) = Es;
+    Zi(sm) = Es - Ee(sm)./K(sm).*Fs;
+end
+
+% u == 0 exactly (incl. -0 and 0+0i): the cot(phi) nudge above would return eps
+z0 = find(u == 0);
+Fi(z0) = u(z0);  Ei(z0) = u(z0);  Zi(z0) = 0;
 
 % END FUNCTION ELLIPTIC12i()

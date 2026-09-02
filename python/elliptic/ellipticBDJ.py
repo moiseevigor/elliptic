@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import math
 
-from ._xputils import get_xp
+from ._xputils import get_xp, is_numpy, sub_kpi
 from .carlson import _rf_xp, _rd_xp, _rj_xp
 
 
@@ -55,11 +55,15 @@ def ellipticBDJ(phi, m, n=None):
     #   D(phi+k*pi|m)   = D(phi|m)   + 2k*D(m)
     #   J(phi+k*pi,n|m) = J(phi,n|m) + 2k*J(n|m)
     k   = xp.ceil(phi / math.pi - 0.5)
-    phi = phi - k * math.pi              # now in (-pi/2, pi/2]
+    # Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at eps*|u_r| instead of eps*|u|
+    phi = sub_kpi(phi, k)                                     # now in (-pi/2, pi/2], error eps*|phi|
 
     s    = xp.sin(phi)
     c    = xp.cos(phi)
-    d2   = 1.0 - m * s * s
+    # Delta^2 = (1-m) + m cos^2, not 1 - m sin^2: the latter cancels near
+    # phi = pi/2 as m -> 1 (relative 2.5e-9 at m = 1-1e-8; R_D turned it
+    # into 3e-10 in D(phi|m) and hence in jacobiEDJ at large u).
+    d2   = (1.0 - m) + m * c * c
     s3o3 = s * s * s / 3.0
 
     one  = xp.ones_like(phi)
@@ -85,11 +89,27 @@ def ellipticBDJ(phi, m, n=None):
 
     if compute_J:
         p     = 1.0 - n * s * s
-        RJ    = _rj_xp(xp, c * c, d2, one, p)
+        # n > 1 with the phase beyond the pole at arcsin(1/sqrt(n)) is a
+        # Cauchy principal-value integral (DLMF 19.7.3): R_J needs p > 0.
+        # The private _rj_xp silently returned garbage there (1.147 for
+        # J(1, 1.5|0.5); the principal value is 0.859).  The complete J(n|m)
+        # is only needed when a period was removed (k != 0); at n = 1 it is
+        # a pole, and 0 * inf turned J(phi, 1|m) into NaN for |phi| <= pi/2.
+        bad_inc = p <= 0.0
+        bad_cpl = (k != 0.0) & (n >= 1.0)
+        if is_numpy(xp) and bool(xp.any(bad_inc | bad_cpl)):
+            raise ValueError(
+                "ellipticBDJ: n > 1 with phase beyond the pole at arcsin(1/sqrt(n)) "
+                "(or n >= 1 with |phi| > pi/2) is a Cauchy principal-value integral "
+                "(DLMF 19.7.3); not supported.")
+        p_safe = xp.where(bad_inc, one, p)
+        RJ    = _rj_xp(xp, c * c, d2, one, p_safe)
         J_val = s3o3 * RJ
         J_val = xp.where(zero, xp.zeros_like(J_val), J_val)
-        J_cpl = _rj_xp(xp, zed, 1.0 - m, one, 1.0 - n) / 3.0   # J(n|m)
-        J_val = J_val + 2.0 * k * J_cpl
+        n_safe = xp.where(bad_cpl | (n == 1.0), xp.zeros_like(n), n)
+        J_cpl = _rj_xp(xp, zed, 1.0 - m, one, 1.0 - n_safe) / 3.0   # J(n|m)
+        J_val = J_val + xp.where(k == 0.0, xp.zeros_like(J_val), 2.0 * k * J_cpl)
+        J_val = xp.where(bad_inc | bad_cpl, xp.full_like(J_val, math.nan), J_val)
     else:
         J_val = None
 

@@ -1,5 +1,10 @@
 # Codebase Weakness Audit — Python Elliptic Library
 
+> Historical snapshot. The high-severity items and the numerical defects
+> confirmed from this list were addressed in the
+> [post-0d09740 follow-up audit](post-0d09740-regression-audit.md). Keep this
+> document as the pre-fix evidence, not as the current defect list.
+
 **Date:** 2026-04-21
 **Scope:** `/home/igor/Work/elliptic/python/elliptic/`
 **Purpose:** Identify weak or breaking points (special values, complex numbers, inf/NaN, memory, exception handling, backend tracing) to guide future implementation work.

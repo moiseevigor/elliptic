@@ -33,7 +33,7 @@ jobs:
       - run:
           name: Run Octave tests
           command: |
-            octave --eval "addpath(fullfile(pwd, 'matlab', 'src')); cd matlab/tests; test testElliptic12; test testElliptic3; test testEllipj; test testThetaPrime; test testAgm; test testJacobiThetaEta;"
+            octave --eval "addpath(fullfile(pwd, 'matlab', 'src')); files=dir(fullfile(pwd, 'matlab', 'tests', 'test*.m')); failed=false; for k=1:numel(files); [n,nmax]=test(fullfile(files(k).folder,files(k).name),'quiet'); fprintf('%s: %d/%d\n',files(k).name,n,nmax); failed=failed || n~=nmax; end; if failed; exit(1); end"
 workflows:
   build:
     jobs:

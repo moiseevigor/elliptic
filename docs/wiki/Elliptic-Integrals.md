@@ -160,7 +160,7 @@ The library provides the AGM function directly:
 
 ## Carlson's Method
 
-The conventional methods for computing elliptic integrals are Gauss and Landen transformations, which converge quadratically and work well for elliptic integrals of the first and second kinds. Unfortunately they suffer from loss of significant digits for the third kind. Carlson's algorithm provides a unified method for all three kinds with satisfactory precision. The third kind integral in this library uses a Gauss-Legendre 10-point quadrature instead.
+The conventional methods for computing elliptic integrals are Gauss and Landen transformations, which converge quadratically and work well for elliptic integrals of the first and second kinds. Unfortunately they suffer from loss of significant digits for the third kind. Carlson's algorithm provides a unified method for all three kinds with satisfactory precision. Python evaluates the third kind directly with Carlson RF/RJ forms. MATLAB/Octave uses a hybrid: vectorised 20-node Gauss-Legendre quadrature on regular inputs and Carlson RF/RJ near endpoint poles, where fixed quadrature loses precision.
 
 ---
 

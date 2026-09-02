@@ -25,6 +25,17 @@ function RJ = carlsonRJ(x, y, z, p)
 %   [2] B.C. Carlson, "Numerical Computation of Real or Complex Elliptic
 %       Integrals," Numer. Algorithms 10 (1995), 13–26.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 4 && (isempty(x) || isempty(y) || isempty(z) || isempty(p))
+    sz = size(x);
+    if isempty(y), sz = size(y); end
+    if isempty(z), sz = size(z); end
+    if isempty(p), sz = size(p); end
+    RJ = zeros(sz);
+    return;
+end
+
 if nargin < 4, error('carlsonRJ: requires four arguments (x, y, z, p).'); end
 if ~isreal(x) || ~isreal(y) || ~isreal(z) || ~isreal(p)
     error('carlsonRJ: all input arguments must be real.');
@@ -34,7 +45,18 @@ end
 origSize = size(x);
 x = x(:).';  y = y(:).';  z = z(:).';  p = p(:).';
 
+% p <= 0 is the Cauchy principal value (DLMF 19.20.14), not implemented -- the
+% duplication took sqrt of a negative and returned complex garbage.
+if any(p <= 0)
+    error(['carlsonRJ: p must be > 0. For p < 0 the integral is a Cauchy principal ' ...
+           'value (DLMF 19.20.14); use the transformation to a p > 0 argument before calling.']);
+end
+% NaN, Inf and negative x, y, z give NaN (see carlsonRF).
+bad = ~(x >= 0 & y >= 0 & z >= 0) | isinf(x) | isinf(y) | isinf(z) | isnan(p) | isinf(p);
+x(bad) = 1;  y(bad) = 1;  z(bad) = 1;  p(bad) = 1;
 RJ = carlsonRJ_core(x, y, z, p);
+RJ(bad) = NaN;
+RJ((x == 0) + (y == 0) + (z == 0) >= 2) = Inf;   % diverges (DLMF 19.16.2)
 RJ = reshape(RJ, origSize);
 
 
@@ -48,22 +70,27 @@ fac  = ones(size(x));
 
 p0   = p;    % save original p for δ computation
 
-for iter = 1:30
+% Each duplication divides the argument-ratio exponent (base 4) by one; the
+% adaptive break below decides, the cap only guards pathological input.
+% A cap of 30 covered ratios to ~1e16 only (RJ(1e-20,2e-20,3e-20,.5) 11% off).
+% Per-element convergence: each element stops when IT has converged, so a
+% value never depends on what else is in the batch (a vector-wide break
+% made chunked and serial evaluations differ by an ulp).
+active = true(size(x));
+for iter = 1:200
     lam  = sqrt(x.*y) + sqrt(y.*z) + sqrt(z.*x);
     % R_C argument for sum term (DLMF 19.36.3)
     alpha = (p .* (sqrt(x) + sqrt(y) + sqrt(z)) + sqrt(x.*y.*z)).^2;
     beta  = p .* (p + lam).^2;
-    S     = S + fac .* carlsonRC_core(alpha, beta);
-    fac   = fac ./ 4;
-    x     = (x + lam) ./ 4;
-    y     = (y + lam) ./ 4;
-    z     = (z + lam) ./ 4;
-    p     = (p + lam) ./ 4;
+    S(active)   = S(active) + fac(active) .* carlsonRC_core(alpha(active), beta(active));
+    fac(active) = fac(active) ./ 4;
+    x(active) = (x(active) + lam(active)) ./ 4;
+    y(active) = (y(active) + lam(active)) ./ 4;
+    z(active) = (z(active) + lam(active)) ./ 4;
+    p(active) = (p(active) + lam(active)) ./ 4;
     A     = (x + y + z + 2.*p) ./ 5;
-    rng   = max([abs(x-A); abs(y-A); abs(z-A); abs(p-A)]);
-    if rng < cr * min(A)
-        break;
-    end
+    active = active & (max([abs(x-A); abs(y-A); abs(z-A); abs(p-A)], [], 1) >= cr * A);
+    if ~any(active), break; end
 end
 
 A  = (x + y + z + 2.*p) ./ 5;
@@ -73,7 +100,7 @@ Z  = (A - z) ./ A;
 P  = -(X + Y + Z) ./ 2;    % (A-p)/A
 
 E2 = X.*Y + X.*Z + Y.*Z - 3.*P.^2;
-E3 = X.*Y.*Z + 2.*E2.*P + 3.*P.^3;
+E3 = X.*Y.*Z + 2.*E2.*P + 4.*P.^3;   % DLMF 19.36.2 (was 3P^3: O(eps^4) truncation, 1e-13 relative)
 E4 = (2.*X.*Y.*Z + E2.*P + 3.*P.^3) .* P;
 E5 = X.*Y.*Z.*P.^2;
 
@@ -105,8 +132,12 @@ if any(gt)
     RC(gt) = atan(d) ./ sqrt(y(gt) - x(gt));
 end
 if any(lt)
-    d      = sqrt((x(lt) - y(lt)) ./ x(lt));   % DLMF 19.2.18: (x-y)/x, not (x-y)/y
-    RC(lt) = atanh(d) ./ sqrt(x(lt) - y(lt));
+    % log((sqrt(x)+sqrt(x-y))/sqrt(y))/sqrt(x-y) == atanh(sqrt(1-y/x))/sqrt(x-y)
+    % without the 1 - sqrt(1-eps) cancellation (RC(3,1e-10) lost 8 digits).
+    % ... as log1p: log((sx+sxy)/sy) = log1p(((x-y)/(sx+sy) + sxy)/sy); the
+    % plain log lost 9 digits again for tiny x - y (RC(1+1e-13, 1)).
+    xl = x(lt);  yl = y(lt);  sx = sqrt(xl);  sy = sqrt(yl);  sxy = sqrt(xl - yl);
+    RC(lt) = log1p(((xl - yl)./(sx + sy) + sxy) ./ sy) ./ sxy;
 end
 
 

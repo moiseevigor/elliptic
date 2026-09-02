@@ -47,11 +47,11 @@ if ~isreal(v) || ~isreal(m)
     error('Input arguments must be real.')
 end
 
-Th = zeros(size(v));
-H = Th;
-
+if isempty(v) || isempty(m), Th = zeros(size(v)); if isempty(m), Th = zeros(size(m)); end; return; end
 if length(m)==1, m = m(ones(size(v))); end
 if length(v)==1, v = v(ones(size(m))); end
+Th = zeros(size(v));   % after broadcasting (a scalar v with a vector m used to hit a size error)
+H = Th;
 if ~isequal(size(m),size(v)), error('V and M must be the same size.'); end
 
 % m = m(:).';    % make a row vector
@@ -61,24 +61,17 @@ if any(m < 0) || any(m > 1),
   error('M must be in the range 0 <= M <= 1.');
 end
 
-K = ellipke(m);
-u = 2*K.*v/pi;
-
-switch type
-    case { '1', 1 }
-        [th, H] = jacobiThetaEta(u,m,tol);
-        Th(:) = H;
-        return;
-    case { '2', 2 }
-        [th, H] = jacobiThetaEta(u+K,m,tol);
-        Th(:) = H;
-        return;
-    case { '3', 3 }
-        Th(:) = jacobiThetaEta(u+K,m,tol);
-        return;
-    case { '4', 4 }
-        Th(:) = jacobiThetaEta(u,m,tol);
-        return;
+% Evaluate the q-series directly on v.  The old route v -> u = 2Kv/pi ->
+% jacobiThetaEta -> v = pi*u/(2K) round-tripped the argument and lost eps*|v|
+% (2e-10 at v ~ 1e8); THETA_SERIES also avoids the k*v product rounding.
+% K'(m) = R_F(0, m, 1) from the exact m: ellipke(1-m) rounds 1-m first and the
+% nome was 30% off at m ~ 1e-16 (theta1 off by 1e-5); see NOMEQ.
+q = exp(-pi .* carlsonRF(zeros(size(m)), m, ones(size(m))) ./ ellipke_safe(m));
+q(~(q < 1)) = 0;                          % m == 1: series diverges -> NaN below
+Th(:) = theta_series(type, v, q, tol);
+Th(m == 1 | isnan(m)) = NaN;   % q = 0 stands in for NaN m above; give NaN back
+if type == 1
+    Th(m == 0) = 0;                       % theta_1(v, 0) = 0 exactly
 end
 
 % END FUNCTION theta()

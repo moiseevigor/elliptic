@@ -500,8 +500,8 @@
 %! end
 
 % ---------------------------------------------------------------------
-% P. uniquetol_compat — the grouping map that feeds the AGM in
-%    elliptic12/ellipj.  Contract: C(ic) reconstructs A within tol,
+% P. uniquetol_compat — compatibility utility (the numerical kernels now
+%    group exact duplicates only). Contract: C(ic) reconstructs A within tol,
 %    C == A(ia) exactly, C strictly increasing, and near-duplicates
 %    (within tol) collapse to one group.  A wrong index map here would
 %    silently corrupt every m-grouped elliptic value downstream.
@@ -517,11 +517,424 @@
 %! assert(isequal(C(:), A(ia)(:)), 'C must equal A(ia) exactly');
 %! assert(all(diff(C) > 0), 'C must be strictly increasing');
 %! assert(all(diff(C) > tol * max(1, abs(C(1:end-1)))), 'groups closer than tol survived');
-%! % elliptic12 must give identical results whether m is grouped or not:
+%! % elliptic12 must preserve every distinct m rather than tolerance-group it:
 %! m_dup = [0.4, 0.4+5e-13, 0.4-5e-13, 0.7, 0.7+1e-12];
 %! [F1,E1] = elliptic12(1.1*ones(size(m_dup)), m_dup);
 %! for k = 1:numel(m_dup)
 %!     [F2,E2] = elliptic12(1.1, m_dup(k));
-%!     assert(abs(F1(k)-F2) < 5e-11 && abs(E1(k)-E2) < 5e-11, ...
+%!     assert(abs(F1(k)-F2) < 2e-13 && abs(E1(k)-E2) < 2e-13, ...
 %!         'grouped vs scalar elliptic12 disagree at k=%d', k);
 %! end
+
+% ---------------------------------------------------------------------
+% Q. Adversarial-review round (external Codex + mpmath 1.4.1, dps=40).
+%    Each block below is a counterexample that a prior version failed.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! % Q1: negative amplitude while the COMPLETE integral has a pole (0*Inf).
+%! assert(abs(elliptic3(-1, 0.5, 1)   - (-1.7319915420235269928)) < 1e-13, 'Pi(-1|.5,1) wrong');
+%! assert(abs(elliptic3(-1, 1,   0.2) - (-1.3115010674599590753)) < 1e-13, 'Pi(-1|1,.2) wrong');
+%! assert(~isnan(elliptic3(-0.4, 1, 1)), 'Pi(-0.4|1,1) must not be NaN');
+
+%!test
+%! clear
+%! % Q2: complex F/E small-m series region (A&S path lost sqrt(eps/m) digits).
+%! assert(abs(elliptic12i(0.2i, 1e-20) - 0.2i) < 1e-15, 'F(0.2i|1e-20)');
+%! [F,E] = elliptic12i(pi/2 + 0.2i, 1e-14);
+%! assert(abs(F - (1.5707963267949005462 + 0.20000000000000101344i)) < 1e-13, 'F(pi/2+0.2i|1e-14)');
+%! assert(abs(E - (1.5707963267948926922 + 0.19999999999999898656i)) < 1e-13, 'E(pi/2+0.2i|1e-14)');
+%! [F,E] = elliptic12i(pi/2 + 0.2i, 1e-6);
+%! assert(abs(F - (1.5707967194941992113 + 0.20000010134411776594i)) < 5e-12, 'F(pi/2+0.2i|1e-6)');
+%! assert(abs(E - (1.5707959340957412894 + 0.19999989865593359446i)) < 5e-12, 'E(pi/2+0.2i|1e-6)');
+%! % both sides of the series threshold vs mpmath (dps=30)
+%! Fa = elliptic12i(1.1+0.3i, 0.99e-4);
+%! assert(abs(Fa - (1.1000153646885162+0.3000120622623928i)) < 1e-12, 'series side of crossover');
+%! Fb = elliptic12i(1.1+0.3i, 1.01e-4);
+%! assert(abs(Fb - (1.1000156750952820+0.3000123059589823i)) < 5e-12, 'decomposition side of crossover');
+
+%!test
+%! clear
+%! % Q3: Weierstrass near-origin values are huge but FINITE (DLMF 23.9.2);
+%! % only the exact lattice point is a pole.
+%! assert(abs(weierstrassP(1e-16,1,0,-1)      - 1e32)  < 1e19,  'P(1e-16) must be ~1e32');
+%! assert(abs(weierstrassPPrime(1e-16,1,0,-1) + 2e48)  < 1e36,  'Pp(1e-16) must be ~-2e48');
+%! assert(abs(weierstrassZeta(1e-16,1,0,-1)   - 1e16)  < 1e3,   'zeta(1e-16) must be ~1e16');
+%! assert(isinf(weierstrassP(0,1,0,-1)), 'P(0) must be Inf');
+
+%!test
+%! clear
+%! % Q4: inverse nome via DLMF 20.9.1 -- exact at every scale.
+%! assert(abs(inversenomeq(1e-30) - 1.6e-29) < 1e-41, 'm(1e-30) must be 1.6e-29');
+%! assert(abs(inversenomeq(1e-12) - 1.5999999999872e-11) < 1e-24, 'm(1e-12) = 16q - 128q^2');
+%! for mv = [1e-8 0.3 0.85 0.999]
+%!     assert(abs(inversenomeq(nomeq(mv)) - mv) < 1e-12*max(mv,1e-3), 'roundtrip fails at m=%g', mv);
+%! end
+
+%!test
+%! clear
+%! % Q5: Carlson scale invariance (DLMF 19.20): RF ~ lambda^(-1/2), RC same,
+%! % RD/RJ ~ lambda^(-3/2).  An absolute branch tolerance broke this.
+%! x=1; y=2; z=3; p=4;
+%! for lam = [1e-20 1e20]
+%!     assert(abs(carlsonRF(lam*x,lam*y,lam*z)     - carlsonRF(x,y,z)/sqrt(lam))       < 1e-10*abs(carlsonRF(x,y,z)/sqrt(lam)), 'RF homogeneity at %g', lam);
+%!     assert(abs(carlsonRC(lam*x,lam*y)           - carlsonRC(x,y)/sqrt(lam))         < 1e-10*abs(carlsonRC(x,y)/sqrt(lam)), 'RC homogeneity at %g', lam);
+%!     assert(abs(carlsonRD(lam*x,lam*y,lam*z)     - carlsonRD(x,y,z)/lam^1.5)         < 1e-10*abs(carlsonRD(x,y,z)/lam^1.5), 'RD homogeneity at %g', lam);
+%!     assert(abs(carlsonRJ(lam*x,lam*y,lam*z,lam*p) - carlsonRJ(x,y,z,p)/lam^1.5)     < 1e-10*abs(carlsonRJ(x,y,z,p)/lam^1.5), 'RJ homogeneity at %g', lam);
+%! end
+%! assert(abs(carlsonRC(1e-20,2e-20) - 7853981633.9744830962) < 1e-4, 'RC(1e-20,2e-20)');
+
+%!test
+%! clear
+%! % Q6: ellipticBD nondegenerate anchors (mpmath: B=(E-(1-m)K)/m, D=(K-E)/m).
+%! R = [0.2 0.8066808960371526438 0.85294270257337535705
+%!      0.7 0.88437375336868858245 1.1909893819237805614
+%!      0.999 0.99832798626015502386 3.8428045742901420065];
+%! for i = 1:rows(R)
+%!     [B,D] = ellipticBD(R(i,1));
+%!     assert(abs(B - R(i,2)) < 1e-14, 'B(%g)', R(i,1));
+%!     assert(abs(D - R(i,3)) < 1e-13, 'D(%g)', R(i,1));
+%! end
+
+%!test
+%! clear
+%! % Q7: reversed arc intervals are signed, circles included.
+%! assert(abs(arclength_ellipse(2,3,1,0.1) + arclength_ellipse(2,3,0.1,1)) < 1e-13, 'ellipse arc not odd under reversal');
+%! assert(abs(arclength_ellipse(2,2,1,0.1) - (-1.8)) < 1e-13, 'reversed circle arc must be -a*(t1-t0)');
+
+% ---------------------------------------------------------------------
+% R. Second adversarial round (fuzz vs mpmath dps=40 over parameter
+%    endpoints, extreme scales, poles and period multiples).  Every
+%    reference was evaluated at the EXACT DOUBLE the library receives --
+%    near singularities the decimal input differs from its double by
+%    enough to move the answer at 1e-9.  Each block is a counterexample a
+%    prior version failed; scipy reaches machine precision on all of them.
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! m1 = 1 - eps/2;
+%! % R1: m -> 1 near phi = pi/2 (Delta^2 formed as (1-m) + m cos^2)
+%! assert(abs(elliptic12(pi/2-1e-9, m1) - 19.65993026560449767) < 1e-12*20, 'F(pi/2-1e-9 | 1-eps/2)');
+%! % R2: m = 1 exactly: F must be exactly 0 at 0 and odd
+%! assert(elliptic12(0, 1) == 0, 'F(0|1) must be exactly 0');
+%! assert(abs(elliptic12(1e-16, 1) - 1e-16) < 1e-31, 'F(1e-16|1) must be 1e-16');
+%! % R3: third kind at the endpoint poles
+%! assert(abs(elliptic3(pi/2-1e-6, 0.3, 1) - 1195228.2584444625825) < 1e-12*1.2e6, 'Pi(pi/2-1e-6 | .3, c=1)');
+%! assert(abs(elliptic3(pi/2-1e-6, 1-1e-8, 0.9) - 88.615055050793590585) < 1e-12*90, 'Pi(pi/2-1e-6 | 1-1e-8, .9)');
+
+%!test
+%! clear
+%! % R4: Carlson -- disparate scales, tiny y, near-equal args, double zeros
+%! assert(abs(carlsonRJ(1e-20,2e-20,3e-20,0.5) - 43616756114.805842986) < 1e-12*4.4e10, 'RJ disparate scales');
+%! assert(abs(carlsonRJ(2,3,4,1e-10) - 7.179193296087372323) < 1e-13*7.2, 'RJ small p');
+%! assert(abs(carlsonRC(3,1e-10) - 7.3643213780616827229) < 1e-13*7.4, 'RC(3,1e-10)');
+%! assert(abs(carlsonRC(1.0000000000001,1) - 0.99999999999998334665) < 1e-14, 'RC(1+1e-13,1)');
+%! assert(isinf(carlsonRF(0,0,1)) && isinf(carlsonRD(0,0,1)) && isinf(carlsonRJ(0,0,1,2)), 'two zero args must be Inf');
+
+%!test
+%! clear
+%! % R5: Jacobi functions at m -> 1 (atan2 Landen step)
+%! assert(abs(ellipj(9.375277798108883, 1-eps/2) - 0) >= 0);   % smoke: callable
+%! [~,cn] = ellipj(9.375277798108883, 1-eps/2);
+%! assert(abs(cn - 0.00016958935096417269446) < 1e-13*1.7e-4, 'cn(9.375 | 1-eps/2)');
+%! [~,cn] = ellipj(7, 1-1e-12);
+%! assert(abs(cn - 0.0018237622775256289351) < 1e-13*1.8e-3, 'cn(7 | 1-1e-12)');
+
+%!test
+%! clear
+%! % R6: inverse E for tiny negative z (oddness first, relative stop)
+%! for m = [0 0.5 1-1e-8]
+%!     [~,E1] = ellipke(m);  z = -1e-9*E1;
+%!     [~,Eb] = elliptic12(inverselliptic2(z, m), m);
+%!     assert(abs(Eb - z) < 1e-13*abs(z), 'inverselliptic2 tiny negative z at m=%g', m);
+%! end
+
+%!test
+%! clear
+%! % R7: complex F -- cancellation-free tan^2(mu): tiny psi and small m
+%! assert(abs(imag(elliptic12i(pi/2 + 1e-9i, 0.9)) - 3.1622776601683798848e-9) < 1e-12*3.2e-9, 'Im F(pi/2+1e-9i | .9)');
+%! F = elliptic12i(pi/2 + 1e-9i, 1-eps/2);
+%! assert(abs(F - (19.754694640120759063 + 0.095049319491958534055i)) < 1e-9*20, 'F(pi/2+1e-9i | 1-eps/2)');
+%! F = elliptic12i(0.4 + 0.3i, 1e-4);
+%! assert(abs(F - (0.39999936996865927219 + 0.30000195549059365219i)) < 1e-13, 'F(0.4+0.3i | 1e-4)');
+
+%!test
+%! clear
+%! % R8: nome at tiny m (K' from the exact argument m); Weierstrass with the
+%! % period computed from 1-m = (e1-e2)/(e1-e3) on a near-m=1 lattice
+%! assert(abs(nomeq(1e-16) - 6.2500000000000001819e-18) < 1e-13*6.25e-18, 'q(1e-16)');   % pi*K'/K ~ 40 eps amplification
+%! assert(abs(nomeq(1e-17) - 6.25e-19) < 1e-13*6.25e-19, 'q(1e-17)');
+%! e1 = 0.5000001; e2 = 0.5; e3 = -1.0000001;  z = 13.391953465243201;
+%! assert(abs(weierstrassP(z,e1,e2,e3)     - 0.51848214450600943279)     < 1e-12, 'P near-1 lattice');
+%! assert(abs(weierstrassZeta(z,e1,e2,e3)  - -5.4787546526901492279)  < 1e-12*5.5, 'Zeta near-1 lattice');
+%! assert(abs(weierstrassSigma(z,e1,e2,e3) - 1.822626274365935705e-13) < 1e-12*1.8e-13, 'Sigma near-1 lattice');
+
+% ---------------------------------------------------------------------
+% S. Third adversarial round: dense random fuzz + API abuse.
+%    S1 Cody-Waite pi reduction: F/E/Z/Pi at u = 5.5*pi + 8e-10, m = 1-1.5e-13
+%       (mpmath at the exact double inputs).  Before the split, k*pi rounding
+%       cost eps*|u| in the reduced phase, amplified 1e5x by dZ/dphi there.
+%    S2 NaN in, NaN out (a NaN m used to crash elliptic12's grouping).
+%    S3 elliptic12i(-0) is -0 exactly (the cot nudge returned eps).
+%    S4 R_J at an argument ratio of 1.9e44 (fixed 100 duplications).
+% ---------------------------------------------------------------------
+%!test
+%! clear
+%! u = 17.27875959554386;  m = 0.99999999999985;
+%! [F,E,Z] = elliptic12(u, m);
+%! assert(abs(F - 177.65640489133312311) < 2e-9,  'F at 5.5pi+8e-10, m->1 (conditioning floor ~1e-9)');
+%! assert(abs(E - 11.000000000012911122) < 1e-12, 'E at 5.5pi+8e-10');
+%! assert(abs(Z - (-0.00012790056416609388015)) < 1e-10, 'Z at 5.5pi+8e-10: k*pi rounding used to cost 1e-9');
+%! assert(abs(elliptic3(u, m, 0.3) - 248.50046674013002377) < 3e-9, 'Pi at 5.5pi+8e-10');
+
+%!test
+%! clear
+%! assert(isnan(elliptic12(0.3, NaN)) && isnan(elliptic12(NaN, 0.5)), 'elliptic12 must propagate NaN');
+%! v = elliptic12([0.3 0.5 0.7], [0.2 NaN 0.4]);
+%! assert(isnan(v(2)) && ~any(isnan(v([1 3]))), 'NaN must not leak into neighbours');
+%! assert(isnan(ellipj(0.3, NaN)), 'ellipj must propagate NaN');
+%! assert(elliptic12i(-0, 0.5) == 0 && elliptic12i(0, 0.5) == 0, 'F(0) must be exactly 0');
+%! assert(abs(carlsonRJ(2.798e-18, 5.954e-24, 9.634e-23, 1.134e21) - 9.9678905686736778972e-12) < 1e-12*1e-11, 'RJ at ratio 1.9e44');
+
+%% ---------------------------------------------------------------------
+%% T. Theta at a huge argument (mpmath jtheta at the exact double v).
+%%    Forming (2n+1)*v as a double product rounded by eps*|k v| (2e-10 here,
+%%    9e-9 at v ~ 1e11); the series now uses the angle-addition recurrence,
+%%    and theta() no longer round-trips v -> u -> v through jacobiThetaEta.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! v = 123456789.123;
+%! [t, tp] = theta_prime(1, v, 0.4);
+%! assert(abs(t - (0.84585020823346348431)) < 2e-15, 'theta1 at v=1.2e8');
+%! assert(abs(tp - (0.015114923736622936955)) < 2e-14, 'theta1'' at v=1.2e8');
+%! assert(abs(theta(1, v, 0.4) - (0.84585020823346348431)) < 2e-15, 'theta() at v=1.2e8');
+%! [t, tp] = theta_prime(2, v, 0.4);
+%! assert(abs(t - (0.014932290326334898348)) < 2e-15, 'theta2 at v=1.2e8');
+%! assert(abs(tp - (-0.84241862816186020729)) < 2e-14, 'theta2'' at v=1.2e8');
+%! assert(abs(theta(2, v, 0.4) - (0.014932290326334898348)) < 2e-15, 'theta() at v=1.2e8');
+%! [t, tp] = theta_prime(3, v, 0.4);
+%! assert(abs(t - (0.93627542467710214194)) < 2e-15, 'theta3 at v=1.2e8');
+%! assert(abs(tp - (-0.004519191759268069986)) < 2e-14, 'theta3'' at v=1.2e8');
+%! assert(abs(theta(3, v, 0.4) - (0.93627542467710214194)) < 2e-15, 'theta() at v=1.2e8');
+%! [t, tp] = theta_prime(4, v, 0.4);
+%! assert(abs(t - (1.0637286984176921296)) < 2e-15, 'theta4 at v=1.2e8');
+%! assert(abs(tp - (0.0045203629452149075654)) < 2e-14, 'theta4'' at v=1.2e8');
+%! assert(abs(theta(4, v, 0.4) - (1.0637286984176921296)) < 2e-15, 'theta() at v=1.2e8');
+
+%% ---------------------------------------------------------------------
+%% U. Round 6 (cross-port parity sweep at extreme m, 2026-09-02).  Every
+%%    anchor is mpmath at the EXACT double inputs.
+%%    - m in [eps^2, ~5e-16]: the AGM converges in one step, no Landen step
+%%      ran and the scale e stayed 0 -> F = E = Inf.
+%%    - theta nome from ellipke(1-m): 1-m rounds, q was 30% off at m ~ 1e-16.
+%%    - E/K sum stopped one AGM term early: E off by 1.4e-13 near m -> 1.
+%%    - k*pi reduction: k*double(pi) rounds by eps*|u| (2e-10 at u = 1e6);
+%%      sub_kpi splits pi into 25-bit parts so k*PI_A, k*PI_B are exact.
+%%    - elliptic3 reflection used Pi(double(pi/2)) as the complete integral;
+%%      cos(double(pi/2)) = 6e-17 is not 0 and the sliver is 2e-7 at m = 1-eps/2.
+%%    - carlsonRJ series: E3 = XYZ + 2 E2 P + 4 P^3 (DLMF 19.36.2), not 3 P^3.
+%%    - ellipticBDJ: n > 1 beyond the pole gave complex J silently; n = 1 gave NaN.
+%%    - elliptic3 now accepts c < 0 (as the Python port does).
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! [F, E] = elliptic12([1 1], [3e-16 5e-16]);
+%! assert(all(isfinite(F)) && all(isfinite(E)), 'F, E must be finite for m ~ 3e-16 (were Inf)');
+%! assert(abs(F(1) - 1.0) < 5e-16 && abs(E(1) - 0.99999999999999996) < 5e-16, 'F(1|3e-16), E(1|3e-16)');
+%! assert(abs(F(2) - 1.0000000000000001) < 5e-16 && abs(E(2) - 0.99999999999999993) < 5e-16, 'F(1|5e-16), E(1|5e-16)');
+%! assert(abs(theta(1, 34401.9, 1.6e-16) - 0.00011178415088289534) < 1e-13 * 1.1e-4, 'theta1 at m = 1.6e-16 (nome from exact m)');
+%! assert(abs(theta_prime(1, 6577.39, 1.5e-16) - (-9.8878892558450512e-5)) < 1e-13 * 1e-4, 'theta_prime at m = 1.5e-16');
+%! [~, H] = jacobiThetaEta(6577.39 * 2 * ellipke(1.5e-16) / pi, 1.5e-16);
+%! assert(abs(H - (-9.8878892558450512e-5)) < 1e-12 * 1e-4, 'jacobiThetaEta eta at m = 1.5e-16');
+%! [F, E] = elliptic12(-1.65181, 0.99999999999999578);
+%! assert(abs(E - (-1.0032798131910099)) < 2e-14, 'E near m -> 1 (missing AGM term gave 1.4e-13)');
+%! assert(abs(F - (-32.666065762173088)) < 1e-14 * 33, 'F near m -> 1');
+%! u = 80101.48788857895;  m = 0.9999533239086507;         % 25497*pi + 0.3
+%! [F, E, Z] = elliptic12(u, m);
+%! assert(abs(Z - 0.2477141143165845) < 2e-14, 'Jacobi Zeta at u = 8e4 (k*pi split)');
+%! assert(abs(E - 51001.284415600044) < 1e-14 * 51001, 'E at u = 8e4');
+%! assert(abs(F - 324959.38078465716) < 1e-14 * 324959, 'F at u = 8e4');
+%! [~, ~, Z] = elliptic12(1000000.123, 1 - eps/2);
+%! assert(abs(Z - (-0.220434859492317)) < 2e-14, 'Jacobi Zeta at u = 1e6, m = 1-eps/2');
+%! assert(abs(elliptic3(-2.70143, 1 - eps/2, 0.9723) - (-1249.3300419938347)) < 1e-14 * 1249, 'elliptic3 reflection at m = 1-eps/2 (complete integral must be exact)');
+%! assert(abs(carlsonRJ(0.1, 0.2, 1, 3.0) - 1.1311524759367163) < 5e-15 * 1.13, 'RJ series E3 coefficient');
+%! assert(abs(carlsonRJ(0.292, 0.646, 1, 1.354) - 1.2806109121365949) < 5e-15 * 1.28, 'RJ series E3 coefficient');
+%! [~, ~, J] = ellipticBDJ(1, 0.5, 1);
+%! assert(abs(J - 0.64877476917835824) < 5e-15, 'J at n = 1 (was NaN)');
+%! [~, ~, J] = ellipticBDJ(0.5, 0.5, 1.5);
+%! assert(abs(J - 0.052791966372572887) < 5e-16, 'J at n = 1.5 below the pole');
+%! err = '';
+%! try, ellipticBDJ(1, 0.5, 1.5); catch e, err = e.message; end
+%! assert(~isempty(strfind(err, 'principal')), 'J at n = 1.5 beyond the pole must error, not return complex');
+%! assert(abs(elliptic3(1, 0.5, -0.5) - 0.9560406633267465) < 5e-16, 'elliptic3 with c = -0.5');
+%! assert(abs(elliptic3(1, 0.5, -3.0) - 0.66684868942035313) < 5e-16, 'elliptic3 with c = -3');
+%! assert(abs(elliptic3(1, 0.5, -100.0) - 0.1523863772236308) < 5e-16, 'elliptic3 with c = -100 (Carlson branch)');
+%! assert(abs(elliptic3(4, 0.9, -100.0) - 0.4921742710224714) < 5e-15, 'elliptic3 with c = -100, reduced phase');
+
+%% ---------------------------------------------------------------------
+%% V. Bulirsch cel (round 6b).  The old route through m = 1 - kc^2 lost kc
+%%    entirely below ~1e-8 (cel1(1e-9) was Inf here, 2e6 in Python; the value
+%%    is ln(4/kc) = 22.1), rejected kc > 1 (m < 0) and returned Inf for p < 0.
+%%    Bulirsch's own algorithm is kc-native; p < 0 is the Cauchy principal
+%%    value, equal to Re Pi(1-p | 1-kc^2) (mpmath).
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! assert(abs(cel1(1e-9) - (22.109560198066302)) < 1e-15 * 22, 'cel1(1e-9) = ln(4/kc)+...');
+%! assert(abs(cel1(1e-300) - (692.1618222593336)) < 1e-15 * 692, 'cel1(1e-300)');
+%! assert(abs(cel1(2) - (1.0782578237498216)) < 1e-15, 'cel1(2): kc > 1 is m = -3');
+%! assert(abs(cel(0.5, -0.5, 1, 1) - (-1.0782578237498216)) < 1e-15 * 1.1, 'cel with p < 0 = principal value Re Pi(1.5|0.75)');
+%! assert(abs(cel(0.7, -5, 1, 1) - (-0.092277884964284496)) < 1e-15, 'cel with p = -5');
+%! assert(abs(cel(1e-9, 0.3, 1.5, -0.7) - (-46.045402351061091)) < 1e-15 * 47, 'general cel at kc = 1e-9');
+%! assert(cel(0.3, 1, 1, 1) == cel1(0.3) && cel(-0.3, 1, 1, 1) == cel1(0.3), 'cel depends on kc^2 only');
+%! assert(isinf(cel1(0)) && cel1(0) > 0, 'cel1(0) = K(1) = Inf');
+%! kc = [1e-12 0.3 0.9 2.5];  p = [-0.4 0.7 -3 1e-3];
+%! assert(all(abs(cel(kc, p, 1, 0) + p .* cel(kc, p, 0, 1) - cel1(kc)) < 1e-14 .* max(1, cel1(kc))), 'cel(1,0) + p cel(0,1) = K');
+
+%% ---------------------------------------------------------------------
+%% W. Round 6c (sweep of the remaining outputs).  mpmath at exact doubles.
+%%    - ellipticBDJ formed Delta^2 = 1 - m sin^2, which cancels near phi = pi/2
+%%      as m -> 1; jacobiEDJ also took am(u) at |u| ~ 1e3 before reducing, so
+%%      D_u(1520|1-1e-8) was off by 3e-10.  Both are at the eps*|u| floor now.
+%%    - arclength_ellipse branched with if(a<b) on arrays (all-elements
+%%      semantics): mixed arrays fell through to the circle formula.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! [~, Dv] = ellipticBDJ(pi/2 - 2e-4, 1 - 1e-8);
+%! assert(abs(Dv - (8.1529993379146678)) < 2e-12 * 9, 'D(pi/2-2e-4 | 1-1e-8): Delta^2 must not cancel');
+%! [Eu, Du] = jacobiEDJ(1520.3427441800743, 0.999999990458008);
+%! assert(abs(Eu - 143.00000694616405) < 2e-12 && abs(Du - 1377.3427503765037) < 2e-12, 'jacobiEDJ at u = 1520 near m = 1 (was 3e-10 off)');
+%! v = arclength_ellipse([5 785.9 3], [10 495.8 3], [0 5.279 0], [1 -6.134 2]);
+%! assert(all(abs(v - [8.8662512353670695 -7494.1448816975323 6]) < 1e-14 * [9 7495 6]), 'arclength_ellipse elementwise on mixed arrays');
+%! assert(abs(arclength_ellipse(5, 10, [0 0.5], [1 1.5])(1) - 8.8662512353670695) < 1e-14, 'scalar axes with array angles');
+
+%% ---------------------------------------------------------------------
+%% X. inversenomeq / nome2m near q = 1.  Above q_max = 0.7789534 the true
+%%    1-m = m(exp(pi^2/ln q)) is below eps/2, so the correctly rounded double
+%%    is exactly 1; the unconverged 30-term series returned m > 1 (1.034 at
+%%    q = 0.999, 1+1.6e-15 at q = 0.9).  nome2m captured its whole input array
+%%    in the fzero objective and errored on any array.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! assert(isequal(inversenomeq([0.78 0.9 0.999]), [1 1 1]), 'inversenomeq rounds to exactly 1 above q_max');
+%! assert(all(inversenomeq([0.5 0.7 0.7789]) <= 1), 'no overshoot below q_max');
+%! assert(abs(inversenomeq(0.5) - 0.99998952213731039) < 4e-16, 'inversenomeq(0.5) (mpmath mfrom)');
+%! q = [1e-12 0.05 0.3 0.5];          % q > 0.5 puts 1-m below 1e-5, where q(m) is ill-conditioned in double
+%! m = nome2m(q);
+%! assert(isequal(size(m), size(q)) && max(abs(nomeq(m) - q) ./ q) < 1e-11, 'nome2m on an array, round trip');
+%! assert(nome2m(0.999) == 1, 'nome2m near q = 1');
+
+%% ---------------------------------------------------------------------
+%% Y. elliptic12i period term just below pi/2, and elliptic123 for m > 1.
+%%    lambda = (-1)^k lambda + pi*ceil(phi/pi - 0.5 + eps) counted the period
+%%    from a separately rounded quantity: for phi within a few ulps below
+%%    pi/2 (asin(sqrt(3)) is 2 ulps below) Re F came out 3K instead of K,
+%%    which elliptic123 inherited as K(3) = 3.003 (mpmath: 1.001).  The
+%%    complete m > 1 case now uses the DLMF 19.7.3 closed forms instead of
+%%    evaluating elliptic12i exactly on its branch point (sqrt(eps)-conditioned).
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! F = elliptic12i(1.5707963267948961 + 0.5i, 1/3);
+%! assert(abs(F - (1.7339168852579344 + 0.62666316872107993i)) < 2e-15 * 2, 'F two ulps below pi/2 (was 3K + ...)');
+%! F = elliptic12i(asin(sqrt(3)), 1/3);
+%! assert(abs(real(F) - 1.73391688525794) < 1e-7 && abs(imag(F) + 2.02895910274881) < 1e-7, 'F at the branch point (sqrt(eps)-conditioned there)');
+%! [K, E] = elliptic123(3);
+%! assert(abs(K - (1.0010773804561062 - 1.1714200841467699i)) < 1e-15 * 2 && abs(E - (0.47522393535101711 + 1.0130180585994313i)) < 1e-15 * 2, 'K(3), E(3) closed forms (were 3x off in the real part)');
+%! [K, E] = elliptic123(pi/2, 3);
+%! assert(abs(K - (1.0010773804561062 - 1.1714200841467699i)) < 1e-15 * 2 && abs(E - (0.47522393535101711 + 1.0130180585994313i)) < 1e-15 * 2, 'elliptic123(pi/2, 3) routes to the complete closed form');
+%! [K, E] = elliptic123(5);
+%! assert(abs(K - (0.74220623671119323 - 1.0094529099892116i)) < 3e-16 && abs(E - (0.36075866393790281 + 1.6257306716064185i)) < 3e-15, 'K(5), E(5)');
+%! [F, E] = elliptic123(1.2, 3);
+%! assert(abs(F - (1.0010773804561062 - 0.89956974520736591i)) < 1e-14 && abs(E - (0.47522393535101711 + 0.50673122232331459i)) < 1e-14, 'F(1.2|3), E(1.2|3) (m > 1, real part was 3x off)');
+
+%% ---------------------------------------------------------------------
+%% Z. Input shapes (round 6d).  Every function must give the same values for
+%%    a 2x3 matrix, a column, a row and a mixed scalar/array call as for the
+%%    scalar loop, and keep the input shape.  Found: ellipj re-read cn(I)
+%%    from its column-shaped output against the row m(I) (6x6 broadcast
+%%    error for column u), jacobiThetaEta returned a row for a matrix,
+%%    inverselliptic2's vector-wide Newton stop made values batch-dependent,
+%%    elliptic123 failed on any matrix.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! u = reshape(linspace(-2.5, 7.3, 6), 2, 3); m = reshape([0.1 0.5 0.9 0.999 0.3 0.7], 2, 3); n = reshape([0.2 -0.5 0.9 0.0 0.5 0.3], 2, 3);
+%! [sn, cn, dn, am] = ellipj(u(:), 0.5);
+%! assert(isequal(size(sn), [6 1]), 'ellipj column input');
+%! [s1, c1, d1, a1] = ellipj(u(3), 0.5);
+%! assert(sn(3) == s1 && cn(3) == c1 && dn(3) == d1 && am(3) == a1, 'ellipj column == scalar');
+%! [Th, H] = jacobiThetaEta(u, m);
+%! assert(isequal(size(Th), [2 3]) && isequal(size(H), [2 3]), 'jacobiThetaEta keeps the input shape');
+%! [t1, h1] = jacobiThetaEta(u(4), m(4));
+%! assert(Th(4) == t1 && H(4) == h1, 'jacobiThetaEta matrix == scalar');
+%! z = reshape(linspace(0.2, 3.1, 6), 2, 3);
+%! v = inverselliptic2(z, m);
+%! for i = 1:6, assert(v(i) == inverselliptic2(z(i), m(i)), 'inverselliptic2 must be batch-independent'); end
+%! [F, E] = elliptic123(u, m);
+%! assert(isequal(size(F), [2 3]), 'elliptic123 matrix input');
+%! for i = 1:6, [f, e] = elliptic123(u(i), m(i)); assert(abs(F(i) - f) < 1e-15 && abs(E(i) - e) < 1e-15, 'elliptic123 matrix == scalar'); end
+%! [F, E, P] = elliptic123(u(:), m(:), 0.3);
+%! assert(isequal(size(P), [6 1]), 'elliptic123 three outputs, column input');
+%! [Eu, Du, Ju] = jacobiEDJ(u(:), 0.5, 0.3);
+%! assert(isequal(size(Ju), [6 1]), 'jacobiEDJ column u, scalar m, n');
+%! [Eu1, Du1, Ju1] = jacobiEDJ(u(2), 0.5, 0.3);
+%! assert(Eu(2) == Eu1 && Du(2) == Du1 && Ju(2) == Ju1, 'jacobiEDJ column == scalar');
+
+%% ---------------------------------------------------------------------
+%% AA. Empty, NaN and Inf inputs (round 6e).  Empty in -> empty out of the
+%%     same shape; a NaN element must come back as NaN without disturbing
+%%     its neighbours or aborting the call.  Found: nine functions rejected
+%%     [] against a scalar partner; nomeq aborted inside ellipke on a NaN
+%%     ("algorithm did not converge"); inversenomeq rejected NaN as "out of
+%%     [0,1)"; elliptic12i raised "must be real" because (-1)^NaN is complex
+%%     in Octave; the Carlson wrappers returned complex NaN for -Inf and
+%%     complex garbage for R_J with p < 0.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! assert(isempty(ellipticBDJ([], 0.5, 0.3)) && isempty(theta_prime(2, [], 0.5)) && isempty(cel([], 1, 1, 1)), 'empty inputs (1)');
+%! assert(isempty(weierstrassP([], 1.5, -0.25, -1.25)) && isempty(weierstrassZeta([], 1.5, -0.25, -1.25)) && isempty(weierstrassSigma([], 1.5, -0.25, -1.25)), 'empty inputs (2)');
+%! assert(isempty(carlsonRF([], 0.5, 1)) && isempty(carlsonRJ(1, 2, 3, [])) && isempty(carlsonRC([], 1)) && isempty(arclength_ellipse(2, 3, 0, [])) && isempty(elliptic123([], 0.5)), 'empty inputs (3)');
+%! assert(isequal(size(carlsonRD(zeros(0, 3), 1, 2)), [0 3]), 'empty keeps its shape');
+%! q = nomeq([0.3 NaN 0.7]);
+%! assert(isnan(q(2)) && ~any(isnan(q([1 3]))) && q(1) == nomeq(0.3), 'nomeq isolates NaN');
+%! m = inversenomeq([0.05 NaN 0.3]);
+%! assert(isnan(m(2)) && m(1) == inversenomeq(0.05) && m(3) == inversenomeq(0.3), 'inversenomeq isolates NaN');
+%! F = elliptic12i([0.3 NaN 0.7 Inf] + 0.2i, 0.5);
+%! assert(isnan(F(2)) && isnan(F(4)) && ~isnan(F(1)) && F(1) == elliptic12i(0.3 + 0.2i, 0.5), 'elliptic12i isolates NaN / Inf');
+%! assert(isnan(carlsonRF(-Inf, 0.5, 1)) && isreal(carlsonRF(-Inf, 0.5, 1)) && isnan(carlsonRF(-1, 2, 3)), 'Carlson: -Inf / negative -> real NaN');
+%! v = carlsonRF([1 NaN 2], 2, 3);
+%! assert(isnan(v(2)) && v(1) == carlsonRF(1, 2, 3), 'Carlson isolates NaN');
+%! err = ''; try, carlsonRJ(1, 2, 3, -1); catch e, err = e.message; end
+%! assert(~isempty(strfind(err, 'principal')), 'carlsonRJ p < 0 must error, not return complex');
+%! t = theta(1, [0.3 0.5 0.7], [0.2 NaN 0.4]);
+%! assert(isnan(t(2)) && t(1) == theta(1, 0.3, 0.2), 'theta isolates NaN in m (Octave ellipke aborts on NaN)');
+%! [th, thp] = theta_prime(2, 0.4, [0.2 NaN]);
+%! assert(isnan(th(2)) && isnan(thp(2)) && ~isnan(th(1)), 'theta_prime isolates NaN in m');
+%! [Th, H] = jacobiThetaEta([0.3 0.5], [0.2 NaN]);
+%! assert(isnan(Th(2)) && isnan(H(2)) && Th(1) == jacobiThetaEta(0.3, 0.2), 'jacobiThetaEta isolates NaN in m');
+%! assert(isnan(inverselliptic2(0.4, NaN)) && isnan(elliptic12i(0.3 + 0.2i, NaN)), 'inverselliptic2 / elliptic12i NaN in m');
+
+%% ---------------------------------------------------------------------
+%% AB. Scalar first argument with a parameter vector (round 6f).  elliptic3
+%%     expanded c from the still-scalar u before u was expanded from m and
+%%     rejected the call as "must be the same size"; theta preallocated its
+%%     output before broadcasting; elliptic123 restored the shape of the
+%%     scalar phase.  Each result must equal the scalar-loop values.
+%% ---------------------------------------------------------------------
+%!test
+%! clear
+%! mv = [0.2 0.5 0.9];
+%! P = elliptic3(0.3, mv, 0.3);
+%! assert(isequal(size(P), [1 3]) && P(2) == elliptic3(0.3, 0.5, 0.3), 'elliptic3 scalar u, vector m');
+%! P = elliptic3(0.3, 0.5, [0.1 0.2 0.3]);
+%! assert(isequal(size(P), [1 3]) && P(3) == elliptic3(0.3, 0.5, 0.3), 'elliptic3 scalar u, m; vector c');
+%! t = theta(1, 0.3, mv);
+%! assert(isequal(size(t), [1 3]) && t(2) == theta(1, 0.3, 0.5), 'theta scalar v, vector m');
+%! [F, E] = elliptic123(0.3, mv);
+%! assert(isequal(size(F), [1 3]) && F(2) == elliptic123(0.3, 0.5), 'elliptic123 scalar b, vector m');
+%! assert(isempty(elliptic3([], 0.5, 0.3)) && isempty(theta(1, [], 0.5)) && isempty(elliptic3(0.3, [], 0.3)), 'empty inputs');

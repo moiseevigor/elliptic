@@ -2,9 +2,9 @@ name: tests
 
 on:
   push:
-    paths: ["python/**"]
+    paths: ["python/**", ".github/workflows/python.yml"]
   pull_request:
-    paths: ["python/**"]
+    paths: ["python/**", ".github/workflows/python.yml"]
   release:
     types: [published]
 
@@ -13,6 +13,32 @@ defaults:
     working-directory: python
 
 jobs:
+  test-standalone:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime dependencies only
+        run: pip install -e .
+      - name: Exercise public functions without SciPy
+        run: |
+          python - <<'PY'
+          import importlib.util
+          import elliptic
+
+          assert importlib.util.find_spec("scipy") is None
+          elliptic.theta(1, 0.2, 0.5)
+          elliptic.theta_prime(1, 0.2, 0.5)
+          elliptic.jacobiThetaEta(0.2, 0.5)
+          elliptic.nomeq(0.5)
+          elliptic.inversenomeq(0.04)
+          elliptic.inverselliptic2(0.5, 0.5)
+          elliptic.elliptic12i(0.7 + 0.2j, 0.5)
+          elliptic.arclength_ellipse([2.0, 3.0], [3.0, 2.0])
+          PY
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -62,7 +88,7 @@ jobs:
   publish:
     name: Build and publish to PyPI
     runs-on: ubuntu-latest
-    needs: [test, test-torch, test-jax]
+    needs: [test-standalone, test, test-torch, test-jax]
     if: github.event_name == 'release' && github.event.action == 'published'
     environment: pypi
     permissions:

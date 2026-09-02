@@ -82,14 +82,14 @@ if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 % smaller than eps = 2.220446049250313e-16, if so we suppose it equal zero
 m(m<eps) = 0;
 
-I = find(m ~= 1 & m ~= 0);
+bad = isnan(m) | isnan(u);            % NaN in, NaN out (a NaN m used to crash unique())
+F(bad) = NaN;  E(bad) = NaN;  Z(bad) = NaN;
+I = find(m ~= 1 & m ~= 0 & ~bad);
 if ~isempty(I)
-    % Use standard uniquetol for numerical precision issues
-    % This is the recommended MATLAB approach since R2015a
+    % Group exact duplicates only.  uniquetol(1e-11) silently substituted a
+    % neighbouring parameter and caused errors up to 1e-9 near m=1.
     m_vals = m(I);
-    tol_unique = 1e-11;
-
-    [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
+    [mu, ~, K] = unique(m_vals);
     K = K(:).';
     mumax = length(mu);
     signU = sign(u(I));
@@ -127,28 +127,38 @@ if ~isempty(I)
     % (-pi/2, pi/2]: u_work is |u|, and the Landen branch term
     % pi*ceil(phin/pi-0.5) below misfires when phin lands on -pi/2, which a
     % symmetric reduction hits for every u within an ulp of pi/2 + k*pi.
-    K_vals = pi ./ (2 .* a(mn,:));                                  % K(m) for each unique m
+    % first converged AGM row per unique m (a(n+1,:)), not the batch-wide last
+    % row: a value must not depend on what else is in the batch
+    a_fin  = reshape(a(sub2ind(size(a), n + 1, 1:mumax)), 1, mumax);
+    K_vals = pi ./ (2 .* a_fin);                                    % K(m) for each unique m
     u_work = signU .* u(I);                                         % == abs(u(I))
     k_per  = floor(u_work ./ pi);                                   % number of full half-periods
-    phin0  = u_work - k_per .* pi;                                  % reduced to [0, pi)
+    phin0  = sub_kpi(u_work, k_per);                                % reduced to [0, pi), error eps*|phin0| (see SUB_KPI)
     K_per  = 2 .* k_per .* K_vals(K);                               % period correction for F
 
 	phin = zeros(1,mmax);     C  = zeros(1,mmax);
-	Cp = C;  e  = zeros(1,mmax);  phin(:) = phin0;
+	Cp = C;  phin(:) = phin0;
+	% Landen scale 2^(n-2) in closed form: F = phi_{n-1} / (2^(n-1) a_n).  Assigning
+	% it inside the loop left e = 0 when no step ran (n <= 1, i.e. m in
+	% [eps^2, ~5e-16]) and F, E came out Inf.  n = 0 (c_0 <= tol) also needs 1/2.
+	e = 2 .^ (max(n(K), 1) - 2);
 	c2 = c.^2;
 	e_vals = 2.^(0:mn-1);                                          % pre-compute powers of 2
-	for i = 1:mn                                                    % Descending Landen Transformation
+	for i = 1:mn                                                    % Descending Landen Transformation (C: mn terms, see below)
+        % E/K = 1 - sum_{j>=0} 2^(j-1) c_j^2 (A&S 17.6.4) needs one term more than
+        % the Landen descent: stopping C at i = n-1 dropped 2^(n-2) c_{n-1}^2, up to
+        % 1e-14 near m -> 1 (c_{n-1} ~ 1e-8), and E(u|1-4e-15) was off by 1.4e-13.
+        maskC = n(K) >= i;
+        C(maskC) = C(maskC) + e_vals(i)*c2(i,K(maskC));
         mask = n(K) > i;
         if any(mask)
             phin(mask) = atan(b(i,K(mask))./a(i,K(mask)).*tan(phin(mask))) + ...
                 pi.*ceil(phin(mask)/pi - 0.5) + phin(mask);
-            e(mask) = e_vals(i);
-            C(mask) = C(mask)  + e_vals(i)*c2(i,K(mask));
             Cp(mask)= Cp(mask) + c(i+1,K(mask)).*sin(phin(mask));
         end
 	end
 
-    Ff = phin ./ (a(mn,K).*e*2) + K_per;                           % F_reduced + period correction
+    Ff = phin ./ (a_fin(K).*e*2) + K_per;                          % F_reduced + period correction
     F(I) = Ff.*signU;                                               % Incomplete Ell. Int. of the First Kind
     Z(I) = Cp.*signU;                                               % Jacobi Zeta Function
     E(I) = (Cp + (1 - 1/2*C) .* Ff).*signU;                         % Incomplete Ell. Int. of the Second Kind
@@ -164,7 +174,7 @@ if ~isempty(m1),
     N = floor( (um1+pi/2)/pi );
     M = find(um1 < pi/2);
 
-    F(m1(M)) = log(tan(pi/4 + u(m1(M))/2));
+    F(m1(M)) = asinh(tan(u(m1(M))));   % gd^-1: exact at 0, odd, and no saturation as sin(u) -> 1
     F(m1(um1 >= pi/2)) = Inf.*sign(u(m1(um1 >= pi/2)));
 
     E(m1) = ((-1).^N .* sin(um1) + 2*N).*sign(u(m1));
@@ -229,7 +239,11 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
     if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
     m(m < eps) = 0;
 
-    I = find(m ~= 1 & m ~= 0);
+    % NaN in, NaN out (a NaN m fell through the selection below and the AGM
+    % loop exited at once, so the GPU path returned F = u on real hardware)
+    bad = isnan(m) | isnan(u);
+    F(bad) = NaN;  E(bad) = NaN;  Z(bad) = NaN;
+    I = find(m ~= 1 & m ~= 0 & ~bad);
     if ~isempty(I)
         mmax  = length(I);
         mu    = m(I);
@@ -257,9 +271,18 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
         mn = max(n);
         % Precompute e from n (avoids GPU assignment in Landen loop)
         e_vals = 2 .^ (0:mn-1);
-        e = gpuArray(e_vals(max(n-1, 1))(:));  % column, e(j)=e_vals(n(j)-1)
+        e = gpuArray(2 .^ (max(n(:), 1) - 2));  % column, 2^(n-2); n <= 1 -> 1/2 (no Landen step)
 
-        phin = gpuArray(signU .* u(I));
+        % Mirror the serial issue-#35 fix: reduce the phase before the
+        % Landen descent and restore 2*k*K afterwards.  The previous GPU
+        % branch still evaluated the unreduced phase and therefore retained
+        % the v4.1.0 regression even after the CPU path was repaired.
+        a_cpu = gather(a);  a_fin = a_cpu(sub2ind(size(a_cpu), (1:mmax)', n + 1));   % per-element converged row
+        K_vals = pi ./ (2 .* a_fin);
+        u_work = signU .* u(I);
+        k_per = floor(u_work ./ pi);
+        phin = gpuArray(sub_kpi(u_work, k_per));   % exact k*pi split, as in the CPU path
+        K_per = gpuArray(2 .* k_per .* K_vals);   % host product, then to the device (ocl refuses ocl .* host)
         C    = gpuArray(zeros(mmax, 1));
         Cp   = gpuArray(zeros(mmax, 1));
         c2   = c .^ 2;
@@ -269,11 +292,11 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
             phin_new = atan(b(:,jj)./a(:,jj).*tan(phin)) + ...
                 pi.*ceil(phin/pi - 0.5) + phin;
             phin = phin + active .* (phin_new - phin);
-            C  = C  + active .* e_vals(jj) .* c2(:,jj);
+            C  = C  + gpuArray(double(n >= jj)) .* e_vals(jj) .* c2(:,jj);   % one term more than the descent (A&S 17.6.4)
             Cp = Cp + active .* c(:,jj+1) .* sin(phin);
         end
 
-        Ff = phin ./ (a(:,mn) .* e * 2);
+        Ff = phin ./ (gpuArray(a_fin) .* e * 2) + K_per;
         F(I) = gather(Ff)                    .* signU;
         Z(I) = gather(Cp)                    .* signU;
         E(I) = gather(Cp + (1 - 0.5*C) .* Ff) .* signU;
@@ -288,7 +311,7 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
     if ~isempty(m1)
         Nf = floor((um1 + pi/2) / pi);
         M  = find(um1 < pi/2);
-        F(m1(M))           = log(tan(pi/4 + u(m1(M))/2));
+        F(m1(M))           = asinh(tan(u(m1(M))));
         F(m1(um1 >= pi/2)) = Inf .* sign(u(m1(um1 >= pi/2)));
         E(m1) = ((-1).^Nf .* sin(um1) + 2*Nf) .* sign(u(m1));
         Z(m1) = (-1).^Nf .* sin(u(m1));

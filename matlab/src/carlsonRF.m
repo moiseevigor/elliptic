@@ -27,6 +27,16 @@ function RF = carlsonRF(x, y, z)
 %   [2] B.C. Carlson, "Numerical Computation of Real or Complex Elliptic
 %       Integrals," Numer. Algorithms 10 (1995), 13–26.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 3 && (isempty(x) || isempty(y) || isempty(z))
+    sz = size(x);
+    if isempty(y), sz = size(y); end
+    if isempty(z), sz = size(z); end
+    RF = zeros(sz);
+    return;
+end
+
 if nargin < 3, error('carlsonRF: requires three arguments (x, y, z).'); end
 if ~isreal(x) || ~isreal(y) || ~isreal(z)
     error('carlsonRF: all input arguments must be real.');
@@ -36,7 +46,15 @@ end
 origSize = size(x);
 x = x(:).';  y = y(:).';  z = z(:).';
 
+% NaN, Inf and negative arguments give NaN (R_F is defined for x, y, z >= 0);
+% they used to reach the duplication and come back as complex NaN.
+bad = ~(x >= 0 & y >= 0 & z >= 0) | isinf(x) | isinf(y) | isinf(z);
+x(bad) = 1;  y(bad) = 1;  z(bad) = 1;
 RF = carlsonRF_core(x, y, z);
+RF(bad) = NaN;
+% Two zero arguments: the integral diverges (DLMF 19.16.1); the duplication
+% loop just stalls and returned a finite 2e6 for R_F(0, 0, 1).
+RF((x == 0) + (y == 0) + (z == 0) >= 2) = Inf;
 RF = reshape(RF, origSize);
 
 
@@ -49,15 +67,20 @@ cr = 0.0027;
 
 x0 = x;  y0 = y;  z0 = z;
 
-for iter = 1:20
+% The adaptive break decides; the cap only guards pathological input
+% (20 was too few for R_F(0, 1e-16, 1) and every K(m) at tiny m).
+% Per-element convergence: each element stops when IT has converged, so a
+% value never depends on what else is in the batch (a vector-wide break
+% made chunked and serial evaluations differ by an ulp).
+active = true(size(x));
+for iter = 1:200
     lam = sqrt(x.*y) + sqrt(y.*z) + sqrt(z.*x);
-    x   = (x + lam) ./ 4;
-    y   = (y + lam) ./ 4;
-    z   = (z + lam) ./ 4;
+    x(active) = (x(active) + lam(active)) ./ 4;
+    y(active) = (y(active) + lam(active)) ./ 4;
+    z(active) = (z(active) + lam(active)) ./ 4;
     A   = (x + y + z) ./ 3;
-    if max(max(abs(x - A)), max(max(abs(y - A)), abs(z - A))) < cr * min(A)
-        break;
-    end
+    active = active & (max([abs(x - A); abs(y - A); abs(z - A)], [], 1) >= cr * A);
+    if ~any(active), break; end
 end
 
 A  = (x + y + z) ./ 3;

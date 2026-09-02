@@ -6,6 +6,10 @@ configuration flag.  The same source code paths work in both **MATLAB**
 (Parallel Computing Toolbox / CUDA) and **Octave** (ocl Forge package /
 OpenCL).
 
+For `elliptic3`, regular inputs run on the GPU. Inputs close to an endpoint
+pole are intentionally gathered and evaluated by the Carlson CPU path because
+fixed GPU quadrature is not accurate enough there.
+
 ---
 
 ## Benchmark results
@@ -20,9 +24,9 @@ Octave 6.4.0 · ocl 1.2.4 · CUDA driver 535, OpenCL 3.0.
 | `elliptic3` | 4 M | 2.668 s | 1.167 s (2.3×) | 0.199 s | **13.4×** |
 | `jacobiThetaEta` | 1 M | 1.460 s | 0.583 s (2.5×) | 0.494 s | **3.1×** |
 
-`elliptic3` achieves 13× because it is a pure Gauss-Legendre quadrature
-(no AGM, no sequential dependencies) — every element is completely
-independent and maps trivially to GPU threads.
+These historical `elliptic3` measurements use regular inputs, for which the
+Gauss-Legendre GPU path remains active. Every element is independent and maps
+directly to GPU threads.
 
 ### Hardware utilisation at N = 1 M
 

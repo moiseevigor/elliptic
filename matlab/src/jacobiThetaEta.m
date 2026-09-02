@@ -50,6 +50,7 @@ if length(m)==1, m = m(ones(size(u))); end
 if length(u)==1, u = u(ones(size(m))); end
 if ~isequal(size(m),size(u)), error('U and M must be the same size.'); end
 
+origSize = size(u);
 Th = zeros(size(u));
 H = Th;
 
@@ -75,7 +76,7 @@ end
 m = m(:).';    % make a row vector
 u = u(:).';
 
-KK = ellipke(m);
+KK = ellipke_safe(m);
 
 % Theta functions from their q-series (A&S 16.27, 16.38):
 %     Th(u|m) = theta_4(v, q),  H(u|m) = theta_1(v, q),  v = pi*u/(2K)
@@ -83,25 +84,12 @@ KK = ellipke(m);
 % q^(n^2) and is accurate to full double precision; the previous AGM-product
 % form lost ~11 digits of the overall normalisation and needed a deliberate
 % perturbation of u and m at the odd half-periods to stay finite.
-q = exp(-pi .* ellipke(1-m) ./ KK);
+q = exp(-pi .* carlsonRF(zeros(size(m)), m, ones(size(m))) ./ KK);   % K(1-m) from the exact m (see NOMEQ)
 q(~(q < 1)) = 0;                      % m == 1 (and NaN) handled below
 v = pi .* u ./ (2 .* KK);
 
-qmax = max([q(:); 0]);
-if qmax > 0
-    nTerms = min(1000, max(1, ceil(sqrt(log(tol) / log(qmax)))));
-else
-    nTerms = 1;
-end
-
-Th = ones(size(v));
-H  = zeros(size(v));
-for nn = 1:nTerms
-    Th = Th + 2*(-1)^nn .* q.^(nn^2) .* cos(2*nn .* v);
-end
-for nn = 0:nTerms
-    H = H + 2*(-1)^nn .* q.^((nn+0.5)^2) .* sin((2*nn+1) .* v);
-end
+Th = theta_series(4, v, q, tol);
+H  = theta_series(1, v, q, tol);
 
 % Special cases: m = {0, 1}
 m0 = find(abs(m) < 10*eps);
@@ -111,11 +99,13 @@ if ( ~isempty(m0) )
     H(m0)  = sqrt(sqrt(m(m0))).* sin(u(m0));
 end
 
-m1 = find(abs(m-1) < 10*eps);
+m1 = find(abs(m-1) < 10*eps | isnan(m));   % NaN m: q was set to 0 above
 if ( ~isempty(m1) )
     Th(m1) = NaN;
     H(m1)  = NaN;
 end
+Th = reshape(Th, origSize);   % the series works on rows; give back the input shape
+H  = reshape(H, origSize);
 
 
 function [Th,H] = parallel_jacobiThetaEta(u, m, tol, nWorkers, minChunk)
@@ -154,72 +144,40 @@ function [Th,H] = parallel_jacobiThetaEta(u, m, tol, nWorkers, minChunk)
 
 
 function [Th,H] = gpu_jacobiThetaEta(u, m, tol)
-%GPU_JACOBITHETAETA  Internal helper: compute jacobiThetaEta using gpuArray.
-%   Compatible with both MATLAB gpuArray and Octave ocl package.
+%GPU_JACOBITHETAETA  Internal helper: q-series on gpuArray (elementwise).
+%   Same series as the serial core (A&S 16.27, 16.38).  The previous GPU
+%   helper still carried the retired AGM-product form and its input
+%   perturbation hack, so GPU results disagreed with the CPU by up to 5e-9.
     origSize = size(u);
     Th = zeros(origSize);
     H  = zeros(origSize);
+    m = m(:);  u = u(:);
+    if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 
-    m = m(:);
-    u = u(:);
-
-    if any(m(:) < 0) || any(m(:) > 1), error('M must be in the range 0 <= M <= 1.'); end
-
-    KK = ellipke(m);
-    period_condition = u./KK/2 - floor(u./KK/2);
-
-    I_odd = find(abs(m-1) > 10*eps & abs(m) > 10*eps & abs(period_condition - 0.5) < 10*eps);
-    if ~isempty(I_odd)
-        u(I_odd) = u(I_odd) + 100000*eps;
-        m(I_odd) = m(I_odd) + 10000*eps;
+    KK = ellipke_safe(m);
+    q  = exp(-pi .* carlsonRF(zeros(size(m)), m, ones(size(m))) ./ KK);   % K(1-m) from the exact m (see NOMEQ)
+    q(~(q < 1)) = 0;
+    v  = pi .* u ./ (2 .* KK);
+    qmax = max([q(:); 0]);
+    if qmax > 0
+        nTerms = min(1000, max(1, ceil(sqrt(log(tol) / log(qmax)))));
+    else
+        nTerms = 1;
     end
-
-    I = find(abs(m-1) > 10*eps & abs(m) > 10*eps);
-    if ~isempty(I)
-        mmax = length(I);
-        mu   = m(I);
-
-        % Transposed layout: rows=elements, cols=iterations (OCL-friendly)
-        MAX_ITER = 12;
-        a = gpuArray(zeros(mmax, MAX_ITER));
-        b = gpuArray(zeros(mmax, MAX_ITER));
-        c = gpuArray(zeros(mmax, MAX_ITER));
-        a(:,1) = gpuArray(ones(mmax,1));
-        c(:,1) = gpuArray(sqrt(mu));
-        b(:,1) = gpuArray(sqrt(1 - mu));
-        n = zeros(mmax, 1);
-        ii = 1;
-        while any(gather(abs(c(:,ii))) > tol)
-            ii = ii + 1;
-            a(:,ii) = 0.5 * (a(:,ii-1) + b(:,ii-1));
-            b(:,ii) = sqrt(a(:,ii-1) .* b(:,ii-1));
-            c(:,ii) = 0.5 * (a(:,ii-1) - b(:,ii-1));
-            mask = logical(gather((abs(c(:,ii)) <= tol) & (abs(c(:,ii-1)) > tol)));
-            n(mask) = ii - 1;
-        end
-
-        % Ascending Landen back-substitution with multiplicative masking
-        phin      = gpuArray((2 .^ n) .* gather(a(:,ii)) .* u(I));
-        phin_pred = phin;
-        prodth    = gpuArray(ones(mmax, MAX_ITER));
-        for jj = ii-1:-1:1
-            active = gpuArray(double(n >= jj));
-            phin_new = 0.5*(asin(c(:,jj+1).*sin(phin)./a(:,jj+1)) + phin);
-            phin_upd = phin + active .* (phin_new - phin);
-            prodth(:,jj) = 1 + active .* ((sec(2*phin_upd - phin_pred)).^(1/2^(jj+1)) - 1);
-            if jj > 1, phin_pred = phin_upd; end
-            phin = phin_upd;
-        end
-
-        th_save = sqrt(2*sqrt(1 - m(I)) .* KK(I)/pi .* ...
-            gather(cos(phin_pred - phin) ./ cos(phin))) .* gather(prod(prodth, 2));
-        Th(I) = th_save;
-        H(I)  = sqrt(sqrt(m(I))) .* gather(sin(phin)) .* th_save;
+    qg = gpuArray(q);  vg = gpuArray(v);
+    Thg = gpuArray(ones(size(v)));
+    Hg  = gpuArray(zeros(size(v)));
+    for nn = 1:nTerms
+        Thg = Thg + 2*(-1)^nn .* qg.^(nn^2) .* cos(2*nn .* vg);
     end
+    for nn = 0:nTerms
+        Hg = Hg + 2*(-1)^nn .* qg.^((nn+0.5)^2) .* sin((2*nn+1) .* vg);
+    end
+    Th(:) = gather(Thg);
+    H(:)  = gather(Hg);
 
     % Special cases: m = {0, 1}
     m0 = find(abs(m) < 10*eps);
     if ~isempty(m0), Th(m0) = 1; H(m0) = sqrt(sqrt(m(m0))) .* sin(u(m0)); end
-
     m1 = find(abs(m-1) < 10*eps);
     if ~isempty(m1), Th(m1) = NaN; H(m1) = NaN; end

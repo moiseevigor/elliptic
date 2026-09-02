@@ -9,6 +9,13 @@ function [sn,cn,dn,am] = ellipj(u,m,tol)
 %   [Sn,Cn,Dn,Am] = ELLIPJ(U,M,TOL) computes the elliptic functions to
 %   the accuracy TOL instead of the default TOL = EPS.
 %
+%   Accuracy limit for large arguments: the phase is reduced modulo 2K in
+%   double precision, so the residual phase carries an absolute uncertainty
+%   of about |U|*eps.  Full precision holds for |U| up to ~1e12; beyond
+%   that the error grows linearly and by |U| ~ 1e16 the phase is lost
+%   entirely.  This bound is shared by every double-precision
+%   implementation (including MATLAB's and SciPy's own ELLIPJ).
+%
 %   Some definitions of the Jacobi elliptic functions use the modulus
 %   k instead of the parameter m.  They are related by m = k^2.
 %
@@ -74,12 +81,10 @@ end
 
 I = find(m ~= 1 & m ~= 0);
 if ~isempty(I)
-    % Use standard uniquetol for numerical precision issues
-    % This is the recommended MATLAB approach since R2015a
+    % Preserve distinct parameters exactly; tolerance grouping is a silent
+    % data substitution and is particularly damaging near m=1.
     m_vals = m(I);
-    tol_unique = 1e-11;
-
-    [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
+    [mu, ~, K] = unique(m_vals);
     K = K(:).';
 
     mumax = length(mu);
@@ -109,19 +114,33 @@ if ~isempty(I)
 	end
 
     mmax = length(I);
+    % Use the platform complete integral for reduction.  Deriving K from the
+    % tolerance-stopped AGM is adequate for small u but its last-bit error is
+    % multiplied by the period count for large u, especially near m=1.
+    K_unique = carlsonRF(zeros(size(mu)), 1-mu, ones(size(mu)));
+    K_vals = K_unique(K);
+    period = floor((u(I) + K_vals) ./ (2 .* K_vals));
+    u_reduced = u(I) - 2 .* period .* K_vals;
 	phin = zeros(1,mmax);
-	phin(:) = (2 .^ n(K)).*a(i,K).*u(I);
+	a_fin = reshape(a(sub2ind(size(a), n(K) + 1, K)), 1, mmax);   % per-element converged AGM row (K may be a column)
+	phin(:) = (2 .^ n(K)).*a_fin.*u_reduced;
 	while i > 1
         i = i - 1;
         mask = n(K) >= i;
         if any(mask)
-          phin(mask) = 0.5*(asin(c(i+1,K(mask)).*sin(phin(mask))./a(i+1,K(mask))) + phin(mask));
+          % asin(c sin/a) = atan2(c sin, sqrt(a^2 cos^2 + b^2 sin^2)) using
+          % a^2 - c^2 = b^2: no asin near +/-1, which lost ~7 digits as m -> 1.
+          sp = sin(phin(mask));  cp = cos(phin(mask));
+          phin(mask) = 0.5*(atan2(c(i+1,K(mask)).*sp, ...
+                sqrt((a(i+1,K(mask)).*cp).^2 + (b(i+1,K(mask)).*sp).^2)) + phin(mask));
         end
 	end
-	am(I) = phin;
-	sn(I) = sin(phin);
-	cn(I) = cos(phin);
-	dn(I) = sqrt(1 - m(I).*sin(phin).^2);
+    quasi_sign = 1 - 2 .* mod(period, 2);
+	am(I) = phin + period .* pi;
+	sn(I) = quasi_sign .* sin(phin);
+	cn_v  = quasi_sign .* cos(phin);            % keep the row: cn(I) re-read from a column-shaped
+	cn(I) = cn_v;                                % output broadcast against the row m(I) (6x6 error)
+	dn(I) = sqrt((1 - m(I)) + m(I).*cn_v.^2);
 end
 
 % Special cases: m = {0, 1}
@@ -191,7 +210,9 @@ function [sn,cn,dn,am] = gpu_ellipj(u, m, tol)
 
     if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 
-    I = find(m ~= 1 & m ~= 0);
+    bad = isnan(m) | isnan(u);          % NaN in, NaN out (see gpu_elliptic12)
+    sn(bad) = NaN;  cn(bad) = NaN;  dn(bad) = NaN;  am(bad) = NaN;
+    I = find(m ~= 1 & m ~= 0 & ~bad);
     if ~isempty(I)
         mmax = length(I);
         mu   = m(I);
@@ -215,18 +236,29 @@ function [sn,cn,dn,am] = gpu_ellipj(u, m, tol)
             n(mask) = ii - 1;
         end
 
+        % Reduce by the 2K quasi-period before the amplified Landen phase.
+        % This mirrors the serial path and prevents large-argument phase loss.
+        a_cpu = gather(a);  a_final = a_cpu(sub2ind(size(a_cpu), (1:mmax)', n + 1));   % per-element converged row
+        K_vals = carlsonRF(zeros(size(mu)), 1-mu, ones(size(mu)));
+        period = floor((u(I) + K_vals) ./ (2 .* K_vals));
+        u_reduced = u(I) - 2 .* period .* K_vals;
+
         % Ascending Landen back-substitution with multiplicative masking
-        phin = gpuArray((2 .^ n) .* gather(a(:,ii)) .* u(I));
+        phin = gpuArray((2 .^ n) .* a_final .* u_reduced);
         for jj = ii-1:-1:1
             active = gpuArray(double(n >= jj));
-            phin_new = 0.5*(asin(c(:,jj+1).*sin(phin)./a(:,jj+1)) + phin);
+            sp = sin(phin);  cp = cos(phin);
+            phin_new = 0.5*(atan2(c(:,jj+1).*sp, sqrt((a(:,jj+1).*cp).^2 + (b(:,jj+1).*sp).^2)) + phin);
             phin = phin + active .* (phin_new - phin);
         end
 
-        am(I) = gather(phin);
-        sn(I) = gather(sin(phin));
-        cn(I) = gather(cos(phin));
-        dn(I) = sqrt(1 - m(I) .* gather(sin(phin)).^2);
+        quasi_sign = 1 - 2 .* mod(period, 2);
+        phin_cpu = gather(phin);
+        cn_val = quasi_sign .* cos(phin_cpu);      % keep everything a column:
+        am(I) = phin_cpu + period .* pi;            % m(I) is a column here but
+        sn(I) = quasi_sign .* sin(phin_cpu);        % cn(I) indexes a row, so
+        cn(I) = cn_val;                             % m(I).*cn(I) was an outer
+        dn(I) = sqrt((1 - m(I)) + m(I) .* cn_val.^2);   % product (found on L4)
     end
 
     % Special cases: m = {0, 1}

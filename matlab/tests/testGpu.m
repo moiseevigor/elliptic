@@ -30,6 +30,8 @@
 %! if ~gpu_available_for_test(), disp('SKIP: no GPU'); return; end
 %! [phi, alpha] = meshgrid(linspace(0.01, pi/2, 40), linspace(0.01, pi/2, 40));
 %! u = phi(:).'; m = sin(alpha(:).').^2;
+%! u = [u, pi+0.3, 3*pi+0.7, -4*pi-0.2];
+%! m = [m, 0.2, 0.5, 0.8];
 %! [F_s, E_s, Z_s] = elliptic12(u, m);
 %! elliptic_config('gpu', true);
 %! [F_g, E_g, Z_g] = elliptic12(u, m);
@@ -43,8 +45,8 @@
 %! clear
 %! elliptic_config('gpu', false);
 %! if ~gpu_available_for_test(), disp('SKIP: no GPU'); return; end
-%! [phi, alpha, cv] = meshgrid(linspace(0, pi/2, 20), linspace(0, pi/2, 20), linspace(0, 0.9, 5));
-%! u = phi(:).'; m = sin(alpha(:).').^2; c = cv(:).';
+%! [phi, mv, cv] = meshgrid(linspace(0, 1.4, 20), linspace(0, 0.7, 20), linspace(0, 0.7, 5));
+%! u = phi(:).'; m = mv(:).'; c = cv(:).';
 %! Pi_s = elliptic3(u, m, c);
 %! elliptic_config('gpu', true);
 %! Pi_g = elliptic3(u, m, c);
@@ -58,6 +60,8 @@
 %! if ~gpu_available_for_test(), disp('SKIP: no GPU'); return; end
 %! [phi, alpha] = meshgrid(linspace(0, 10, 40), linspace(0, pi/2, 40));
 %! u = phi(:).'; m = sin(alpha(:).').^2;
+%! u = [u, 1e3+0.123, 1e6+0.123];
+%! m = [m, 0.5, 0.9];
 %! [Sn_s, Cn_s, Dn_s, Am_s] = ellipj(u, m);
 %! elliptic_config('gpu', true);
 %! [Sn_g, Cn_g, Dn_g, Am_g] = ellipj(u, m);

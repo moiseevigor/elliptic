@@ -1,7 +1,9 @@
 """Nome q(m) and its inverse m(q)."""
 from __future__ import annotations
+import math
 import numpy as np
-from array_api_compat import array_namespace
+from ._xputils import get_xp, check_range, is_numpy
+from .theta import _q_from_m_xp
 
 
 def nomeq(m):
@@ -17,23 +19,20 @@ def nomeq(m):
     q : array
         Nome in [0, 1).
     """
-    from scipy.special import ellipk
-    m = np.asarray(m, dtype=np.float64)
-    xp = array_namespace(m)
-    m_np = np.asarray(m).ravel()
-    K  = ellipk(m_np)
-    Kp = ellipk(1.0 - m_np)
-    q  = np.exp(-np.pi * Kp / K)
-    q  = q.reshape(np.asarray(m).shape)
-    return xp.asarray(q)
+    xp = get_xp(m)
+    m = xp.asarray(m, dtype=xp.float64)
+    check_range(xp, m, 0.0, 1.0, 'm')      # traced backends already NaN-mask inside
+    q = _q_from_m_xp(xp, m)
+    return xp.where(m == 1.0, xp.ones_like(q), q)
 
 
 def inversenomeq(q):
     """Inverse nome: parameter m from nome q.
 
-    Uses ``scipy.optimize.brentq`` to invert ``nomeq``. In double precision the
-    representable range is roughly q ∈ [0, 0.779]; beyond this, m(q) exceeds
-    1 - 2⁻⁵³ and cannot be represented.
+    Closed form m = (theta2(0,q)/theta3(0,q))^4 (DLMF 20.9.1), exact at every
+    scale. In double precision the representable range is q ∈ [0, q_max] with
+    q_max = nomeq(nextafter(1, 0)) ≈ 0.7789; beyond this m(q) exceeds 1 - 2⁻⁵³
+    and cannot be represented.
 
     Parameters
     ----------
@@ -45,39 +44,32 @@ def inversenomeq(q):
     m : array
         Parameter m = m(q) in [0, 1).
     """
-    import warnings
-    from scipy.optimize import brentq
-    from scipy.special import ellipk
+    xp = get_xp(q)
+    q = xp.asarray(q, dtype=xp.float64)
 
-    q = np.asarray(q, dtype=np.float64)
-    xp = array_namespace(q)
-    q_flat = np.asarray(q).ravel()
+    m_hi_scalar = np.nextafter(1.0, 0.0)
+    q_max = float(_q_from_m_xp(np, np.asarray(m_hi_scalar)))
 
-    if np.any(q_flat < 0) or np.any(q_flat >= 1):
-        raise ValueError("q must be in [0, 1)")
+    if is_numpy(xp):
+        if np.any((q < 0.0) | (q >= 1.0)):
+            raise ValueError("q must be in [0, 1)")
+    # Above q_max the true 1-m = m(exp(pi^2/ln q)) ~ 16 exp(-pi^2/ln(1/q)) is
+    # below eps/2, so the correctly rounded double is exactly 1.0 (the series
+    # is not converged there; this used to raise, MATLAB returned m > 1).
 
-    m_hi  = np.nextafter(1.0, 0.0)        # largest f64 strictly < 1
-    q_max = float(np.exp(-np.pi * ellipk(1.0 - m_hi) / ellipk(m_hi)))
-    if np.any(q_flat >= q_max):
-        raise ValueError(
-            f"inversenomeq: q must be < {q_max:.15f} in double precision "
-            "(the essential singularity of m(q) at q=1 cannot be resolved in f64)"
-        )
-    if np.any(q_flat > 0.76):
-        warnings.warn("inversenomeq: accuracy degrades for q > 0.76 (near m=1 singularity)",
-                      RuntimeWarning, stacklevel=2)
-
-    def _nomeq_scalar(m_val):
-        K  = float(ellipk(m_val))
-        Kp = float(ellipk(1.0 - m_val))
-        return float(np.exp(-np.pi * Kp / K))
-
-    m_out = np.empty_like(q_flat)
-    for i, qi in enumerate(q_flat):
-        if qi == 0.0:
-            m_out[i] = 0.0
-        else:
-            m_out[i] = brentq(lambda m: _nomeq_scalar(m) - qi, 0.0, m_hi, xtol=1e-14)
-
-    m_out = m_out.reshape(np.asarray(q).shape)
-    return xp.asarray(m_out)
+    # Closed form, DLMF 20.9.1:  m = (theta2(0,q) / theta3(0,q))^4.
+    # Exact at every scale -- the previous 64-step bisection in m had an
+    # absolute resolution floor of 2^-64, so m(1e-30) came back 2.7e-20
+    # instead of 1.6e-29 (nine orders of magnitude off).
+    #   theta2(0,q) = 2 q^(1/4) sum q^(n(n+1)),  theta3(0,q) = 1 + 2 sum q^(n^2)
+    # The q^(1/4) factor is kept outside the ratio so tiny q cannot underflow.
+    valid = (q >= 0.0) & (q < 1.0)
+    q_safe = xp.where(valid, xp.minimum(q, xp.full_like(q, q_max)), xp.zeros_like(q))
+    s2 = xp.ones_like(q_safe)                   # sum q^(n(n+1)), n >= 0
+    s3 = xp.ones_like(q_safe)                   # theta3 = 1 + 2 sum q^(n^2)
+    for n in range(1, 31):
+        s2 = s2 + q_safe ** (n * (n + 1))
+        s3 = s3 + 2.0 * q_safe ** (n * n)
+    result = xp.minimum(16.0 * q_safe * (s2 / s3) ** 4, xp.ones_like(q_safe))
+    result = xp.where(q > q_max, xp.ones_like(result), result)
+    return xp.where(valid, result, xp.full_like(result, math.nan))

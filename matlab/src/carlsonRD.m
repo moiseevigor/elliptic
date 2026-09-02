@@ -23,6 +23,16 @@ function RD = carlsonRD(x, y, z)
 %   [2] B.C. Carlson, "Numerical Computation of Real or Complex Elliptic
 %       Integrals," Numer. Algorithms 10 (1995), 13–26.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 3 && (isempty(x) || isempty(y) || isempty(z))
+    sz = size(x);
+    if isempty(y), sz = size(y); end
+    if isempty(z), sz = size(z); end
+    RD = zeros(sz);
+    return;
+end
+
 if nargin < 3, error('carlsonRD: requires three arguments (x, y, z).'); end
 if ~isreal(x) || ~isreal(y) || ~isreal(z)
     error('carlsonRD: all input arguments must be real.');
@@ -32,7 +42,12 @@ end
 origSize = size(x);
 x = x(:).';  y = y(:).';  z = z(:).';
 
+% NaN, Inf and negative arguments give NaN (see carlsonRF).
+bad = ~(x >= 0 & y >= 0 & z > 0) | isinf(x) | isinf(y) | isinf(z);
+x(bad) = 1;  y(bad) = 1;  z(bad) = 1;
 RD = carlsonRD_core(x, y, z);
+RD(bad) = NaN;
+RD((x == 0) & (y == 0)) = Inf;          % diverges (DLMF 19.16.5)
 RD = reshape(RD, origSize);
 
 
@@ -44,19 +59,21 @@ cr    = 0.0015;   % convergence: tighter than RF because RD is 3/2 order
 S     = zeros(size(x));
 fac   = ones(size(x));    % 4^{-n}
 
-for iter = 1:30
+% Per-element convergence: each element stops when IT has converged, so a
+% value never depends on what else is in the batch (a vector-wide break
+% made chunked and serial evaluations differ by an ulp).
+active = true(size(x));
+for iter = 1:200   % per-element break decides; cap guards pathological input
     lam  = sqrt(x.*y) + sqrt(y.*z) + sqrt(z.*x);
     sz   = sqrt(z);
-    S    = S + fac ./ (sz .* (z + lam));
-    fac  = fac ./ 4;
-    x    = (x + lam) ./ 4;
-    y    = (y + lam) ./ 4;
-    z    = (z + lam) ./ 4;
+    S(active)   = S(active) + fac(active) ./ (sz(active) .* (z(active) + lam(active)));
+    fac(active) = fac(active) ./ 4;
+    x(active) = (x(active) + lam(active)) ./ 4;
+    y(active) = (y(active) + lam(active)) ./ 4;
+    z(active) = (z(active) + lam(active)) ./ 4;
     A    = (x + y + 3.*z) ./ 5;
-    rng  = max([abs(x-A); abs(y-A); abs(z-A)]);
-    if rng < cr * min(A)
-        break;
-    end
+    active = active & (max([abs(x-A); abs(y-A); abs(z-A)], [], 1) >= cr * A);
+    if ~any(active), break; end
 end
 
 A  = (x + y + 3.*z) ./ 5;

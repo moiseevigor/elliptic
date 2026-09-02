@@ -4,7 +4,7 @@
     E(phi, m) = integral_0^phi  sqrt(1 - m sin^2 t)      dt
     Z(phi, m) = E(phi, m) - E(m)/K(m) * F(phi, m)   [Jacobi Zeta]
 
-Algorithm: Carlson symmetric forms (DLMF 19.25.5-6):
+Algorithm: Carlson symmetric forms (DLMF 19.25.5 for F, 19.25.9 for E):
     F = sin(phi) * RF(cos^2, 1-m sin^2, 1)
     E = F - m * sin^3(phi)/3 * RD(cos^2, 1-m sin^2, 1)
     Z = E - E(m)/K(m) * F   where K=RF(0,1-m,1), E(m)=K - m/3*RD(0,1-m,1)
@@ -17,7 +17,8 @@ from __future__ import annotations
 import math
 import numpy as np
 
-from ._xputils import get_xp
+from ._xputils import get_xp, check_range, sub_kpi
+
 from .carlson import _rf_xp, _rd_xp, _rf_numpy, _rd_numpy
 
 
@@ -37,14 +38,18 @@ def elliptic12(u, m):
     u = xp.asarray(u, dtype=xp.float64)
     m = xp.asarray(m, dtype=xp.float64)
     u, m = xp.broadcast_arrays(u, m)
-    return _elliptic12_xp(xp, u, m)
+    valid = check_range(xp, m, 0.0, 1.0, 'm')
+    F, E, Z = _elliptic12_xp(xp, u, m)
+    nan = xp.full_like(F, math.nan)
+    return xp.where(valid, F, nan), xp.where(valid, E, nan), xp.where(valid, Z, nan)
 
 
 def _elliptic12_xp(xp, u, m):
     """Backend-native F, E, Z via Carlson forms.  u and m are 1-D xp arrays."""
     # Period reduction: F(u+kπ|m) = F(u|m) + 2k·K(m), Z period π
     k   = xp.round(u / math.pi)
-    u_r = u - k * math.pi          # reduced to (-π/2, π/2]
+    # Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at eps*|u_r| instead of eps*|u|
+    u_r = sub_kpi(u, k)                      # reduced to (-π/2, π/2], error eps*|u_r|
 
     # Complete integrals K(m), E(m) via Carlson
     z0  = xp.zeros_like(m)
@@ -55,7 +60,9 @@ def _elliptic12_xp(xp, u, m):
 
     s   = xp.sin(u_r)
     c   = xp.cos(u_r)
-    d2  = 1.0 - m * s * s
+    # (1-m) + m cos^2 avoids the cancellation in 1 - m sin^2 when m -> 1
+    # and phi -> pi/2 (F(pi/2-1e-9 | 1-eps/2) was off by 4e-3).
+    d2  = (1.0 - m) + m * c * c
 
     RF  = _rf_xp(xp, c * c, d2, xp.ones_like(u_r))
     RD  = _rd_xp(xp, c * c, d2, xp.ones_like(u_r))
@@ -78,16 +85,26 @@ def _elliptic12_xp(xp, u, m):
     E = xp.where(m == 0.0, u, E)
     Z = xp.where(m == 0.0, xp.zeros_like(Z), Z)
 
-    # m == 1: F = log(tan(π/4 + u_r/2)), E via sin, Z = sin(u_r)
-    F_m1 = xp.log(xp.tan(math.pi / 4 + u_r * 0.5))
-    um1  = xp.abs(u_r)
-    Nf   = xp.floor((um1 + math.pi * 0.5) / math.pi)
+    # m == 1: F has its first non-integrable pole at |u|=π/2.  Period
+    # reduction must not hide that crossing (the old code returned F=0 at
+    # u=π and also under-counted E beyond the first quadrant).
+    um1 = xp.abs(u)
+    Nf = xp.floor((um1 + math.pi * 0.5) / math.pi)
     sgn  = xp.where(u >= 0.0, xp.ones_like(u), -xp.ones_like(u))
     E_m1 = ((-1.0) ** Nf * xp.sin(um1) + 2.0 * Nf) * sgn
-    Z_m1 = xp.sin(u_r)           # (-1)^Nf * sin(u), Nf=0 for |u_r|<π/2
+    Z_m1 = xp.sin(u_r)
 
-    near_pole_m1 = xp.abs(u_r) >= math.pi * 0.5 - 1e-14
-    F_m1 = xp.where(near_pole_m1, xp.full_like(F_m1, math.inf) * sgn, F_m1)
+    crossed_pole_m1 = um1 >= math.pi * 0.5
+    u_m1_safe = xp.where(crossed_pole_m1, xp.zeros_like(u), u)
+    # asinh(tan u) (the inverse Gudermannian): exact at u = 0, odd, and it does
+    # not saturate the way atanh(sin u) does when sin u rounds to 1 near pi/2
+    # (F(pi/2-1e-9|1) is 21.4, not inf); log(tan(pi/4+u/2)) gave F(0|1) = -1e-16.
+    F_m1_finite = xp.arcsinh(xp.tan(u_m1_safe))
+    F_m1 = xp.where(
+        crossed_pole_m1,
+        xp.full_like(F_m1_finite, math.inf) * sgn,
+        F_m1_finite,
+    )
     F = xp.where(m == 1.0, F_m1, F)
     E = xp.where(m == 1.0, E_m1, E)
     Z = xp.where(m == 1.0, Z_m1, Z)

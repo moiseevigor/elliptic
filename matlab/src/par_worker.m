@@ -1,10 +1,30 @@
 function result = par_worker(func_name, varargin)
 %PAR_WORKER  Generic parallel worker for Octave parcellfun.
 %   Calls the named function with the given arguments and packs
-%   multiple outputs into a cell array. Workers run in fresh
-%   processes where elliptic_config defaults to parallel=false,
-%   preventing recursive parallelism.
+%   multiple outputs into a cell array.
+%
+%   The parallel dispatch is switched OFF for the duration of the call and
+%   restored afterwards.  Relying on parcellfun workers being fresh
+%   processes (where the config defaults to parallel=false) was not
+%   enough: whenever N is a multiple of chunk_size every chunk has exactly
+%   chunk_size elements, so an in-process evaluation (a serial parcellfun
+%   fallback, a shared-state worker, or plain testing) re-entered the
+%   dispatch from inside the worker without bound and crashed Octave.
 
+    was_parallel = elliptic_config('parallel');
+    elliptic_config('parallel', false);
+    % try/catch rather than unwind_protect so the file also parses in MATLAB
+    try
+        result = par_worker_dispatch(func_name, varargin{:});
+    catch err
+        elliptic_config('parallel', was_parallel);
+        rethrow(err);
+    end
+    elliptic_config('parallel', was_parallel);
+end
+
+
+function result = par_worker_dispatch(func_name, varargin)
     switch func_name
         case 'elliptic12'
             [F, E, Z] = elliptic12(varargin{:});
@@ -57,3 +77,4 @@ function result = par_worker(func_name, varargin)
         otherwise
             error('par_worker: unknown function %s', func_name);
     end
+end

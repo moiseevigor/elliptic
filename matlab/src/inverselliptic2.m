@@ -91,12 +91,15 @@ if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 z = E; mu = 1-m;
 
 % complete integral initialization
-[~,E1] = ellipke(m,tol);
+[~,E1] = ellipke_safe(m,tol);
 
 % Boyd's initialisation and the Newton iteration below only converge on
 % phi in [0, pi/2].  Reduce first, using
 %   E(phi + k*pi | m) = E(phi | m) + 2k*E(m)      (period)
 %   E(pi - phi  | m) = 2*E(m) - E(phi | m)        (reflection)
+% Oddness first: folding a tiny negative z through 2*E1 - (z + 2*E1) lost
+% all its digits (rel 1e-7 at z = -1e-9*E1).
+signZ = sign(z);  z = abs(z);
 twoE1 = 2*E1;
 k     = floor(z./twoE1);
 z_red = z - k.*twoE1;                       % in [0, 2*E1)
@@ -114,16 +117,24 @@ invE(:) = min(max(invE(:), 0), pi/2);
 % Newton on E(phi|m) = z_red;  dE/dphi = sqrt(1 - m sin^2 phi).
 % Iterate to convergence rather than a fixed count (issue #12): four steps
 % are not enough near m -> 1, where the initial guess can be off by ~1.
+% Per-element convergence: a vector-wide break let converged elements take
+% extra Newton steps that depended on their batch mates (1 ulp).
+active = true(numel(invE), 1);   % column, like res
+mc = m(:);
 for iter=1:100
     [~, Ecur] = elliptic12(invE(:),m,tol);
-    res = Ecur - z_red;
-    if max(abs(res)) < 1e-14, break; end
-    invE(:) = invE(:) - res./max(sqrt( 1-m.*sin(invE(:)).^2 ), 1e-15);
+    res = Ecur(:) - z_red(:);
+    active = active & ~(abs(res) <= 4*eps*max(abs(z_red(:)), realmin));   % relative
+    if ~any(active), break; end
+    iv = invE(:);
+    step = zeros(numel(iv), 1);
+    step(active) = res(active)./max(sqrt( 1-mc(active).*sin(iv(active)).^2 ), 1e-15);
+    invE(:) = iv - step;
     invE(:) = min(max(invE(:), 0), pi/2);
 end
 
 % undo the reflection, then the period strips
 invE(over) = pi - invE(over);
-invE(:) = invE(:) + k*pi;
+invE(:) = signZ .* (invE(:) + k*pi);
 return;
 

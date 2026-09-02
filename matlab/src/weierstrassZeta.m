@@ -25,6 +25,17 @@ function Z = weierstrassZeta(z, e1, e2, e3)
 %       Functions", Dover, 1965, §18.3, 18.10.
 %   [2] NIST DLMF §23.6.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 4 && (isempty(z) || isempty(e1) || isempty(e2) || isempty(e3))
+    sz = size(z);
+    if isempty(e1), sz = size(e1); end
+    if isempty(e2), sz = size(e2); end
+    if isempty(e3), sz = size(e3); end
+    Z = zeros(sz);
+    return;
+end
+
 if nargin < 4, error('weierstrassZeta: requires four arguments (z, e1, e2, e3).'); end
 if ~isreal(z) || ~isreal(e1) || ~isreal(e2) || ~isreal(e3)
     error('weierstrassZeta: all input arguments must be real.');
@@ -74,9 +85,11 @@ function Z = weierZ_core(z, e1, e2, e3)
 % exactly (theta1'(v+pi)/theta1(v+pi) is pi-periodic, the linear term does
 % the rest), so no period reduction is needed either.
 
-m_param = (e2 - e3) ./ (e1 - e3);
-KK  = ellipke(m_param);
-KKp = ellipke(1 - m_param);
+m_param  = (e2 - e3) ./ (e1 - e3);
+mp_param = (e1 - e2) ./ (e1 - e3);    % 1-m without cancellation
+one = ones(size(m_param));  zed = zeros(size(m_param));
+KK  = carlsonRF(zed, mp_param, one);
+KKp = carlsonRF(zed, m_param,  one);
 omega1 = KK ./ sqrt(e1 - e3);
 q = exp(-pi .* KKp ./ KK);
 v = pi .* z ./ (2 .* omega1);
@@ -102,13 +115,17 @@ else
 end
 th1 = zeros(size(v));  th1p = th1;
 th1p0 = zeros(size(v)); th1ppp0 = th1p0;
+% sin/cos of (2n+1)v by angle-addition from sin v, cos v (k*v as a double
+% product rounds by eps*|k v|; see THETA_SERIES)
+sk = sin(v);  ck = cos(v);  s2 = 2 .* sk .* ck;  c2 = 1 - 2 .* sk.^2;
 for n = 0:nT
     qq = (-1)^n .* q.^((n+0.5)^2);
     k  = 2*n + 1;
-    th1     = th1     + qq .* sin(k .* v);
-    th1p    = th1p    + qq .* k .* cos(k .* v);
+    th1     = th1     + qq .* sk;
+    th1p    = th1p    + qq .* k .* ck;
     th1p0   = th1p0   + qq .* k;
     th1ppp0 = th1ppp0 - qq .* k^3;
+    [sk, ck] = deal(sk.*c2 + ck.*s2, ck.*c2 - sk.*s2);
 end
 
 

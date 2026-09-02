@@ -43,6 +43,17 @@ function [B, D, J] = ellipticBDJ(phi, m, n)
 %   [3] B.C. Carlson, "Numerical Computation of Real or Complex Elliptic
 %       Integrals," Numer. Algorithms 10 (1995), 13–26.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 2 && (isempty(phi) || isempty(m))
+    sz = size(phi);
+    if isempty(m), sz = size(m); end
+    B = zeros(sz);
+    D = zeros(sz);
+    J = zeros(sz);
+    return;
+end
+
 compute_J = (nargin >= 3);
 
 if nargin < 2, error('ellipticBDJ: requires at least two arguments (phi, m).'); end
@@ -91,11 +102,16 @@ function [B, D, J] = ellipticBDJ_core(phi, m, n, compute_J, origSize)
 %   D(φ+k·pi|m)   = D(φ|m)   + 2k·D(m)
 %   J(φ+k·pi,n|m) = J(φ,n|m) + 2k·J(n|m)
 k   = ceil(phi./pi - 0.5);
-phi = phi - k .* pi;      % now in (-pi/2, pi/2]
+% Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at
+% eps*|u_r| instead of eps*|u| (pi_lo = pi - double(pi) = 1.2246467991473532e-16).
+phi = sub_kpi(phi, k);                                    % now in (-pi/2, pi/2], error eps*|phi| (see SUB_KPI)
 
 s  = sin(phi);
 c  = cos(phi);
-d2 = 1 - m .* s.^2;    % Δ²
+% Δ² = (1-m) + m cos² instead of 1 - m sin²: the latter cancels near
+% phi = pi/2 as m -> 1 (relative 2.5e-9 at m = 1-1e-8, which R_D turned into
+% 3e-10 in D(phi|m) and hence in jacobiEDJ at large u).
+d2 = (1 - m) + m .* c.^2;    % Δ²
 d  = sqrt(d2);          % Δ
 
 % s³/3 factor
@@ -126,11 +142,25 @@ D = reshape(D_val + 2 .* k .* D_cpl, origSize);
 if compute_J
     % 1 − n·s² (denominator parameter for R_J)
     p = 1 - n .* s.^2;
+    % n > 1 with the phase beyond the pole at arcsin(1/sqrt(n)) is a Cauchy
+    % principal-value integral (DLMF 19.7.3): R_J needs p > 0, and sqrt of a
+    % negative p silently produced COMPLEX output (J(1, 1.5|0.5) came out
+    % 0.86 - 1.81i).  The complete J(n|m) is only needed when a period was
+    % removed (k ~= 0); at n = 1 it is a pole and 0*Inf made J NaN.
+    if any(p <= 0) || any(k ~= 0 & n >= 1)
+        error(['ellipticBDJ: n > 1 with phase beyond the pole at arcsin(1/sqrt(n)) ' ...
+               '(or n >= 1 with |phi| > pi/2) is a Cauchy principal-value integral ' ...
+               '(DLMF 19.7.3); not supported.']);
+    end
     RJ = carlsonRJ(c.^2, d2, one, p);
     J_val = s3o3 .* RJ;
     J_val(s == 0) = 0;
-    J_cpl = carlsonRJ(zed, 1-m, one, 1-n) ./ 3;     % J(n|m)
-    J = reshape(J_val + 2 .* k .* J_cpl, origSize);
+    J = J_val;
+    kk = find(k ~= 0);
+    if ~isempty(kk)
+        J(kk) = J(kk) + 2 .* k(kk) .* carlsonRJ(zed(kk), 1-m(kk), one(kk), 1-n(kk)) ./ 3;   % + 2k J(n|m)
+    end
+    J = reshape(J, origSize);
 else
     J = [];
 end
@@ -138,10 +168,11 @@ end
 
 % -----------------------------------------------------------------------
 function [B, D, J] = gpu_ellipticBDJ(phi, m, n, compute_J, origSize)
-[B, D, J] = ellipticBDJ_core(gpuArray(phi(:).'), gpuArray(m(:).'), ...
-    ifelse(compute_J, gpuArray(n(:).'), []), compute_J, origSize);
-B = gather(B); D = gather(D);
-if compute_J, J = gather(J); end
+% No OpenCL kernel: the Carlson duplication needs data-dependent masking
+% and logical indexing, which ocl arrays do not support, and carlsonRF's
+% isreal() check rejects them outright (seen on an L4).  Evaluate the
+% serial core on host arrays; results are identical to the CPU path.
+[B, D, J] = ellipticBDJ_core(phi(:).', m(:).', ifelse(compute_J, n(:).', []), compute_J, origSize);
 
 
 % -----------------------------------------------------------------------

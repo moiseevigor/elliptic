@@ -25,6 +25,17 @@ function dP = weierstrassPPrime(z, e1, e2, e3)
 %   [1] M. Abramowitz and I.A. Stegun, "Handbook of Mathematical
 %       Functions", Dover, 1965, §18.9.
 
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 4 && (isempty(z) || isempty(e1) || isempty(e2) || isempty(e3))
+    sz = size(z);
+    if isempty(e1), sz = size(e1); end
+    if isempty(e2), sz = size(e2); end
+    if isempty(e3), sz = size(e3); end
+    dP = zeros(sz);
+    return;
+end
+
 if nargin < 4, error('weierstrassPPrime: requires four arguments (z, e1, e2, e3).'); end
 if ~isreal(z) || ~isreal(e1) || ~isreal(e2) || ~isreal(e3)
     error('weierstrassPPrime: all input arguments must be real.');
@@ -62,12 +73,24 @@ dP(:) = weierPP_core(z(:).', e1(:).', e2(:).', e3(:).');
 function dP = weierPP_core(z, e1, e2, e3)
 %WEIEPPCORE  Vectorised serial evaluation (row-vector inputs).
 m    = (e2 - e3) ./ (e1 - e3);
-w    = z .* sqrt(e1 - e3);
+mp   = (e1 - e2) ./ (e1 - e3);
+% Reduce z by the real period 2*omega1 BEFORE ellipj, with omega1 from
+% R_F(0, 1-m, 1) and 1-m = (e1-e2)/(e1-e3) formed without cancellation.
+% ellipj's own reduction uses K from an AGM seeded with sqrt(1-m) (1-m
+% rounded), which loses ~eps/(1-m) relative digits near m -> 1 lattices
+% and put P(2*omega1 + 1e-9) off by 40%.  sn^2 and cn*dn/sn^3 are
+% invariant under w -> w + 2K, so no sign bookkeeping is needed.
+omega1 = carlsonRF(zeros(size(m)), mp, ones(size(m))) ./ sqrt(e1 - e3);
+zr   = z - 2 .* round(z ./ (2 .* omega1)) .* omega1;
+w    = zr .* sqrt(e1 - e3);
 [sn, cn, dn] = ellipj(w, m);
 scale = -2 .* (e1 - e3).^(3/2);
 dP   = scale .* cn .* dn ./ sn.^3;
 % Poles: sn -> 0 at z = 0 and at lattice points
-dP(abs(sn) < eps^(1/3)) = Inf;
+% Pole only where sn vanishes exactly (z at a representable lattice
+% point): the old abs(sn) < eps^(1/3) window (~6e-6!) replaced huge
+% finite near-pole values -- P(1e-16) ~ 1e32 -- with Inf.
+dP(sn == 0) = Inf;
 
 
 % -----------------------------------------------------------------------
@@ -75,11 +98,17 @@ function dP = gpu_weierstrassPPrime(z, e1, e2, e3, origSize)
 %GPU_WEIERSTRASSPPRIME  GPU path via ellipj's internal GPU dispatch.
 z_f  = z(:).'; e1_f = e1(:).'; e2_f = e2(:).'; e3_f = e3(:).';
 m    = (e2_f - e3_f) ./ (e1_f - e3_f);
-w    = z_f .* sqrt(e1_f - e3_f);
+mp   = (e1_f - e2_f) ./ (e1_f - e3_f);
+omega1 = carlsonRF(zeros(size(m)), mp, ones(size(m))) ./ sqrt(e1_f - e3_f);
+zr   = z_f - 2 .* round(z_f ./ (2 .* omega1)) .* omega1;
+w    = zr .* sqrt(e1_f - e3_f);
 [sn, cn, dn] = ellipj(w, m);
 scale = -2 .* (e1_f - e3_f).^(3/2);
 dP   = scale .* cn .* dn ./ sn.^3;
-dP(abs(sn) < eps^(1/3)) = Inf;
+% Pole only where sn vanishes exactly (z at a representable lattice
+% point): the old abs(sn) < eps^(1/3) window (~6e-6!) replaced huge
+% finite near-pole values -- P(1e-16) ~ 1e32 -- with Inf.
+dP(sn == 0) = Inf;
 dP   = reshape(dP, origSize);
 
 

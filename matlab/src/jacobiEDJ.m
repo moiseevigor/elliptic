@@ -39,16 +39,33 @@ end
 
 % Get amplitude phi = am(u|m) via ellipj
 % ellipj returns [sn, cn, dn, am]
+% Reduce u by the period 2K BEFORE taking the amplitude.  am(u) at |u| ~ 1e3
+% carries eps*|am| ~ 5e-14 of rounding, and near phi = pi/2 with m -> 1 the
+% map phi -> D(phi|m) is steep (dD/dphi = sin^2/Delta ~ 1/sqrt(1-m)), so
+% D_u(1520|1-1e-8) was off by 3e-10.  As functions of u the integrals are
+% perfectly conditioned (dD_u/du = sn^2 <= 1): reduce u, take the amplitude
+% of the reduced argument (|am_r| <= pi/2), add 2k times the complete
+% integrals.
+if isscalar(m) && ~isscalar(u), m = m + zeros(size(u)); end
+if isscalar(u) && ~isscalar(m), u = u + zeros(size(m)); end
+if compute_J && isscalar(n) && ~isscalar(u), n = n + zeros(size(u)); end
+one = ones(size(m));  zed = zeros(size(m));
+K   = carlsonRF(zed, 1 - m, one);
+k   = floor((u + K) ./ (2 .* K));
+u_r = u - 2 .* k .* K;
+[~, ~, ~, phi_r] = ellipj(u_r, m);
+D_cpl = carlsonRD(zed, 1 - m, one) ./ 3;               % D(m)
 if compute_J
-    [~, ~, ~, phi] = ellipj(u, m);
-    [B, D, J] = ellipticBDJ(phi, m, n);
-    Eu = u - m .* D;    % E_u = u - m*D_u
-    Du = D;
-    Ju = J;
+    [~, D_r, J_r] = ellipticBDJ(phi_r, m, n);
+    J_cpl = zed;
+    kk = find(k ~= 0);
+    if ~isempty(kk)
+        J_cpl(kk) = carlsonRJ(zed(kk), 1 - m(kk), one(kk), 1 - n(kk)) ./ 3;   % J(n|m)
+    end
+    Ju = J_r + 2 .* k .* J_cpl;
 else
-    [~, ~, ~, phi] = ellipj(u, m);
-    [~, D] = ellipticBDJ(phi, m);
-    Eu = u - m .* D;
-    Du = D;
+    [~, D_r] = ellipticBDJ(phi_r, m);
     Ju = [];
 end
+Du = D_r + 2 .* k .* D_cpl;
+Eu = u - m .* Du;    % E_u = u - m*D_u  (error eps*|u|, the conditioning floor)

@@ -2,31 +2,16 @@
 
     Pi(u, m, n) = integral_0^u  1 / ((1 - n sin^2 t) sqrt(1 - m sin^2 t))  dt
 
-Algorithm: 10-point Gauss-Legendre quadrature. Pure array-namespace ops —
-runs natively on NumPy, PyTorch CUDA, and JAX without any np.asarray conversion.
+Algorithm: Carlson symmetric forms (DLMF 19.25.14). Pure array-namespace
+operations run natively on NumPy, PyTorch CUDA, and JAX.
 """
 from __future__ import annotations
 
 import math
+import numpy as np
 
-from ._xputils import get_xp
-
-# 10-point Gauss-Legendre nodes and weights on [0, 1] as plain Python floats
-# (so they broadcast correctly against any backend tensor)
-_GL_T = [
-    0.9931285991850949, 0.9639719272779138,
-    0.9122344282513259, 0.8391169718222188,
-    0.7463319064601508, 0.6360536807265150,
-    0.5108670019508271, 0.3737060887154195,
-    0.2277858511416451, 0.07652652113349734,
-]
-_GL_W = [
-    0.01761400713915212, 0.04060142980038694,
-    0.06267204833410907, 0.08327674157670475,
-    0.10193011981724040, 0.11819453196151840,
-    0.13168863844917660, 0.14209610931838200,
-    0.14917298647260370, 0.15275338713072580,
-]
+from ._xputils import get_xp, is_numpy, sub_kpi
+from .carlson import _rf_xp, _rj_xp
 
 
 def elliptic3(u, m, n):
@@ -34,12 +19,13 @@ def elliptic3(u, m, n):
 
     Parameters
     ----------
-    u : array_like   Phase in radians, 0 <= u <= pi/2.
+    u : array_like   Phase in radians.
     m : array_like   Parameter, 0 <= m <= 1.
     n : array_like   Characteristic, n <= 1. For n > 1 the integral is a
                      Cauchy principal value (circular case, DLMF 19.7.3)
-                     which 10-point Gauss–Legendre cannot resolve; this
-                     function raises ValueError in that regime.
+                     which this real-valued implementation does not resolve;
+                     NumPy calls raise ValueError when the integration path
+                     crosses that pole.
 
     Returns
     -------
@@ -51,18 +37,20 @@ def elliptic3(u, m, n):
     n = xp.asarray(n, dtype=xp.float64)
     u, m, n = xp.broadcast_arrays(u, m, n)
 
-    import numpy as _np
-    n_np = _np.asarray(n)
-    u_np = _np.asarray(u)
-    if _np.any(n_np > 1.0):
+    # Eager NumPy calls can provide a precise domain error.  Traced backends
+    # cannot branch on array values; their invalid elements naturally become
+    # non-finite through the Carlson expression instead.
+    if is_numpy(xp) and np.any(n > 1.0):
+        n_np = np.asarray(n)
+        u_np = np.asarray(u)
         # Check whether the singularity sin²θ = 1/n lies in [0, u]
-        with _np.errstate(invalid='ignore', divide='ignore'):
-            sing = _np.where(n_np > 1.0, _np.arcsin(_np.sqrt(1.0 / n_np)), _np.inf)
-        if _np.any((n_np > 1.0) & (u_np >= sing)):
+        with np.errstate(invalid="ignore", divide="ignore"):
+            sing = np.where(n_np > 1.0, np.arcsin(np.sqrt(1.0 / n_np)), np.inf)
+        if np.any((n_np > 1.0) & (np.abs(u_np) >= sing)):
             raise ValueError(
                 "elliptic3: n > 1 with phase beyond the pole at arcsin(1/sqrt(n)) "
-                "is a Cauchy principal-value integral (DLMF 19.7.3); not supported "
-                "by 10-point Gauss–Legendre. Use a transformation (DLMF 19.7.4) "
+                "is a Cauchy principal-value integral (DLMF 19.7.3); not supported. "
+                "Use a transformation (DLMF 19.7.4) "
                 "or compute via Carlson R_J with complex arguments."
             )
 
@@ -71,50 +59,45 @@ def elliptic3(u, m, n):
     #   Pi(-u)      = -Pi(u)
     #   Pi(u+k*pi)  =  Pi(u) + 2k*Pi(pi/2)
     #   Pi(pi-u)    =  2*Pi(pi/2) - Pi(u)
-    # The 10-point Gauss-Legendre rule below is only accurate on [0, pi/2];
-    # larger phases used to be evaluated directly and were silently wrong
-    # (~1e-6 at u = 6).
     sign_u = xp.where(u < 0, -xp.ones_like(u), xp.ones_like(u))
     ua     = xp.abs(u)
     k_per  = xp.floor(ua / math.pi)
-    r      = ua - k_per * math.pi                       # in [0, pi)
+    # Cody-Waite split of pi: (u - k*PI_HI) - k*PI_LO keeps the reduction error at eps*|u_r| instead of eps*|u|
+    r      = sub_kpi(ua, k_per)                                  # in [0, pi), error eps*|r|
     refl   = r > math.pi * 0.5
     u_red  = xp.where(refl, math.pi - r, r)             # in [0, pi/2]
-    reduced = xp.any(k_per > 0) or xp.any(refl) or xp.any(u < 0)
+    s = xp.sin(u_red)
+    c = xp.cos(u_red)
+    s2 = s * s
+    # (1-m) + m cos^2 and (1-n) + n cos^2: no cancellation near the
+    # endpoint poles (Pi(pi/2-1e-6 | m, n=1) was off by 3e-5).
+    d2 = (1.0 - m) + m * c * c
+    p = (1.0 - n) + n * c * c
+    one = xp.ones_like(s)
 
-    u = u_red
-    half_u = u * 0.5
-    P = xp.zeros_like(u)
-    for ti, wi in zip(_GL_T, _GL_W):
-        c0  = half_u * ti
-        tp  = half_u + c0
-        tm  = half_u - c0
-        s2p = xp.sin(tp) ** 2
-        s2m = xp.sin(tm) ** 2
-        P = P + wi * (
-            1.0 / ((1.0 - n * s2p) * xp.sqrt(xp.clip(1.0 - m * s2p, 0.0, None))) +
-            1.0 / ((1.0 - n * s2m) * xp.sqrt(xp.clip(1.0 - m * s2m, 0.0, None)))
-        )
-    Pi = half_u * P
+    RF = _rf_xp(xp, c * c, d2, one)
+    RJ = _rj_xp(xp, c * c, d2, one, p)
+    Pi_red = s * RF + n * s * s2 * RJ / 3.0
+    Pi_red = xp.where(s == 0.0, xp.zeros_like(Pi_red), Pi_red)
 
-    if reduced:
-        # Complete integral Pi(pi/2|m,n) by the same rule, then undo the
-        # reduction:  Pi(|u|) = 2k*Pcpl + refl*2*Pcpl ± Pi(u_red),  * sign(u)
-        qtr = math.pi * 0.25
-        Pc = xp.zeros_like(u)
-        for ti, wi in zip(_GL_T, _GL_W):
-            tp  = qtr + qtr * ti
-            tm  = qtr - qtr * ti
-            s2p = xp.sin(tp) ** 2
-            s2m = xp.sin(tm) ** 2
-            Pc = Pc + wi * (
-                1.0 / ((1.0 - n * s2p) * xp.sqrt(xp.clip(1.0 - m * s2p, 0.0, None))) +
-                1.0 / ((1.0 - n * s2m) * xp.sqrt(xp.clip(1.0 - m * s2m, 0.0, None)))
-            )
-        Pc = qtr * Pc
-        Pi = sign_u * (2.0 * k_per * Pc + xp.where(refl, 2.0 * Pc, xp.zeros_like(Pc))
-                       + xp.where(refl, -Pi, Pi))
+    # Complete Π is needed to restore reflected/full periods.  Replace
+    # singular complete parameters while evaluating the eager expression so
+    # unselected branches stay finite on autodiff backends.
+    complete_singular = (m == 1.0) | (n >= 1.0)
+    m_complete = xp.where(complete_singular, xp.zeros_like(m), m)
+    n_complete = xp.where(complete_singular, xp.zeros_like(n), n)
+    zero = xp.zeros_like(s)
+    RF_complete = _rf_xp(xp, zero, 1.0 - m_complete, one)
+    RJ_complete = _rj_xp(xp, zero, 1.0 - m_complete, one, 1.0 - n_complete)
+    Pi_complete = RF_complete + n_complete * RJ_complete / 3.0
 
-    # u == pi/2 and (m == 1 or n == 1) → inf
-    inf_mask = ((u == math.pi * 0.5) & (m == 1.0)) | ((u == math.pi * 0.5) & (n == 1.0))
-    return xp.where(inf_mask, xp.full_like(Pi, math.inf), Pi)
+    Pi_abs = (
+        2.0 * k_per * Pi_complete
+        + xp.where(refl, 2.0 * Pi_complete - Pi_red, Pi_red)
+    )
+    Pi = sign_u * Pi_abs
+
+    # At m=1 or n=1 the path diverges once it reaches the first π/2 pole.
+    crosses_endpoint_pole = complete_singular & (ua >= math.pi * 0.5)
+    signed_inf = sign_u * xp.full_like(Pi, math.inf)
+    return xp.where(crosses_endpoint_pole, signed_inf, Pi)

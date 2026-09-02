@@ -86,6 +86,25 @@ function [F,E,P]=elliptic123(a1,a2,a3)
 % Everyone is permitted to copy and distribute verbatim copies of this
 % script under terms and conditions of GNU GENERAL PUBLIC LICENSE.
 
+% The legacy kernels below preallocate row vectors and index with logical
+% masks; give them rows (any input shape) and restore the shape at the end.
+% Empty input -> empty output of the same shape (elementwise semantics; the
+% size checks below would otherwise reject [] against a scalar).
+if nargin >= 1 && (isempty(a1))
+    sz = size(a1);
+    F = zeros(sz);
+    E = zeros(sz);
+    P = zeros(sz);
+    return;
+end
+
+sz = size(a1);
+if nargin >= 2 && numel(a2) > numel(a1), sz = size(a2); end
+if nargin >= 3 && numel(a3) > max(numel(a1), numel(a2)), sz = size(a3); end
+a1 = a1(:).';
+if nargin >= 2, a2 = a2(:).'; end
+if nargin >= 3, a3 = a3(:).'; end
+
 if nargout<3
 
   if nargin==1
@@ -113,9 +132,9 @@ else
 end
 
 % multidimensional input reshape
-F = reshape(F,size(a1));
-E = reshape(E,size(a1));
-if nargin==3, P = reshape(P,size(a1)); end
+F = reshape(F,sz);
+E = reshape(E,sz);
+if nargout==3, P = reshape(P,sz); end
 
 end
 
@@ -139,10 +158,15 @@ if any(m<0)
 end
 
 
-% Reciprocal-modulus transformation: http://dlmf.nist.gov/19.7#E4
+% Reciprocal-modulus transformation, complete case (DLMF 19.7.3):
+%   K(m) = (K(1/m) - i K(1-1/m)) / sqrt(m),  m > 1
+% evaluated from the real complete integrals.  Going through
+% elliptic12i(asin(sqrt(m)), 1/m) puts the argument exactly on the branch
+% point of F(.|1/m), where the decomposition is sqrt(eps)-conditioned and the
+% result was off by 1e-8 (and, before the period fix in elliptic12i, by 2K).
 if any(m>1)
   mm=m(m>1);
-  F(m>1)=(1./sqrt(mm)).*(elliptic12i(asin(sqrt(mm)),1./mm));
+  F(m>1)=(ellipke(1./mm) - 1i*ellipke(1-1./mm))./sqrt(mm);
 end
 
 if any(m<=1&m>=0)
@@ -161,11 +185,14 @@ if nargout>1
     E(m<0)=sqrt(1-mm).*EE;
   end
 
-  % Reciprocal-modulus transformation: http://dlmf.nist.gov/19.7#E4
+  % Complete case of DLMF 19.7.4 at the branch point, where (A&S 17.4.16 with
+  % lambda = mu = pi/2)  F_b = K(m') - i K(1-m'),  E_b = E(m') - i (K(1-m') - E(1-m')),
+  % m' = 1/m, and  E(m) = sqrt(m) E_b - ((m-1)/sqrt(m)) F_b.
   if any(m>1)
-    mm=m(m>1);
-    [FF,EE]=elliptic12i(asin(sqrt(mm)),1./mm);
-    E(m>1)=((1./sqrt(mm))-sqrt(mm)).*FF+sqrt(mm).*EE;
+    mm=m(m>1);  mp=1./mm;
+    [Kp, Ep] = ellipke(mp);  [Kq, Eq] = ellipke(1-mp);
+    Fb = Kp - 1i*Kq;  Eb = Ep - 1i*(Kq - Eq);
+    E(m>1)=((1./sqrt(mm))-sqrt(mm)).*Fb+sqrt(mm).*Eb;
   end
 
   if any(m<=1&m>=0)
@@ -237,6 +264,12 @@ if any(mpos_ind)
   bb=b(mpos_ind);
 
   F(mpos_ind)=(1./sqrt(mm)).*(elliptic12i(asin(sqrt(mm).*sin(bb)),1./mm));
+  % sqrt(m) sin b = 1 is the branch point of F(.|1/m) (sqrt(eps)-conditioned
+  % there): that is the complete integral, take the closed form instead.
+  cpl = abs(sin(bb)) >= 1 - eps;                  % b = pi/2 (mod pi): asin(sqrt(m)) is that branch point
+  if any(cpl)
+    Fc = elliptic12c(mm(cpl));  Fi = F(mpos_ind);  Fi(cpl) = sign(sin(bb(cpl))).*Fc;  F(mpos_ind) = Fi;
+  end
   warning('elliptic123:F_bm_largem','Complex part may be missing and/or incorrect for ellipticF(b,m>1).');
 
 end
@@ -293,6 +326,10 @@ if nargout>1
 
     [FF,EE]=elliptic12i(asin(sqrt(mm).*sin(bb)),1./mm); %cannot display complex part
     E(mpos_ind)=((1./sqrt(mm))-sqrt(mm)).*FF+sqrt(mm).*EE;
+    cpl = abs(sin(bb)) >= 1 - eps;                  % complete: closed form (see elliptic12c)
+    if any(cpl)
+      [~, Ec] = elliptic12c(mm(cpl));  Ei = E(mpos_ind);  Ei(cpl) = sign(sin(bb(cpl))).*Ec;  E(mpos_ind) = Ei;
+    end
     warning('elliptic123:BadComplex','Complex part may be missing');
 
   end
@@ -523,7 +560,7 @@ end
 
 
 
-function [Fi,Ei,Zi] = elliptic12i(u,m,tol)
+function [Fi,Ei,Zi] = elliptic12i_legacy(u,m,tol)
 
 % ELLIPTIC12i evaluates the Incomplete Elliptic Integrals
 % of the First, Second Kind and Jacobi's Zeta Function for the complex
@@ -630,8 +667,8 @@ end
 lambda = (-1).^floor(phi/pi*2).*lambda + pi*ceil(phi/pi-0.5+eps);
 mu     = sign(psi).*real(mu);
 
-[F1(:),E1(:)] = elliptic12ic(lambda, m, tol);
-[F2(:),E2(:)] = elliptic12ic(mu, 1-m, tol);
+[F1(:),E1(:)] = elliptic12ic_legacy(lambda, m, tol);
+[F2(:),E2(:)] = elliptic12ic_legacy(mu, 1-m, tol);
 
 % complex values of elliptic integral of the first kind
 Fi = F1 + sqrt(-1)*F2;
@@ -655,7 +692,7 @@ end
 
 % END FUNCTION ELLIPTIC12i()
 
-function [F,E,Z] = elliptic12ic(u,m,tol)
+function [F,E,Z] = elliptic12ic_legacy(u,m,tol)
 %
 % Bug fix for the elliptic12 in the main distribution.
 % This function should disappear when the fixes appear there.
@@ -681,12 +718,9 @@ if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 
 I = uint32( find(m ~= 1 & m ~= 0) );
 if ~isempty(I)
-    % Use standard uniquetol for numerical precision issues
-    % This is the recommended MATLAB approach since R2015a
+    % Legacy implementation retained only for historical comparison.
     m_vals = m(I);
-    tol_unique = 1e-11;
-
-    [mu, ~, K] = uniquetol_compat(m_vals, tol_unique);
+    [mu, ~, K] = unique(m_vals);
     K = uint32(K(:).');  % Ensure K is a row vector
     mumax = length(mu);
     signU = sign(u(I));
@@ -942,4 +976,3 @@ if ~isempty(im)
 end
 
 end
-

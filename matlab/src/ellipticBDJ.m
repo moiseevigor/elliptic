@@ -138,10 +138,11 @@ end
 
 % -----------------------------------------------------------------------
 function [B, D, J] = gpu_ellipticBDJ(phi, m, n, compute_J, origSize)
-[B, D, J] = ellipticBDJ_core(gpuArray(phi(:).'), gpuArray(m(:).'), ...
-    ifelse(compute_J, gpuArray(n(:).'), []), compute_J, origSize);
-B = gather(B); D = gather(D);
-if compute_J, J = gather(J); end
+% No OpenCL kernel: the Carlson duplication needs data-dependent masking
+% and logical indexing, which ocl arrays do not support, and carlsonRF's
+% isreal() check rejects them outright (seen on an L4).  Evaluate the
+% serial core on host arrays; results are identical to the CPU path.
+[B, D, J] = ellipticBDJ_core(phi(:).', m(:).', ifelse(compute_J, n(:).', []), compute_J, origSize);
 
 
 % -----------------------------------------------------------------------

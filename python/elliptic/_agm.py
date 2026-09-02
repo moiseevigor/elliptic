@@ -21,7 +21,7 @@ def agm_coeffs(m, xp):
     iters = _AGM_ITERS
 
     # Allocate: we'll build columns one by one (works for numpy/torch/jax)
-    a = [xp.ones(N, dtype=xp.float64)]
+    a = [xp.ones_like(m)]          # device-preserving (xp.ones(N) lands on the CPU in torch)
     b = [xp.sqrt(1.0 - m)]
     c = [xp.sqrt(m)]
 

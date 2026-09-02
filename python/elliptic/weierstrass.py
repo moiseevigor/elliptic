@@ -25,10 +25,16 @@ def _reject_complex_inputs(*values):
 def _broadcast4(z, e1, e2, e3):
     _reject_complex_inputs(z, e1, e2, e3)
     xp = get_xp(z, e1, e2, e3)
-    z  = xp.asarray(z,  dtype=xp.float64)
-    e1 = xp.asarray(e1, dtype=xp.float64)
-    e2 = xp.asarray(e2, dtype=xp.float64)
-    e3 = xp.asarray(e3, dtype=xp.float64)
+    # Python-scalar roots must be materialised on the SAME DEVICE as the
+    # array inputs: xp.asarray(1.5) is a CPU tensor in torch, and
+    # broadcast_arrays refuses to mix it with CUDA tensors (found on L4).
+    args = [z, e1, e2, e3]
+    ref = next((a for a in args if hasattr(a, 'device') or hasattr(a, 'shape')), None)
+    def dev(a):
+        if ref is not None and not hasattr(a, 'shape'):
+            return xp.full_like(xp.asarray(ref, dtype=xp.float64), float(a))
+        return xp.asarray(a, dtype=xp.float64)
+    z, e1, e2, e3 = (dev(a) for a in args)
     z, e1, e2, e3 = xp.broadcast_arrays(z, e1, e2, e3)
     return xp, z, e1, e2, e3
 

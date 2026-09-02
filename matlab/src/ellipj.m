@@ -250,10 +250,11 @@ function [sn,cn,dn,am] = gpu_ellipj(u, m, tol)
 
         quasi_sign = 1 - 2 .* mod(period, 2);
         phin_cpu = gather(phin);
-        am(I) = phin_cpu + period .* pi;
-        sn(I) = quasi_sign .* sin(phin_cpu);
-        cn(I) = quasi_sign .* cos(phin_cpu);
-        dn(I) = sqrt((1 - m(I)) + m(I) .* cn(I).^2);
+        cn_val = quasi_sign .* cos(phin_cpu);      % keep everything a column:
+        am(I) = phin_cpu + period .* pi;            % m(I) is a column here but
+        sn(I) = quasi_sign .* sin(phin_cpu);        % cn(I) indexes a row, so
+        cn(I) = cn_val;                             % m(I).*cn(I) was an outer
+        dn(I) = sqrt((1 - m(I)) + m(I) .* cn_val.^2);   % product (found on L4)
     end
 
     % Special cases: m = {0, 1}

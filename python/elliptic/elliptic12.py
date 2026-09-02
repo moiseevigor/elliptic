@@ -91,9 +91,10 @@ def _elliptic12_xp(xp, u, m):
 
     crossed_pole_m1 = um1 >= math.pi * 0.5
     u_m1_safe = xp.where(crossed_pole_m1, xp.zeros_like(u), u)
-    # atanh(sin u) is exact at u = 0 and odd; log(tan(pi/4 + u/2)) gave
-    # F(0|1) = -1.1e-16 and the wrong sign at u = 1e-16.
-    F_m1_finite = xp.arctanh(xp.sin(u_m1_safe))
+    # asinh(tan u) (the inverse Gudermannian): exact at u = 0, odd, and it does
+    # not saturate the way atanh(sin u) does when sin u rounds to 1 near pi/2
+    # (F(pi/2-1e-9|1) is 21.4, not inf); log(tan(pi/4+u/2)) gave F(0|1) = -1e-16.
+    F_m1_finite = xp.arcsinh(xp.tan(u_m1_safe))
     F_m1 = xp.where(
         crossed_pole_m1,
         xp.full_like(F_m1_finite, math.inf) * sgn,

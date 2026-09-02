@@ -89,8 +89,9 @@ def carlsonRF(x, y, z):
     out = _rf_xp(xp, x, y, z)
     # Two zero arguments: the integral diverges (DLMF 19.16.1); the fixed
     # duplication count otherwise returns a finite number.
-    two0 = ((x == 0).astype(xp.float64) + (y == 0).astype(xp.float64)
-            + (z == 0).astype(xp.float64)) >= 2
+    # pure boolean algebra: torch tensors have no .astype, and this must
+    # stay backend-native (caught on the L4 hardware run)
+    two0 = ((x == 0) & (y == 0)) | ((x == 0) & (z == 0)) | ((y == 0) & (z == 0))
     return xp.where(two0, xp.full_like(out, math.inf), out)
 
 
@@ -184,8 +185,9 @@ def carlsonRJ(x, y, z, p):
             "a q > 0 argument before calling."
         )
     out = _rj_xp(xp, x, y, z, p)
-    two0 = ((x == 0).astype(xp.float64) + (y == 0).astype(xp.float64)
-            + (z == 0).astype(xp.float64)) >= 2
+    # pure boolean algebra: torch tensors have no .astype, and this must
+    # stay backend-native (caught on the L4 hardware run)
+    two0 = ((x == 0) & (y == 0)) | ((x == 0) & (z == 0)) | ((y == 0) & (z == 0))
     return xp.where(two0, xp.full_like(out, math.inf), out)  # DLMF 19.16.2
 
 

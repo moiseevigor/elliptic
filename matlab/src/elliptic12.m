@@ -162,7 +162,7 @@ if ~isempty(m1),
     N = floor( (um1+pi/2)/pi );
     M = find(um1 < pi/2);
 
-    F(m1(M)) = atanh(sin(u(m1(M))));   % exact at 0 and odd; log(tan(.)) gave -1.1e-16
+    F(m1(M)) = asinh(tan(u(m1(M))));   % gd^-1: exact at 0, odd, and no saturation as sin(u) -> 1
     F(m1(um1 >= pi/2)) = Inf.*sign(u(m1(um1 >= pi/2)));
 
     E(m1) = ((-1).^N .* sin(um1) + 2*N).*sign(u(m1));
@@ -294,7 +294,7 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
     if ~isempty(m1)
         Nf = floor((um1 + pi/2) / pi);
         M  = find(um1 < pi/2);
-        F(m1(M))           = atanh(sin(u(m1(M))));
+        F(m1(M))           = asinh(tan(u(m1(M))));
         F(m1(um1 >= pi/2)) = Inf .* sign(u(m1(um1 >= pi/2)));
         E(m1) = ((-1).^Nf .* sin(um1) + 2*Nf) .* sign(u(m1));
         Z(m1) = (-1).^Nf .* sin(u(m1));

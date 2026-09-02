@@ -103,9 +103,8 @@ function [B, D, S] = gpu_ellipticBD(m, origSize)
 % No OpenCL kernel: the Carlson duplication inside the core needs logical
 % indexing that ocl arrays lack, and carlsonRF's isreal() rejects them
 % (seen on an L4 with elliptic_config('gpu', true)).  Host arrays; identical
-% results to the CPU path.
+% results to the CPU path.  No gather(): ocl's gather rejects host arrays.
 [B, D, S] = ellipticBD_core(m(:).', origSize);
-B = gather(B);  D = gather(D);  S = gather(S);
 
 
 % -----------------------------------------------------------------------

@@ -91,7 +91,7 @@ if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 z = E; mu = 1-m;
 
 % complete integral initialization
-[~,E1] = ellipke(m,tol);
+[~,E1] = ellipke_safe(m,tol);
 
 % Boyd's initialisation and the Newton iteration below only converge on
 % phi in [0, pi/2].  Reduce first, using

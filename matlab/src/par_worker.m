@@ -13,11 +13,14 @@ function result = par_worker(func_name, varargin)
 
     was_parallel = elliptic_config('parallel');
     elliptic_config('parallel', false);
-    unwind_protect
+    % try/catch rather than unwind_protect so the file also parses in MATLAB
+    try
         result = par_worker_dispatch(func_name, varargin{:});
-    unwind_protect_cleanup
+    catch err
         elliptic_config('parallel', was_parallel);
-    end_unwind_protect
+        rethrow(err);
+    end
+    elliptic_config('parallel', was_parallel);
 end
 
 

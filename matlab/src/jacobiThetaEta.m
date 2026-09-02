@@ -76,7 +76,7 @@ end
 m = m(:).';    % make a row vector
 u = u(:).';
 
-KK = ellipke(m);
+KK = ellipke_safe(m);
 
 % Theta functions from their q-series (A&S 16.27, 16.38):
 %     Th(u|m) = theta_4(v, q),  H(u|m) = theta_1(v, q),  v = pi*u/(2K)
@@ -99,7 +99,7 @@ if ( ~isempty(m0) )
     H(m0)  = sqrt(sqrt(m(m0))).* sin(u(m0));
 end
 
-m1 = find(abs(m-1) < 10*eps);
+m1 = find(abs(m-1) < 10*eps | isnan(m));   % NaN m: q was set to 0 above
 if ( ~isempty(m1) )
     Th(m1) = NaN;
     H(m1)  = NaN;
@@ -154,7 +154,7 @@ function [Th,H] = gpu_jacobiThetaEta(u, m, tol)
     m = m(:);  u = u(:);
     if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 
-    KK = ellipke(m);
+    KK = ellipke_safe(m);
     q  = exp(-pi .* carlsonRF(zeros(size(m)), m, ones(size(m))) ./ KK);   % K(1-m) from the exact m (see NOMEQ)
     q(~(q < 1)) = 0;
     v  = pi .* u ./ (2 .* KK);

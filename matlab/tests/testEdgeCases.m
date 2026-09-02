@@ -911,3 +911,10 @@
 %! assert(isnan(v(2)) && v(1) == carlsonRF(1, 2, 3), 'Carlson isolates NaN');
 %! err = ''; try, carlsonRJ(1, 2, 3, -1); catch e, err = e.message; end
 %! assert(~isempty(strfind(err, 'principal')), 'carlsonRJ p < 0 must error, not return complex');
+%! t = theta(1, [0.3 0.5 0.7], [0.2 NaN 0.4]);
+%! assert(isnan(t(2)) && t(1) == theta(1, 0.3, 0.2), 'theta isolates NaN in m (Octave ellipke aborts on NaN)');
+%! [th, thp] = theta_prime(2, 0.4, [0.2 NaN]);
+%! assert(isnan(th(2)) && isnan(thp(2)) && ~isnan(th(1)), 'theta_prime isolates NaN in m');
+%! [Th, H] = jacobiThetaEta([0.3 0.5], [0.2 NaN]);
+%! assert(isnan(Th(2)) && isnan(H(2)) && Th(1) == jacobiThetaEta(0.3, 0.2), 'jacobiThetaEta isolates NaN in m');
+%! assert(isnan(inverselliptic2(0.4, NaN)) && isnan(elliptic12i(0.3 + 0.2i, NaN)), 'inverselliptic2 / elliptic12i NaN in m');

@@ -99,12 +99,12 @@ if any(m < 0) || any(m > 1)
     error('M must be in the range 0 <= M <= 1.');
 end
 
-K  = ellipke(m);
+K  = ellipke_safe(m);
 Kp = carlsonRF(zeros(size(m)), m, ones(size(m)));   % K(1-m) from the exact m (see NOMEQ)
 q  = exp(-pi .* Kp ./ K);
 q(~(q < 1)) = 0;                  % m == 1 guard
 [th, thp] = theta_series(j, z, q, tol);
-th(m == 1) = NaN;  thp(m == 1) = NaN;
+th(m == 1 | isnan(m)) = NaN;  thp(m == 1 | isnan(m)) = NaN;   % q = 0 stood in for NaN m
 if j == 1, th(m == 0) = 0; end
 
 end

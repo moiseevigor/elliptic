@@ -100,7 +100,10 @@ def elliptic12i(u, m):
     den = cm**2 + m_f * sl**2 * sm**2
     b1  = m_f * sl * cl * sm**2 * xp.sqrt(d2l)
     b2  = sm * cm * d2l * xp.sqrt(d2m)
-    Ei  = (b1 + 1j * b2) / den + E1 + 1j * (-E2 + F2)
+    # den = 0 only where the small-m series (below) replaces the result; keep
+    # the division silent instead of raising a RuntimeWarning on 0/0
+    den_safe = xp.where(den == 0.0, xp.ones_like(den), den)
+    Ei  = (b1 + 1j * b2) / den_safe + E1 + 1j * (-E2 + F2)
 
     # Z = E - (E_complete / K) * F
     # Complete integrals from the exact Carlson forms, not F(double(pi/2)|m):

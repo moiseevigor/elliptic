@@ -210,7 +210,9 @@ function [sn,cn,dn,am] = gpu_ellipj(u, m, tol)
 
     if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
 
-    I = find(m ~= 1 & m ~= 0);
+    bad = isnan(m) | isnan(u);          % NaN in, NaN out (see gpu_elliptic12)
+    sn(bad) = NaN;  cn(bad) = NaN;  dn(bad) = NaN;  am(bad) = NaN;
+    I = find(m ~= 1 & m ~= 0 & ~bad);
     if ~isempty(I)
         mmax = length(I);
         mu   = m(I);

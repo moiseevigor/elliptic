@@ -56,15 +56,24 @@ regression tests. No public function was intentionally removed.
 
 ## Automated verification
 
-- Python default environment: **451 passed, 1 skipped**. The skip is the
-  optional JAX-only test when JAX is not installed.
-- Python with both JAX and PyTorch installed: **458 passed**.
-- Dedicated backend matrix: **10 passed**, covering NumPy, PyTorch, and JAX;
-  JAX compiles the core paths and traces the larger fixed-iteration graphs.
-- Octave: **220/220 test blocks passed** across all 16 `test*.m` files.
-- Python byte-compilation and whitespace/error checks passed.
-- A base-dependency-only public API exercise verifies that SciPy is absent and
-  not imported at runtime.
+State after round 6 (2026-09-02):
+
+- Python (NumPy + PyTorch CPU): **484 passed, 1 skipped** (the optional
+  JAX-only test); docstring examples run under `pytest --doctest-modules`.
+- Backend matrix on an NVIDIA L4 (Cloud Run job): **10 passed**; the 88
+  function/backend device checks of `gpu_verify.py` all within 3.6e-14 of the
+  NumPy reference, torch x50 over NumPy, JAX jitted 2e6 points in 18 ms.
+- Octave: **18 `test*.m` files, 0 failures**, also under `--traditional`
+  (MATLAB-compatibility mode).  New files: `testDocExamples.m` (every
+  docstring `Example:` block), `testGpuStrict.m` (every GPU path under the
+  strict device stub in `tests/gpu_stub/`, including NaN inputs),
+  `testParallel.m` chunking block (bit-identical chunked vs serial).
+- Octave on the L4 (`ocl` over OpenCL 3.0): GPU/CPU parity <= 4.8e-16 on
+  `elliptic12`, `ellipj`, `elliptic3`, `ellipticBDJ`; x2.7 over CPU.
+- Cross-port sweeps (kept under `scratchpad`, reproducible from the audit
+  text): 3000 + 1500 + 800 + 1000 random points at extreme parameters, every
+  disagreement above 1e-13 adjudicated with mpmath at the exact doubles;
+  matrix/column/mixed-shape sweep; empty/NaN/Inf sweep.
 
 ## Adversarial review round (2026-08-16)
 
@@ -195,6 +204,7 @@ for theta1).  The remaining cross-port gap is `sn, cn, dn` at `|u| ~ 1e5`
 | 6.17 | `ellipj.m`, `jacobiThetaEta.m`, `inverselliptic2.m`, `elliptic123.m` | input-shape defects from a sweep of matrix / column / row / mixed-scalar calls against scalar loops: `ellipj` re-read `cn(I)` from its column-shaped output against the row `m(I)` (6x6 broadcast error for any column `u`, hence also `jacobiEDJ`); `jacobiThetaEta` returned a row for a matrix; `inverselliptic2`'s vector-wide Newton stop made values batch-dependent by an ulp; `elliptic123` failed on any matrix | keep the row-shaped value; reshape to the input shape; per-element Newton mask; flatten to rows and restore the shape.  The Python port passed the same sweep; `TestInputShapes` pins it |
 | 6.18 | `elliptic12.m` GPU path | `K_per = 2 .* gpuArray(k_per) .* K_vals` multiplied a device array by a host matrix (K_vals became a host array in 6.4); `ocl` refuses that and the L4 run's Octave section failed.  The identity stubs used locally cannot see host/device mixing | host product, then `gpuArray`.  New `tests/gpu_stub/gpuArray.m`: a strict device-array stand-in that errors on device-by-host-matrix operators and on logical indexing exactly like `ocl`; `testGpuStrict.m` runs every GPU path under it (would have caught all three host/device defects of the earlier hardware rounds on a laptop) |
 | 6.19 | empty / NaN / Inf inputs | MATLAB: nine functions rejected `[]` against a scalar partner (`ellipticBDJ`, `theta_prime`, `cel`, the four Weierstrass functions, the four Carlson functions, `arclength_ellipse`, `elliptic123`); `nomeq` aborted inside `ellipke` on a single NaN; `inversenomeq` rejected NaN as out of range; `elliptic12i` raised "must be real" because `(-1)^NaN` is complex in Octave; the Carlson wrappers returned complex NaN for `-Inf` and complex garbage for `R_J` with `p < 0`.  Python: `cel(NaN, ...)` returned `pi/2` (a NaN `kc` never became active) | empty in, empty out of the same shape; NaN isolated elementwise; `R_J` with `p <= 0` errors like the Python port; `cel` propagates NaN |
+| 6.20 | GPU branches of `elliptic12.m`, `ellipj.m`; `theta`, `theta_prime`, `jacobiThetaEta`, `elliptic12i`, `inverselliptic2` (MATLAB) | on the L4 the Octave section failed the NaN block: a NaN `m` fell through `find(m ~= 1 & m ~= 0)` on the GPU path, the AGM loop exited at once and `F` came back equal to `u`.  Separately, Octave's `ellipke` aborts with "algorithm did not converge" as soon as one element is NaN, taking the whole theta family down | NaN masks in both GPU branches (reproduced locally by the strict stub, which now includes NaN cases); `ellipke_safe.m` (NaN-propagating `ellipke`) at the six call sites, and NaN `m` mapped back to NaN after the `q = 0` stand-in |
 
 Deliberate limits found in this sweep: complex `sn, cn, dn` near the poles
 `u = iK'` and Weierstrass functions near lattice points carry the

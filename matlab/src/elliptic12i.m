@@ -144,7 +144,7 @@ b3 = cos_mu.^2 + m.*sin_lam.^2.*sin_mu.^2;
 Ei(:) = (b1 + sqrt(-1)*b2)./b3;
 Ei(:) = Ei(:) + E1(:) + sqrt(-1)*(-E2(:) + F2(:));
 
-[K,Ee] = ellipke(m);
+[K,Ee] = ellipke_safe(m);
 % complex values of zeta function
 Zi(:) = Ei(:) - Ee(:)./K(:).*Fi(:);
 

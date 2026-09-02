@@ -36,6 +36,10 @@ end
 %!     'inverselliptic2', @() inverselliptic2(z, m);
 %!     'cel',         @() cel(sqrt(1-m), n, 1, 0.5);
 %!     'arclength_ellipse', @() arclength_ellipse(z+0.1, z+0.5, u, z);
+%!     'elliptic12 NaN', @() nthargout(1:3, @elliptic12, [0.3 0.5 0.7 NaN], [0.2 NaN 0.4 0.5]);
+%!     'ellipj NaN',     @() nthargout(1:4, @ellipj, [0.3 0.5 0.7 NaN], [0.2 NaN 0.4 0.5]);
+%!     'theta NaN',      @() theta(1, [0.3 0.5], [0.2 NaN]);
+%!     'elliptic3 NaN',  @() elliptic3([0.3 0.5], [0.2 NaN], 0.3);
 %!   };
 %!   for t = 1:rows(tests)
 %!     name = tests{t,1}; f = tests{t,2};

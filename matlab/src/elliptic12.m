@@ -239,7 +239,11 @@ function [F,E,Z] = gpu_elliptic12(u, m, tol)
     if any(m < 0) || any(m > 1), error('M must be in the range 0 <= M <= 1.'); end
     m(m < eps) = 0;
 
-    I = find(m ~= 1 & m ~= 0);
+    % NaN in, NaN out (a NaN m fell through the selection below and the AGM
+    % loop exited at once, so the GPU path returned F = u on real hardware)
+    bad = isnan(m) | isnan(u);
+    F(bad) = NaN;  E(bad) = NaN;  Z(bad) = NaN;
+    I = find(m ~= 1 & m ~= 0 & ~bad);
     if ~isempty(I)
         mmax  = length(I);
         mu    = m(I);
